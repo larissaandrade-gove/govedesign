@@ -72,7 +72,7 @@ async function build() {
       { ...base, type: 'Textbox', name: 'Chamada', text: 'Saiba mais', left: 80, top: 260, width: 400, fontSize: 28, fontFamily: 'Montserrat', fontWeight: 400, fontStyle: 'normal', fill: '#FF0000', styles: [{ start: 0, end: 5, style: { fontStyle: 'italic', fontWeight: 700 } }] },
       { ...base, type: 'Image', name: 'Logo', src: 'assets/gove-logo-roxo.png', left: 700, top: 60, width: 300, height: 80, scaleX: 1.2, scaleY: 1, filters: [{ type: 'BlendColor', color: '#FFFFFF', mode: 'tint' }] },
       { ...base, type: 'Path', name: 'Ícone custom', path: 'M0 0 L40 0 L40 40 L0 40 Z M10 10 L30 30', fill: '#FFC72C', left: 900, top: 300, width: 40, height: 40 },
-      { ...base, type: 'Image', name: 'QR code', gove: { role: 'qrcode' }, src: qrTransparent, left: 820, top: 900, width: 120, height: 120 },
+      { ...base, type: 'Image', name: 'QR code', gove: { role: 'qrcode' }, src: qrTransparent, left: 820, top: 900, width: 240, height: 240, scaleX: 0.5, scaleY: 0.5 },
     ],
   };
 

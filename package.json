@@ -7,7 +7,7 @@
     "start": "node backend/server.js",
     "dev": "node --watch backend/server.js",
     "db:init": "node db/init.js",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.js"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisor de identidade · Gove</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Gove Digital · Identidade visual</p>
+      <h1>Revisor de identidade visual</h1>
+      <p class="lead">Envie uma peça de marketing ou um slide e receba um relatório com o que está conforme, o que precisa de atenção e como corrigir.</p>
+    </header>
+
+    <section class="card" aria-labelledby="t-enviar">
+      <h2 id="t-enviar">Revisar uma peça</h2>
+      <form id="audit-form">
+        <div class="modes">
+          <div class="mode">
+            <h3>Modo A · Vetorial</h3>
+            <p>Fabric.js JSON (<code>canvas.toJSON()</code>). Checagens exatas de fonte, cor, gradiente, margens, logomarca, ícones e QR code.</p>
+          </div>
+          <div class="mode">
+            <h3>Modo B · Raster</h3>
+            <p>PNG ou JPG final. Paleta e contraste por pixel; tipografia, logomarca e ícones ficam para revisão manual.</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Peça (.json, .png ou .jpg)</span>
+          <input type="file" name="file" accept=".json,application/json,image/png,image/jpeg,image/webp" required>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>Tipo de peça</span>
+            <select name="pieceType">
+              <option value="">Detectar pelo arquivo</option>
+              <option value="post">Post</option>
+              <option value="story">Story</option>
+              <option value="flyer">Flyer</option>
+              <option value="slide">Slide</option>
+              <option value="banner">Banner</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Largura do artboard (px, opcional)</span>
+            <input type="number" name="artboardWidth" min="1" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span>Altura do artboard (px, opcional)</span>
+            <input type="number" name="artboardHeight" min="1" inputmode="numeric">
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Regiões de texto/QR code (.regions.json, opcional — Modo B)</span>
+          <input type="file" name="regions" accept=".json,application/json">
+        </label>
+
+        <button class="btn-accent" type="submit">Revisar peça</button>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="result" class="card" hidden aria-labelledby="t-resultado">
+      <div class="result-head">
+        <div>
+          <p class="eyebrow" id="r-mode"></p>
+          <h2 id="t-resultado">Resultado</h2>
+        </div>
+        <span class="pill" id="r-status"></span>
+      </div>
+      <div id="r-callouts"></div>
+      <div class="tiles" id="r-tiles"></div>
+      <div class="actions">
+        <a class="btn-primary" id="r-zip" href="#">Baixar ZIP (relatório + preview)</a>
+        <a class="btn-ghost" id="r-html" href="#" target="_blank" rel="noopener">Abrir relatório completo</a>
+      </div>
+      <div class="result-grid">
+        <img id="r-preview" alt="Preview da peça com os itens não conformes destacados">
+        <ol class="checks" id="r-checks"></ol>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="t-qr">
+      <h2 id="t-qr">Gerar QR code</h2>
+      <p>Gerado já no padrão Gove: módulos azul-noite sobre branco sólido, com zona de silêncio de 4 módulos.</p>
+      <form id="qr-form" class="row">
+        <label class="field grow">
+          <span>Conteúdo (URL ou texto)</span>
+          <input type="text" name="text" value="https://www.gove.digital/" required>
+        </label>
+        <label class="field">
+          <span>Tamanho (px)</span>
+          <input type="number" name="width" value="600" min="150">
+        </label>
+        <button class="btn-primary" type="submit">Gerar QR code</button>
+      </form>
+      <div id="qr-out" class="qr-out"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-hist">
+      <h2 id="t-hist">Histórico de auditorias</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Data</th><th>Arquivo</th><th>Modo</th><th>Status</th><th>Reprovados</th><th></th></tr></thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="app.js" type="module"></script>
+</body>
+</html>
