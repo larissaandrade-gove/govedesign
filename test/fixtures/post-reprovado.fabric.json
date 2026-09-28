@@ -1,0 +1,163 @@
+{
+  "version": "7.4.0",
+  "width": 1080,
+  "height": 1080,
+  "background": "#1A153A",
+  "objects": [
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Rect",
+      "name": "Faixa gradiente",
+      "left": 0,
+      "top": 560,
+      "width": 1080,
+      "height": 520,
+      "fill": {
+        "type": "linear",
+        "gradientUnits": "pixels",
+        "coords": {
+          "x1": 0,
+          "y1": 0,
+          "x2": 1080,
+          "y2": 0
+        },
+        "colorStops": [
+          {
+            "offset": 0,
+            "color": "#4A00E0"
+          },
+          {
+            "offset": 1,
+            "color": "#FF00AA"
+          }
+        ]
+      }
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Textbox",
+      "name": "Título",
+      "text": "Oferta imperdível",
+      "left": 20,
+      "top": 30,
+      "width": 900,
+      "fontSize": 72,
+      "fontFamily": "Arial",
+      "fontWeight": "bold",
+      "fill": "#FFFFFF"
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Textbox",
+      "name": "Subtítulo",
+      "text": "Texto com baixo contraste",
+      "left": 80,
+      "top": 200,
+      "width": 800,
+      "fontSize": 28,
+      "fontFamily": "Montserrat",
+      "fontWeight": 600,
+      "fill": "#3A2E6B"
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Textbox",
+      "name": "Chamada",
+      "text": "Saiba mais",
+      "left": 80,
+      "top": 260,
+      "width": 400,
+      "fontSize": 28,
+      "fontFamily": "Montserrat",
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "fill": "#FF0000",
+      "styles": [
+        {
+          "start": 0,
+          "end": 5,
+          "style": {
+            "fontStyle": "italic",
+            "fontWeight": 700
+          }
+        }
+      ]
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1.2,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Image",
+      "name": "Logo",
+      "src": "assets/gove-logo-roxo.png",
+      "left": 700,
+      "top": 60,
+      "width": 300,
+      "height": 80,
+      "filters": [
+        {
+          "type": "BlendColor",
+          "color": "#FFFFFF",
+          "mode": "tint"
+        }
+      ]
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Path",
+      "name": "Ícone custom",
+      "path": "M0 0 L40 0 L40 40 L0 40 Z M10 10 L30 30",
+      "fill": "#FFC72C",
+      "left": 900,
+      "top": 300,
+      "width": 40,
+      "height": 40
+    },
+    {
+      "originX": "left",
+      "originY": "top",
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "opacity": 1,
+      "type": "Image",
+      "name": "QR code",
+      "gove": {
+        "role": "qrcode"
+      },
+      "src": "data:image/png;base64,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",
+      "left": 820,
+      "top": 900,
+      "width": 120,
+      "height": 120
+    }
+  ]
+}

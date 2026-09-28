@@ -1,0 +1,38 @@
+{
+  "name": "gove-revisor-identidade",
+  "version": "0.1.0",
+  "description": "Revisor de identidade visual para peças de marketing e apresentações da Gove Digital",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "db:init": "node db/init.js",
+    "test": "node --test test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/larissaandrade-gove/govedesign.git"
+  },
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/larissaandrade-gove/govedesign/issues"
+  },
+  "homepage": "https://github.com/larissaandrade-gove/govedesign#readme",
+  "dependencies": {
+    "@fontsource/montserrat": "^5.3.0",
+    "@phosphor-icons/core": "^2.1.1",
+    "archiver": "^8.0.0",
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.2.1",
+    "fabric": "^7.4.0",
+    "lucide": "^1.48.0",
+    "multer": "^2.4.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}

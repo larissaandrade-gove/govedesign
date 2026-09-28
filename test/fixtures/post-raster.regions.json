@@ -1,0 +1,37 @@
+{
+  "pieceType": "post",
+  "textRegions": [
+    {
+      "label": "Título",
+      "x": 72,
+      "y": 118,
+      "width": 760,
+      "height": 96
+    },
+    {
+      "label": "Subtítulo",
+      "x": 72,
+      "y": 280,
+      "width": 560,
+      "height": 56
+    }
+  ],
+  "qrRegions": [
+    {
+      "label": "QR code",
+      "x": 760,
+      "y": 760,
+      "width": 240,
+      "height": 240
+    }
+  ],
+  "logoRegions": [
+    {
+      "label": "Logo",
+      "x": 80,
+      "y": 880,
+      "width": 300,
+      "height": 100
+    }
+  ]
+}
