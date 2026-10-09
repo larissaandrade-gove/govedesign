@@ -4,3 +4,6 @@ db/*.sqlite-*
 storage/
 .DS_Store
 scratch/
+.env
+.env.*
+!.env.example

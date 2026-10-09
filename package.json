@@ -7,7 +7,10 @@
     "start": "node backend/server.js",
     "dev": "node --watch backend/server.js",
     "db:init": "node db/init.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "criativos:install": "npm --prefix criativos install",
+    "criativos:dev": "npm --prefix criativos run dev",
+    "criativos:build": "npm --prefix criativos run build"
   },
   "repository": {
     "type": "git",

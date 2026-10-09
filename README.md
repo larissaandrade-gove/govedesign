@@ -1,3 +1,45 @@
+# Gove Design — revisor de identidade + gerador de criativos
+
+Este repositório reúne duas aplicações independentes da Gove Digital:
+
+| App | Pasta | O que faz | Stack |
+| --- | --- | --- | --- |
+| **Revisor de identidade visual** | raiz (`backend/`, `db/`, `frontend/`) | Audita peças prontas contra os tokens de marca | Node + Express + SQLite |
+| **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React + Tailwind (Vite) |
+
+Cada app tem o próprio `package.json`, dependências e servidor; um não altera o
+outro. Os scripts da raiz só encurtam os comandos:
+
+```bash
+npm start                  # revisor em http://localhost:3040
+npm run criativos:install  # dependências do gerador
+npm run criativos:dev      # gerador em modo dev (Vite)
+npm run criativos:build    # build de produção do gerador (.output/)
+```
+
+## Gerador de Criativos GOVE (`criativos/`)
+
+Trazido do Lovable sem mudanças de comportamento: login restrito, Studio ao
+vivo com 8 diagramações, gerador em lote, material colaborativo (especialista),
+vídeo de 15 s (MP4 via ffmpeg.wasm), texto alternativo e a checagem de
+conformidade de `src/lib/creative/brand.ts` (paleta travada, pares texto/fundo,
+CTA com verbo de ação, limites de headline/subhead).
+
+Configuração: copie `criativos/.env.example` para `criativos/.env` e preencha
+`SESSION_SECRET` (≥ 32 caracteres), `GATE_EMAIL` e `GATE_PASSWORD`;
+`PEXELS_API_KEY` é opcional (busca de fotos).
+
+Única adaptação: os logos ficam hospedados no Lovable (`/__l5e/assets-v1/…`),
+endereço que não existe fora dele. O app agora procura antes uma cópia em
+`criativos/public/logos/` (ver o README dessa pasta); sem ela, mantém o
+comportamento original (endereço do Lovable e, na falha, o texto "GOVE").
+
+O build gera um worker para Cloudflare (padrão do `@lovable.dev/vite-tanstack-config`
+via Nitro). Esta pasta não está ligada à sincronização do Lovable: alterações
+feitas aqui não voltam para o projeto no Lovable, e vice-versa.
+
+---
+
 # Revisor de identidade visual — Gove Digital
 
 Módulo que audita peças de marketing e apresentações da Gove Digital contra os
