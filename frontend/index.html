@@ -3,117 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Revisor de identidade · Gove</title>
+  <title>Gove Design</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #1A153A;
+      --surface: #2A3233;
+      --primary: #4A00E0;
+      --secondary: #3A2E6B;
+      --accent: #FFC72C;
+      --text-strong: #FFFFFF;
+      --focus-ring: var(--accent);
+      --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.6);
+      --glow-purple: 0 0 20px rgba(74, 0, 224, 0.4);
+      --display: Montserrat, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 48px 16px;
+      background: var(--background);
+      font-family: var(--display);
+    }
+    main { width: 100%; max-width: 720px; }
+    nav {
+      width: 100%;
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+    a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      padding: 32px 24px;
+      border: 1px solid var(--secondary);
+      border-radius: 16px;
+      background: var(--surface);
+      color: var(--text-strong);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.4;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 200ms ease-in-out, border-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
+    }
+    a:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: var(--shadow-md), var(--glow-purple); }
+    a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    @media (max-width: 560px) { nav { grid-template-columns: 1fr; } a { min-height: 112px; font-size: 20px; } }
+    @media (prefers-reduced-motion: reduce) { a { transition: none; } a:hover { transform: none; } }
+  </style>
 </head>
 <body>
   <main>
-    <header class="hero">
-      <p class="eyebrow">Gove Digital · Identidade visual</p>
-      <h1>Revisor de identidade visual</h1>
-      <p class="lead">Envie uma peça de marketing ou um slide e receba um relatório com o que está conforme, o que precisa de atenção e como corrigir.</p>
-    </header>
-
-    <section class="card" aria-labelledby="t-enviar">
-      <h2 id="t-enviar">Revisar uma peça</h2>
-      <form id="audit-form">
-        <div class="modes">
-          <div class="mode">
-            <h3>Modo A · Vetorial</h3>
-            <p>Fabric.js JSON (<code>canvas.toJSON()</code>). Checagens exatas de fonte, cor, gradiente, margens, logomarca, ícones e QR code.</p>
-          </div>
-          <div class="mode">
-            <h3>Modo B · Raster</h3>
-            <p>PNG ou JPG final. Paleta e contraste por pixel; tipografia, logomarca e ícones ficam para revisão manual.</p>
-          </div>
-        </div>
-
-        <label class="field">
-          <span>Peça (.json, .png ou .jpg)</span>
-          <input type="file" name="file" accept=".json,application/json,image/png,image/jpeg,image/webp" required>
-        </label>
-
-        <div class="row">
-          <label class="field">
-            <span>Tipo de peça</span>
-            <select name="pieceType">
-              <option value="">Detectar pelo arquivo</option>
-              <option value="post">Post</option>
-              <option value="story">Story</option>
-              <option value="flyer">Flyer</option>
-              <option value="slide">Slide</option>
-              <option value="banner">Banner</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Largura do artboard (px, opcional)</span>
-            <input type="number" name="artboardWidth" min="1" inputmode="numeric">
-          </label>
-          <label class="field">
-            <span>Altura do artboard (px, opcional)</span>
-            <input type="number" name="artboardHeight" min="1" inputmode="numeric">
-          </label>
-        </div>
-
-        <label class="field">
-          <span>Regiões de texto/QR code (.regions.json, opcional — Modo B)</span>
-          <input type="file" name="regions" accept=".json,application/json">
-        </label>
-
-        <button class="btn-accent" type="submit">Revisar peça</button>
-        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-      </form>
-    </section>
-
-    <section id="result" class="card" hidden aria-labelledby="t-resultado">
-      <div class="result-head">
-        <div>
-          <p class="eyebrow" id="r-mode"></p>
-          <h2 id="t-resultado">Resultado</h2>
-        </div>
-        <span class="pill" id="r-status"></span>
-      </div>
-      <div id="r-callouts"></div>
-      <div class="tiles" id="r-tiles"></div>
-      <div class="actions">
-        <a class="btn-primary" id="r-zip" href="#">Baixar ZIP (relatório + preview)</a>
-        <a class="btn-ghost" id="r-html" href="#" target="_blank" rel="noopener">Abrir relatório completo</a>
-      </div>
-      <div class="result-grid">
-        <img id="r-preview" alt="Preview da peça com os itens não conformes destacados">
-        <ol class="checks" id="r-checks"></ol>
-      </div>
-    </section>
-
-    <section class="card" aria-labelledby="t-qr">
-      <h2 id="t-qr">Gerar QR code</h2>
-      <p>Gerado já no padrão Gove: módulos azul-noite sobre branco sólido, com zona de silêncio de 4 módulos.</p>
-      <form id="qr-form" class="row">
-        <label class="field grow">
-          <span>Conteúdo (URL ou texto)</span>
-          <input type="text" name="text" value="https://www.gove.digital/" required>
-        </label>
-        <label class="field">
-          <span>Tamanho (px)</span>
-          <input type="number" name="width" value="600" min="150">
-        </label>
-        <button class="btn-primary" type="submit">Gerar QR code</button>
-      </form>
-      <div id="qr-out" class="qr-out"></div>
-    </section>
-
-    <section class="card" aria-labelledby="t-hist">
-      <h2 id="t-hist">Histórico de auditorias</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>#</th><th>Data</th><th>Arquivo</th><th>Modo</th><th>Status</th><th>Reprovados</th><th></th></tr></thead>
-          <tbody id="history"></tbody>
-        </table>
-      </div>
-    </section>
+    <h1 class="sr-only">Gove Design</h1>
+    <nav aria-label="Aplicações">
+      <a href="/revisor/">Revisor de identidade visual</a>
+      <a href="/criativos">Gerador de criativos</a>
+    </nav>
   </main>
-  <script src="app.js" type="module"></script>
 </body>
 </html>

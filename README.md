@@ -11,11 +11,17 @@ Cada app tem o próprio `package.json`, dependências e servidor; um não altera
 outro. Os scripts da raiz só encurtam os comandos:
 
 ```bash
-npm start                  # revisor em http://localhost:3040
+npm start                  # tela inicial em http://localhost:3040 (revisor em /revisor/)
 npm run criativos:install  # dependências do gerador
-npm run criativos:dev      # gerador em modo dev (Vite)
+npm run criativos:dev      # gerador em modo dev (Vite, http://localhost:5173)
 npm run criativos:build    # build de produção do gerador (.output/)
 ```
+
+A tela inicial (`/`) mostra só os botões de cada app. "Revisor de identidade
+visual" abre `/revisor/`; "Gerador de criativos" passa por `/criativos`, que
+redireciona para o endereço do gerador definido em `CRIATIVOS_URL` (padrão
+`http://localhost:5173/`). Ao publicar, aponte `CRIATIVOS_URL` para a URL
+pública do gerador.
 
 ## Gerador de Criativos GOVE (`criativos/`)
 
@@ -77,7 +83,7 @@ db/
   seed.js                   valores iniciais (com TODOs)
   database.js / init.js
   assets/logos/             arquivos oficiais da logomarca (TODO)
-frontend/                   upload, resultado, gerador de QR e histórico
+frontend/                   tela inicial (index.html) e interface do revisor (revisor/)
 test/                       testes (node:test) e peças de exemplo
 ```
 

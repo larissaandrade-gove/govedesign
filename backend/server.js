@@ -21,6 +21,9 @@ export function createApp({ db = openDatabase(), storageDir: storageDirIn = proc
   app.use(express.json({ limit: '20mb' }));
   app.use(express.static(join(ROOT, 'frontend')));
 
+  // Botão "Gerador de criativos" da tela inicial: o app roda em servidor próprio.
+  app.get('/criativos', (_req, res) => res.redirect(302, process.env.CRIATIVOS_URL || 'http://localhost:5173/'));
+
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   // ---------- Tokens de marca ----------
