@@ -1,0 +1,2 @@
+DROP POLICY "Time autenticado pode ver landing pages" ON public.landing_pages;
+CREATE POLICY "Autor pode ver suas landing pages" ON public.landing_pages FOR SELECT TO authenticated USING (auth.uid() = autor);

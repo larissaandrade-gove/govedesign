@@ -1,27 +1,63 @@
-# Gove Design — revisor de identidade + gerador de criativos
+# Gove Design — apps de marketing da Gove Digital
 
-Este repositório reúne duas aplicações independentes da Gove Digital:
+Este repositório reúne quatro aplicações independentes, acessadas por uma tela
+inicial com um botão para cada uma:
 
 | App | Pasta | O que faz | Stack |
 | --- | --- | --- | --- |
 | **Revisor de identidade visual** | raiz (`backend/`, `db/`, `frontend/`) | Audita peças prontas contra os tokens de marca | Node + Express + SQLite |
-| **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React + Tailwind (Vite) |
+| **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React (Vite) |
+| **Gove Links** | [`links/`](links/) | Encurtador de links com rastreamento de cliques | TanStack Start + React + Supabase |
+| **LP Builder** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
 
 Cada app tem o próprio `package.json`, dependências e servidor; um não altera o
 outro. Os scripts da raiz só encurtam os comandos:
 
 ```bash
 npm start                  # tela inicial em http://localhost:3040 (revisor em /revisor/)
-npm run criativos:install  # dependências do gerador
-npm run criativos:dev      # gerador em modo dev (Vite, http://localhost:5173)
-npm run criativos:build    # build de produção do gerador (.output/)
+
+npm run criativos:install && npm run criativos:dev   # http://localhost:5173
+npm run links:install     && npm run links:dev       # http://localhost:5174
+npm run lp:install        && npm run lp:dev          # http://localhost:5175
+# build de produção de cada um: criativos:build, links:build, lp:build
 ```
 
-A tela inicial (`/`) mostra só os botões de cada app. "Revisor de identidade
-visual" abre `/revisor/`; "Gerador de criativos" passa por `/criativos`, que
-redireciona para o endereço do gerador definido em `CRIATIVOS_URL` (padrão
-`http://localhost:5173/`). Ao publicar, aponte `CRIATIVOS_URL` para a URL
-pública do gerador.
+Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/`; os
+outros botões passam por `/criativos`, `/links` e `/lp`, que redirecionam para
+o endereço de cada app definido em `CRIATIVOS_URL`, `LINKS_URL` e `LP_URL`
+(padrão: as portas locais acima). Ao publicar, aponte essas variáveis para as
+URLs públicas.
+
+Os três apps de `criativos/`, `links/` e `lp-builder/` vieram do Lovable. As
+pastas não estão ligadas à sincronização do Lovable: alterações feitas aqui não
+voltam para lá, e vice-versa. O build de cada um gera um worker para Cloudflare
+(padrão do `@lovable.dev/vite-tanstack-config`).
+
+## Gove Links (`links/`)
+
+Trazido do Lovable sem mudanças. Login por e-mail e senha do Supabase (contas
+criadas pela administração), criação de links curtos, dashboard e
+redirecionamento público em `/:slug` e `/r/:slug`, que registra o clique
+(dispositivo, navegador, sistema e país vindos dos cabeçalhos da borda, sem IP).
+
+Configuração: copie `links/.env.example` para `links/.env` e preencha com os
+dados do projeto Supabase do app. O `.env` original não foi versionado (este
+repositório é público). `SUPABASE_SERVICE_ROLE_KEY` é necessária no servidor
+para o redirecionamento registrar cliques; `VITE_SHORT_DOMAIN` define um domínio
+curto próprio. As tabelas (`short_links`, `link_clicks`) vivem no projeto
+Supabase; o zip não trazia migrações delas.
+
+## LP Builder (`lp-builder/`)
+
+Trazido do Lovable. Editor visual com biblioteca de blocos (seção, linhas,
+texto, CTA, imagem, card com ícone, vídeo, contagem regressiva, formulário RD
+Station), presets de Hero, visualização desktop/mobile e exportação de HTML.
+Os projetos ficam só no `localStorage` do navegador.
+
+Única mudança: o e-mail e a senha de acesso estavam escritos no código e agora
+vêm de `lp-builder/.env` (`VITE_LP_EMAIL`, `VITE_LP_PASSWORD`; ver
+`.env.example`). A checagem continua no navegador, então os valores ficam
+visíveis no JavaScript publicado.
 
 ## Gerador de Criativos GOVE (`criativos/`)
 
@@ -40,9 +76,6 @@ endereço que não existe fora dele. O app agora procura antes uma cópia em
 `criativos/public/logos/` (ver o README dessa pasta); sem ela, mantém o
 comportamento original (endereço do Lovable e, na falha, o texto "GOVE").
 
-O build gera um worker para Cloudflare (padrão do `@lovable.dev/vite-tanstack-config`
-via Nitro). Esta pasta não está ligada à sincronização do Lovable: alterações
-feitas aqui não voltam para o projeto no Lovable, e vice-versa.
 
 ---
 

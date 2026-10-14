@@ -21,8 +21,15 @@ export function createApp({ db = openDatabase(), storageDir: storageDirIn = proc
   app.use(express.json({ limit: '20mb' }));
   app.use(express.static(join(ROOT, 'frontend')));
 
-  // Botão "Gerador de criativos" da tela inicial: o app roda em servidor próprio.
-  app.get('/criativos', (_req, res) => res.redirect(302, process.env.CRIATIVOS_URL || 'http://localhost:5173/'));
+  // Botões da tela inicial: cada app roda em servidor próprio; o destino vem do ambiente.
+  const APP_URLS = {
+    '/criativos': ['CRIATIVOS_URL', 'http://localhost:5173/'],
+    '/links': ['LINKS_URL', 'http://localhost:5174/'],
+    '/lp': ['LP_URL', 'http://localhost:5175/'],
+  };
+  for (const [path, [envName, fallback]] of Object.entries(APP_URLS)) {
+    app.get(path, (_req, res) => res.redirect(302, process.env[envName] || fallback));
+  }
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

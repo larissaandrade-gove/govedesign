@@ -9,8 +9,14 @@
     "db:init": "node db/init.js",
     "test": "node --test test/*.test.js",
     "criativos:install": "npm --prefix criativos install",
-    "criativos:dev": "npm --prefix criativos run dev",
-    "criativos:build": "npm --prefix criativos run build"
+    "criativos:dev": "npm --prefix criativos run dev -- --port 5173",
+    "criativos:build": "npm --prefix criativos run build",
+    "links:install": "npm --prefix links install",
+    "links:dev": "npm --prefix links run dev -- --port 5174",
+    "links:build": "npm --prefix links run build",
+    "lp:install": "npm --prefix lp-builder install",
+    "lp:dev": "npm --prefix lp-builder run dev -- --port 5175",
+    "lp:build": "npm --prefix lp-builder run build"
   },
   "repository": {
     "type": "git",
