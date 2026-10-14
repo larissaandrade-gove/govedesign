@@ -16,7 +16,10 @@
     "links:build": "npm --prefix links run build",
     "lp:install": "npm --prefix lp-builder install",
     "lp:dev": "npm --prefix lp-builder run dev -- --port 5175",
-    "lp:build": "npm --prefix lp-builder run build"
+    "lp:build": "npm --prefix lp-builder run build",
+    "print:install": "cd print-studio/web && pnpm install",
+    "print:build": "cd print-studio/web && pnpm run bundle",
+    "print:icons": "node print-studio/scripts/build-icons.mjs"
   },
   "repository": {
     "type": "git",
@@ -36,6 +39,7 @@
     "fabric": "^7.4.0",
     "lucide": "^1.48.0",
     "multer": "^2.4.0",
+    "pdfkit": "^0.20.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5"
   },

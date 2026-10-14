@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens do design system Gove (tema Noturno) no formato HSL do shadcn/ui */
+@layer base {
+  :root {
+    --background: 248 47% 15%;        /* #1A153A */
+    --foreground: 0 0% 92%;           /* #EAEAEA */
+    --card: 186 10% 18%;              /* #2A3233 */
+    --card-foreground: 0 0% 92%;
+    --popover: 186 10% 18%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 260 100% 44%;          /* #4A00E0 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 252 40% 30%;         /* #3A2E6B */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 248 35% 22%;
+    --muted-foreground: 249 18% 80%;
+    --accent: 44 100% 59%;            /* #FFC72C */
+    --accent-foreground: 248 47% 15%;
+    --destructive: 354 100% 71%;      /* status funcional */
+    --destructive-foreground: 248 47% 15%;
+    --border: 252 40% 30%;
+    --input: 252 40% 30%;
+    --ring: 44 100% 59%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-display text-white;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}

@@ -9,6 +9,7 @@ import { officialLogoFiles } from './audit/modeA.js';
 import { generateQr, qrFabricObjects } from './lib/qrcode.js';
 import { writeZip } from './report/package.js';
 import { AuditInputError, runAudit, storedEntries } from './services/auditService.js';
+import { createPrintStudioRouter } from '../print-studio/server/router.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
@@ -20,6 +21,10 @@ export function createApp({ db = openDatabase(), storageDir: storageDirIn = proc
 
   app.use(express.json({ limit: '20mb' }));
   app.use(express.static(join(ROOT, 'frontend')));
+
+  // Gove Print Studio (Kit de Boas-Vindas): interface e API em /print-studio/
+  app.get('/print-studio', (req, res, next) => (req.originalUrl.split('?')[0].endsWith('/') ? next() : res.redirect(301, '/print-studio/')));
+  app.use('/print-studio', createPrintStudioRouter());
 
   // Botões da tela inicial: cada app roda em servidor próprio; o destino vem do ambiente.
   const APP_URLS = {

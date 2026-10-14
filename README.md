@@ -1,6 +1,6 @@
 # Gove Design — apps de marketing da Gove Digital
 
-Este repositório reúne quatro aplicações independentes, acessadas por uma tela
+Este repositório reúne cinco aplicações independentes, acessadas por uma tela
 inicial com um botão para cada uma:
 
 | App | Pasta | O que faz | Stack |
@@ -9,6 +9,7 @@ inicial com um botão para cada uma:
 | **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React (Vite) |
 | **Gove Links** | [`links/`](links/) | Encurtador de links com rastreamento de cliques | TanStack Start + React + Supabase |
 | **LP Builder** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
+| **Gove Print Studio** | [`print-studio/`](print-studio/) | PDFs de impressão do Kit de Boas-Vindas (CMYK, sangria, lote por município) | React + Fabric.js · Express + pdfkit + SQLite |
 
 Cada app tem o próprio `package.json`, dependências e servidor; um não altera o
 outro. Os scripts da raiz só encurtam os comandos:
@@ -22,7 +23,10 @@ npm run lp:install        && npm run lp:dev          # http://localhost:5175
 # build de produção de cada um: criativos:build, links:build, lp:build
 ```
 
-Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/`; os
+O Print Studio roda dentro do mesmo servidor do revisor, em `/print-studio/`
+(`npm run print:install && npm run print:build` só é necessário ao alterar a interface).
+
+Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/` e "Print Studio" abre `/print-studio/`; os
 outros botões passam por `/criativos`, `/links` e `/lp`, que redirecionam para
 o endereço de cada app definido em `CRIATIVOS_URL`, `LINKS_URL` e `LP_URL`
 (padrão: as portas locais acima). Ao publicar, aponte essas variáveis para as
@@ -58,6 +62,42 @@ Os projetos ficam só no `localStorage` do navegador.
 vêm de `lp-builder/.env` (`VITE_LP_EMAIL`, `VITE_LP_PASSWORD`; ver
 `.env.example`). A checagem continua no navegador, então os valores ficam
 visíveis no JavaScript publicado.
+
+## Gove Print Studio (`print-studio/`)
+
+Gera os PDFs prontos para gráfica dos 4 materiais do Kit de Boas-Vindas —
+Flyer A4, Flyer 10x15cm, Adesivo 5x10cm e Display Acrílico A6 — personalizados
+por município, conforme o briefing "Produtor de Layouts do Kit de Boas-Vindas".
+
+- **Um motor de layout para tudo** (`shared/layout.js`): calcula cada elemento em
+  milímetros; o preview (Fabric.js, no navegador) e o PDF (pdfkit, no servidor)
+  desenham a mesma lista, com as mesmas Montserrat `.ttf` (Regular, SemiBold,
+  Bold, Black — oficiais de JulietaUla/Montserrat, licença OFL, embutidas no PDF).
+- **Produção gráfica**: sangria de 5 mm em todas as peças, área de segurança de
+  5 mm, todas as cores em CMYK (logos e foto do mockup convertidos para JPEG
+  CMYK a 300 dpi; nenhum objeto RGB), QR code `wa.me/55{ddd}{numero}` com
+  correção de erro H, módulos K100 sobre branco sólido e mínimo de 20 mm.
+- **Fundo**: gradiente a 135° escurecido em relação ao briefing — com
+  `#25D366 → #1AA652`, nem branco (1,98:1) nem verde-escuro-2 (1,71:1) atingiam
+  o contraste do H1. Decisão da Gove: `#128541 → #0F7A3B`, onde o texto branco
+  fica entre 4,7:1 e 5,4:1.
+- **Interface** (criada com o web-artifacts-builder: React + Tailwind +
+  shadcn/ui, empacotada num único `web/bundle.html`): editor com seleção de
+  layouts, município, logo do Banco do Brasil, ícones de serviços (Lucide,
+  reordenáveis), imagem do mockup com recorte 9:16 e ajuste de enquadramento,
+  textos editáveis, preview com sangria/corte/área de segurança e arraste
+  travado na área de segurança; cadastro de municípios; logos fixos (Gove e
+  Banco do Brasil); fila de exportação com verificação antes do download
+  ("Sangria / Fontes embutidas / Cores em CMYK / Contraste QR") e `.zip` com um
+  PDF por peça (`{layout}_{municipio}_{ddmmaaaa}.pdf`).
+- **Dados**: SQLite + arquivos em `print-studio/data/` (fora do Git).
+
+Pendências (`TODO_VALIDAR_GRAFICA` em `shared/tokens.js`): os CMYK dos verdes
+são conversões aproximadas do HEX — validar com a gráfica (ou Pantone oficial)
+antes da primeira tiragem. A marca d'água do WhatsApp é uma aproximação em
+contorno (ícones Lucide); troque pelo contorno oficial em
+`scripts/build-icons.mjs`. Os logos da Gove e do Banco do Brasil são enviados
+em "Logos fixos". O PDF tem cores CMYK, mas não é PDF/X-1a certificado.
 
 ## Gerador de Criativos GOVE (`criativos/`)
 

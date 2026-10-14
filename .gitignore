@@ -7,3 +7,6 @@ scratch/
 .env
 .env.*
 !.env.example
+print-studio/data/
+print-studio/web/dist/
+print-studio/web/.parcel-cache/
