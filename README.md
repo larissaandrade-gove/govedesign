@@ -1,6 +1,6 @@
 # Gove Design — apps de marketing da Gove Digital
 
-Este repositório reúne cinco aplicações independentes, acessadas por uma tela
+Este repositório reúne seis aplicações independentes, acessadas por uma tela
 inicial com um botão para cada uma:
 
 | App | Pasta | O que faz | Stack |
@@ -9,6 +9,7 @@ inicial com um botão para cada uma:
 | **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React (Vite) |
 | **Gove Links** | [`links/`](links/) | Encurtador de links com rastreamento de cliques | TanStack Start + React + Supabase |
 | **LP Builder** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
+| **Design System** | [`design-system/`](design-system/) | Documentação e UI Kit (tokens, tipografia, componentes) | React + Vite + Tailwind + Framer Motion |
 | **Gove Print Studio** | [`print-studio/`](print-studio/) | PDFs de impressão do Kit de Boas-Vindas (CMYK, sangria, lote por município) | React + Fabric.js · Express + pdfkit + SQLite |
 
 Cada app tem o próprio `package.json`, dependências e servidor; um não altera o
@@ -26,7 +27,11 @@ npm run lp:install        && npm run lp:dev          # http://localhost:5175
 O Print Studio roda dentro do mesmo servidor do revisor, em `/print-studio/`
 (`npm run print:install && npm run print:build` só é necessário ao alterar a interface).
 
-Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/` e "Print Studio" abre `/print-studio/`; os
+O Design System também é servido pelo mesmo servidor, em `/design-system/`
+(build de arquivo único em `design-system/dist/`; `npm run ds:install && npm run ds:build`
+após alterar o código, `npm run ds:dev` para desenvolver).
+
+Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/`, "Print Studio" abre `/print-studio/` e "Design System" abre `/design-system/`; os
 outros botões passam por `/criativos`, `/links` e `/lp`, que redirecionam para
 o endereço de cada app definido em `CRIATIVOS_URL`, `LINKS_URL` e `LP_URL`
 (padrão: as portas locais acima). Ao publicar, aponte essas variáveis para as
@@ -62,6 +67,25 @@ Os projetos ficam só no `localStorage` do navegador.
 vêm de `lp-builder/.env` (`VITE_LP_EMAIL`, `VITE_LP_PASSWORD`; ver
 `.env.example`). A checagem continua no navegador, então os valores ficam
 visíveis no JavaScript publicado.
+
+## Design System (`design-system/`)
+
+Documentação navegável e UI Kit no visual "Cyberpunk Premium / Urban Tech":
+Dark Mode nativo, neon roxo e amarelo, cidade noturna ao fundo.
+
+- `src/data/tokens.js` é a fonte única dos tokens (cores, escala tipográfica,
+  espaçamento de 8px, raios, sombras e movimento). O `tailwind.config.js`
+  importa esse arquivo, e a documentação lê os mesmos valores.
+- Seções: hero com parallax, cores (cards com brilho da própria cor, cópia do
+  HEX e contraste sobre o fundo, mais a paleta institucional do manual de
+  marca), tipografia (Montserrat × Inter, nota do fallback impresso Helvetica),
+  espaçamento, raio e sombras e componentes ao vivo (botões, cards, inputs).
+- Animações com Framer Motion: entrada Fade In + Slide Up (600ms,
+  `cubic-bezier(0.16, 1, 0.3, 1)`) disparada por Intersection Observer,
+  cascata de 70ms nos grids, hover com `scale 1.02` em 250ms. Com "reduzir
+  movimento" ativo no sistema, só a opacidade anima.
+- As paisagens noturnas são desenhadas em canvas (`CityBackdrop.tsx`), sem
+  imagens externas, com overlay escuro para não atrapalhar a leitura.
 
 ## Gove Print Studio (`print-studio/`)
 

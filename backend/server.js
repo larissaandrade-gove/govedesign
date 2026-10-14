@@ -22,6 +22,13 @@ export function createApp({ db = openDatabase(), storageDir: storageDirIn = proc
   app.use(express.json({ limit: '20mb' }));
   app.use(express.static(join(ROOT, 'frontend')));
 
+  // Design System (documentação e UI Kit): build estático de arquivo único
+  app.get('/design-system', (req, res, next) => (req.originalUrl.split('?')[0].endsWith('/') ? next() : res.redirect(301, '/design-system/')));
+  app.get('/design-system/', (_req, res) => {
+    const file = join(ROOT, 'design-system', 'dist', 'index.html');
+    return existsSync(file) ? res.sendFile(file) : res.status(503).type('text').send('Design system não compilado. Rode: npm run ds:build');
+  });
+
   // Gove Print Studio (Kit de Boas-Vindas): interface e API em /print-studio/
   app.get('/print-studio', (req, res, next) => (req.originalUrl.split('?')[0].endsWith('/') ? next() : res.redirect(301, '/print-studio/')));
   app.use('/print-studio', createPrintStudioRouter());
