@@ -13,10 +13,16 @@ import { LOGO_OPTIONS, loadLogoLibrary } from "@/lib/creative/logos";
 import { ICONS } from "@/lib/creative/icons";
 import { buildAltText } from "@/lib/creative/alt";
 import { getGateStatus } from "@/lib/gate.functions";
+import { ExpertFields } from "@/components/ExpertFields";
 import { searchPexels, type PexelsPhoto } from "@/lib/pexels.functions";
 import {
   BG_PRESETS,
   STUDIO_LAYOUTS,
+  EXPERT_LAYOUTS,
+  EMPTY_EXPERT,
+  expertReady,
+  isExpertLayout,
+  type ExpertMaterial,
   FORMATS,
   SCHEMES,
   formatSize,
@@ -192,6 +198,13 @@ function Studio() {
   const [icon, setIcon] = useState("arrow");
   const [themeIcon, setThemeIcon] = useState("clock");
   const [cardColor, setCardColor] = useState<string>(PALETTE.purple3);
+  const [expert, setExpert] = useState<ExpertMaterial>(EMPTY_EXPERT);
+  const onExpertChange = (e: ExpertMaterial) => {
+    setExpert(e);
+    if (e.enabled && !isExpertLayout(layout)) setLayout("expert-card");
+    if (!e.enabled && isExpertLayout(layout)) setLayout("mockup-center-top");
+  };
+  const expertBlocked = expert.enabled && !expertReady(expert);
 
   useEffect(() => {
     let alive = true;
@@ -229,6 +242,7 @@ function Studio() {
       remix: bg.kind === "upload" ? remix : undefined,
       logoPurple: library["purple-gold"] ?? library["purple"] ?? null,
       logoWhite: library["white-gold"] ?? library["white"] ?? null,
+      expert: expert.enabled ? expert : null,
     };
   }, [
     bg,
@@ -247,6 +261,7 @@ function Studio() {
     tone,
     remix,
     library,
+    expert,
   ]);
 
   // Prévia ao vivo: qualquer mudança de estado redesenha o canvas imediatamente.
@@ -333,6 +348,10 @@ function Studio() {
 
 
   const download = () => {
+    if (expertBlocked) {
+      toast.error("Preencha nome e sobrenome, cargo e foto do especialista.");
+      return;
+    }
     if (!report?.pass) {
       toast.error("Ajuste os pontos do manual de marca antes de exportar.");
       return;
@@ -405,7 +424,7 @@ function Studio() {
                 <Button variant="outline" size="sm" onClick={copyAlt}>
                   Copiar texto alt
                 </Button>
-                <Button size="sm" onClick={download} disabled={!report?.pass}>
+                <Button size="sm" onClick={download} disabled={!report?.pass || expertBlocked}>
                   <Download className="mr-2 size-4" aria-hidden="true" />
                   Baixar PNG
                 </Button>
@@ -612,9 +631,12 @@ function Studio() {
           </div>
 
           <div className="rounded-xl border border-border bg-background p-4">
-            <Label className="text-sm font-medium">Diagramação (8 estilos fixos)</Label>
+            <ExpertFields value={expert} onChange={onExpertChange} />
+            <Label className="mt-4 block text-sm font-medium">
+              {expert.enabled ? "Diagramação exclusiva de especialista" : "Diagramação (8 estilos fixos)"}
+            </Label>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {STUDIO_LAYOUTS.map((l) => (
+              {(expert.enabled ? EXPERT_LAYOUTS : STUDIO_LAYOUTS).map((l) => (
                 <button
                   key={l.key}
                   type="button"

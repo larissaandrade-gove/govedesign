@@ -54,7 +54,7 @@ export const APPS: GoveApp[] = [
     route: '/criativos',
     icon: Sparkles,
     summary: 'Cria criativos de mídia paga em lote e no Studio ao vivo, com as travas do manual de marca aplicadas automaticamente.',
-    features: ['8 diagramações', 'Lote e Studio ao vivo', 'Vídeo de 15 s', 'Texto alternativo'],
+    features: ['8 diagramações', 'Material de especialista', 'Lote e Studio ao vivo', 'Vídeo de 15 s', 'Texto alternativo'],
     stack: ['TanStack Start', 'React', 'Canvas'],
     folder: 'criativos/',
     run: 'npm run criativos:install && npm run criativos:dev',

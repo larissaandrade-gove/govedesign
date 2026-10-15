@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { CreativeCard } from "@/components/CreativeCard";
 import { VideoCard } from "@/components/VideoCard";
+import { ExpertFields } from "@/components/ExpertFields";
 import { BG_COLORS, MAX_HEADLINE, MAX_SUBHEAD, PALETTE } from "@/lib/creative/brand";
 import { LOGO_OPTIONS, loadLogoLibrary } from "@/lib/creative/logos";
 import { ICONS } from "@/lib/creative/icons";
@@ -30,6 +31,10 @@ import {
   type CreativeLayout,
   type CreativeScheme,
   type CreativeSpec,
+  EXPERT_LAYOUTS,
+  EMPTY_EXPERT,
+  expertReady,
+  type ExpertMaterial,
 } from "@/lib/creative/renderer";
 
 
@@ -207,6 +212,21 @@ function Index() {
   const [format, setFormat] = useState<CreativeFormat>("feed-45");
   const [mode, setMode] = useState<"image" | "video">("image");
   const [specs, setSpecs] = useState<Spec[]>([]);
+  const [expert, setExpert] = useState<ExpertMaterial>(EMPTY_EXPERT);
+  const expertKeys = useMemo(() => EXPERT_LAYOUTS.map((l) => l.key), []);
+  const expertBlocked = expert.enabled && !expertReady(expert);
+  // Material colaborativo ao vivo: aplica/retira layouts exclusivos e dados do especialista.
+  useEffect(() => {
+    setSpecs((prev) =>
+      prev.map((s, i) => ({
+        ...s,
+        expert: expert.enabled ? expert : null,
+        layout: expert.enabled
+          ? expertKeys.includes(s.layout) ? s.layout : (expertKeys[i % expertKeys.length] ?? "expert-card")
+          : expertKeys.includes(s.layout) ? (LAYOUTS[i % LAYOUTS.length]?.key ?? "card-bottom") : s.layout,
+      })),
+    );
+  }, [expert, expertKeys]);
 
 
   // Troca de formato re-renderiza as peças já geradas mantendo textos e cores.
@@ -273,7 +293,7 @@ function Index() {
 
   // Diagramações: peça com layout desativado migra para um layout ativo.
   useEffect(() => {
-    if (!enabledLayouts.length) return;
+    if (!enabledLayouts.length || expert.enabled) return;
     setSpecs((prev) =>
       prev.length
         ? prev.map((s) =>
@@ -283,7 +303,7 @@ function Index() {
           )
         : prev,
     );
-  }, [enabledLayouts]);
+  }, [enabledLayouts, expert.enabled]);
 
   // Esquemas de cor / imagens de fundo.
   useEffect(() => {
@@ -411,6 +431,7 @@ function Index() {
           ? undefined
           : pick(enabledPresets.length ? enabledPresets : BG_PRESETS.map((p) => p.key)),
         ...pickLogoSet(),
+        expert: expert.enabled ? expert : null,
       };
 
     },
@@ -425,6 +446,7 @@ function Index() {
       backgrounds,
       enabledPresets,
       pickLogoSet,
+      expert,
     ],
   );
 
@@ -452,7 +474,12 @@ function Index() {
     // Distribui as diagramações para garantir variedade entre as 8 peças.
     // No modo vídeo geramos menos peças: cada uma exporta 3 formatos em MP4.
     const count = mode === "video" ? 4 : 8;
-    const rotation = shuffle([...enabledLayouts, ...enabledLayouts]).slice(0, count);
+    if (expertBlocked) {
+      toast.error("Preencha nome e sobrenome, cargo e foto do especialista.");
+      return;
+    }
+    const pool = expert.enabled ? expertKeys : enabledLayouts;
+    const rotation = shuffle(Array.from({ length: count }, (_, i) => pool[i % pool.length]!));
     const list = Array.from({ length: count }, (_, i) => buildSpec(rotation[i % rotation.length]));
 
     setSpecs(list);
@@ -491,6 +518,10 @@ function Index() {
 
   /** Baixa todos os criativos renderizados, um PNG por peça. */
   const downloadAll = async () => {
+    if (expertBlocked) {
+      toast.error("Preencha nome e sobrenome, cargo e foto do especialista.");
+      return;
+    }
     const canvases = Array.from(gridRef.current?.querySelectorAll("canvas") ?? []);
     if (!canvases.length) {
       toast.error("Gere os criativos antes de baixar.");
@@ -910,7 +941,13 @@ function Index() {
               onToggle={() => setOpenSections((p) => ({ ...p, layouts: !p.layouts }))}
             >
 
-              {LAYOUTS.map((l) => (
+              <ExpertFields value={expert} onChange={setExpert} />
+              {expert.enabled && (
+                <p className="text-xs text-muted-foreground">
+                  Material colaborativo ativo: as peças usam os layouts exclusivos de especialista.
+                </p>
+              )}
+              {(expert.enabled ? [] : LAYOUTS).map((l) => (
                 <div key={l.key} className="flex items-center justify-between gap-3">
                   <Label htmlFor={`layout-${l.key}`} className="text-xs font-normal">
                     {l.label}
@@ -1084,7 +1121,7 @@ function Index() {
                     />
                   ))}
                 </div>
-                <Button onClick={downloadAll} className="min-h-11 w-full">
+                <Button onClick={downloadAll} disabled={expertBlocked} className="min-h-11 w-full">
                   <Download aria-hidden="true" />
                   Baixar todos os {specs.length} criativos (PNG)
                 </Button>
