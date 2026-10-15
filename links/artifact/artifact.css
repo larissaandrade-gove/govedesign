@@ -1,0 +1,89 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "../src/styles.css";
+@source "./";
+
+/*
+ * Tema do build do artefato (paleta Gove).
+ * Claro por padrão (interface branca); escuro com a classe .dark no <html>
+ * (aplicada por syncTheme() do artifact-runtime, acompanhando o Design System).
+ * Contraste de texto ≥ 4.5:1 nos dois temas.
+ */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #20133d;
+  --card: #ffffff;
+  --card-foreground: #20133d;
+  --popover: #ffffff;
+  --popover-foreground: #20133d;
+  --primary: #3d0099;
+  --primary-foreground: #ffffff;
+  --primary-glow: #a278da;
+  --secondary: #f4f4f4;
+  --secondary-foreground: #20133d;
+  --muted: #f4f4f4;
+  --muted-foreground: #5b6770;
+  --accent: #ffc72c;
+  --accent-foreground: #20133d;
+  /* Amarelo não tem contraste como texto sobre branco: usa o azul Gove. */
+  --accent-ink: #16499f;
+  --destructive: #c0262d;
+  --destructive-foreground: #ffffff;
+  --border: #e3e1ea;
+  --input: #e3e1ea;
+  --ring: #a278da;
+  --overlay: rgb(32 19 61 / 0.45);
+  --notice: #fff8e1;
+  --notice-border: #ffc72c;
+  --chart-1: #3d0099;
+  --chart-2: #a278da;
+  --chart-3: #ffc72c;
+  --chart-4: #5ac2cd;
+  --chart-5: #16499f;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --background: #20133d;
+  --foreground: #f4f4f4;
+  --card: #2a1a52;
+  --card-foreground: #f4f4f4;
+  --popover: #2a1a52;
+  --popover-foreground: #f4f4f4;
+  --primary: #ffc72c;
+  --primary-foreground: #20133d;
+  --primary-glow: #a278da;
+  --secondary: #3a2670;
+  --secondary-foreground: #f4f4f4;
+  --muted: #2a1a52;
+  --muted-foreground: #c9c2db;
+  --accent: #ffc72c;
+  --accent-foreground: #20133d;
+  --accent-ink: #ffc72c;
+  --destructive: #ff8a80;
+  --destructive-foreground: #20133d;
+  --border: #4a3780;
+  --input: #4a3780;
+  --ring: #a278da;
+  --overlay: rgb(0 0 0 / 0.6);
+  --notice: #351f65;
+  --notice-border: #a278da;
+  --shadow-elegant: 0 20px 50px -20px rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --color-accent-ink: var(--accent-ink);
+  --color-overlay: var(--overlay);
+  --color-notice: var(--notice);
+  --color-notice-border: var(--notice-border);
+}
+
+/* Componentes reaproveitados do app publicado usam text-accent como texto. */
+.text-accent {
+  color: var(--accent-ink);
+}
+
+html,
+body {
+  background-color: var(--background);
+}

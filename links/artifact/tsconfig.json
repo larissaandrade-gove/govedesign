@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/lib/short-links": ["./artifact/lib/short-links.ts"],
+      "@/lib/links-queries": ["./artifact/lib/links-queries.ts"],
+      "@/lib/short-domain": ["./artifact/lib/short-domain.ts"],
+      "@/integrations/supabase/client": ["./artifact/lib/supabase-stub.ts"],
+      "@gove/runtime": ["../artifact-runtime/index.ts"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.tsx", "../src/routeTree.gen.ts"]
+}

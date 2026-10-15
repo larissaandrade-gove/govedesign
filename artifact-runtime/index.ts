@@ -319,8 +319,12 @@ export async function saveFile(filename: string, data: Blob | string): Promise<S
 /** Abre um link externo (o artefato bloqueia `window.open` em alguns hosts). */
 export function openExternal(url: string) {
   try {
-    const w = (window.top ?? window).open(url, '_blank', 'noopener');
-    if (w) return;
+    // Sem 'noopener' (com ele window.open sempre devolve null e abriríamos duas abas)
+    const w = (window.top ?? window).open(url, '_blank');
+    if (w) {
+      w.opener = null;
+      return;
+    }
   } catch {
     /* ignora */
   }
