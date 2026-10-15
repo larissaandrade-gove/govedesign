@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./*.ts", "./*.tsx", "../src/**/*.ts", "../src/**/*.tsx"],
+  "exclude": ["../src/routes/__root.tsx", "../src/router.tsx", "../src/server.ts", "../src/start.ts", "../src/integrations/**"],
+  "compilerOptions": {
+    "noPropertyAccessFromIndexSignature": false,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@/*": ["../src/*"],
+      "@artifact/*": ["./*"],
+      "@gove/runtime": ["../../artifact-runtime/index.ts"]
+    }
+  }
+}

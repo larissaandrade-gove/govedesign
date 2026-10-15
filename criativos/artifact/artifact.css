@@ -1,0 +1,90 @@
+/*
+ * Estilos do build do artefato: reaproveita src/styles.css e ajusta os tokens
+ * da interface para a paleta Gove — claro (branco) por padrão, escuro via
+ * classe `.dark` (aplicada pelo syncTheme() do runtime). As peças geradas no
+ * canvas mantêm a renderização de marca e não seguem o tema.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap");
+@import "../src/styles.css";
+@source "./";
+
+:root {
+  --background: #ffffff;
+  --foreground: #2f3539; /* 12,4:1 sobre branco */
+  --card: #ffffff;
+  --card-foreground: #2f3539;
+  --popover: #ffffff;
+  --popover-foreground: #2f3539;
+  --primary: #3d0099; /* branco sobre ele: 12,9:1 */
+  --primary-foreground: #ffffff;
+  --secondary: #f1ecfa;
+  --secondary-foreground: #3d0099;
+  --muted: #f4f4f4;
+  --muted-foreground: #5b6770; /* 5,7:1 sobre branco; 5,2:1 sobre #F4F4F4 */
+  --accent: #ffc72c;
+  --accent-foreground: #20133d;
+  --border: #e2e4e7;
+  --input: #d5d9dd;
+  --ring: #3d0099;
+  --chart-1: #3d0099;
+  --chart-2: #ffc72c;
+  --chart-3: #16499f;
+  --chart-4: #5ac2cd;
+  --chart-5: #a278da;
+}
+
+.dark {
+  --background: #20133d;
+  --foreground: #f4f4f4;
+  --card: #2a1950;
+  --card-foreground: #f4f4f4;
+  --popover: #2a1950;
+  --popover-foreground: #f4f4f4;
+  --primary: #ffc72c; /* #20133D sobre dourado: 11:1 */
+  --primary-foreground: #20133d;
+  --secondary: #351f65;
+  --secondary-foreground: #f4f4f4;
+  --muted: #351f65;
+  --muted-foreground: #c9c3d9; /* 7,6:1 sobre #351F65 */
+  --accent: #351f65;
+  --accent-foreground: #ffc72c;
+  --destructive: #ff8a80;
+  --destructive-foreground: #20133d;
+  --border: rgb(255 255 255 / 14%);
+  --input: rgb(255 255 255 / 20%);
+  --ring: #a278da;
+  --chart-1: #a278da;
+  --chart-2: #ffc72c;
+  --chart-3: #5ac2cd;
+  --chart-4: #f4f4f4;
+  --chart-5: #16499f;
+  --sidebar: #2a1950;
+  --sidebar-foreground: #f4f4f4;
+  --sidebar-primary: #ffc72c;
+  --sidebar-primary-foreground: #20133d;
+  --sidebar-accent: #351f65;
+  --sidebar-accent-foreground: #f4f4f4;
+  --sidebar-border: rgb(255 255 255 / 14%);
+  --sidebar-ring: #a278da;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Avisos com cores fixas no código do app: versões legíveis no modo escuro. */
+.dark .text-amber-700 {
+  color: #ffd666;
+}
+.dark .text-emerald-700 {
+  color: #7ee2b8;
+}
+
+/* Toasts (sonner) seguem os tokens do tema. */
+html [data-sonner-toaster][data-sonner-theme] {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+}

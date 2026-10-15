@@ -1,0 +1,9 @@
+{
+  "name": "lp-builder-artifact",
+  "private": true,
+  "description": "Dependências só do build do artefato (HTML único). O resto vem de ../node_modules.",
+  "devDependencies": {
+    "vite-plugin-singlefile": "2.3.3"
+  },
+  "type": "module"
+}

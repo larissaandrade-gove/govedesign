@@ -343,7 +343,7 @@ function parentTheme(): Theme | null {
     if (window.parent !== window) {
       // O Design System usa data-gove-theme (data-theme pode ser definido pelo host do artefato)
       const ds = window.parent.document.documentElement.dataset;
-      const t = ds.goveTheme ?? ds.theme;
+      const t = ds['goveTheme'] ?? ds['theme'];
       if (t === 'light' || t === 'dark') return t;
     }
   } catch {
