@@ -21,7 +21,16 @@
 type AnyFn = (...args: any[]) => any;
 type ClaudeLike = { use: (name: string) => Promise<any> };
 
+/**
+ * Capacidades do artefato (db, assets, downloads) ligadas só no build com
+ * VITE_GOVE_CAPS=on. Desligadas, o código de acesso some do bundle e os apps
+ * usam o armazenamento do navegador e o download comum.
+ */
+// @ts-ignore — substituído pelo Vite em tempo de build
+const CAPS_ENABLED = import.meta.env.VITE_GOVE_CAPS === 'on';
+
 function findClaude(): ClaudeLike | null {
+  if (!CAPS_ENABLED) return null;
   const tryWin = (w: any): ClaudeLike | null => {
     try {
       return w && w.claude && typeof w.claude.use === 'function' ? (w.claude as ClaudeLike) : null;
@@ -241,7 +250,7 @@ export async function putFile(blob: Blob): Promise<StoredFile> {
 const urlCache = new Map<string, string>();
 /** URL exibível para um id salvo por `putFile` (ou null se o arquivo não estiver neste navegador). */
 export async function fileUrl(id: string): Promise<string | null> {
-  if (id.startsWith('asset:')) return '/_blob/' + id.slice(6);
+  if (CAPS_ENABLED && id.startsWith('asset:')) return '/_blob/' + id.slice(6);
   if (urlCache.has(id)) return urlCache.get(id)!;
   const blob = await getFile(id);
   if (!blob) return null;
@@ -252,7 +261,7 @@ export async function fileUrl(id: string): Promise<string | null> {
 
 /** Conteúdo de um arquivo salvo por `putFile`. */
 export async function getFile(id: string): Promise<Blob | null> {
-  if (id.startsWith('asset:')) {
+  if (CAPS_ENABLED && id.startsWith('asset:')) {
     try {
       const r = await fetch('/_blob/' + id.slice(6));
       return r.ok ? await r.blob() : null;
@@ -271,7 +280,7 @@ export async function getFile(id: string): Promise<Blob | null> {
 }
 
 export async function deleteFile(id: string): Promise<void> {
-  if (id.startsWith('asset:')) {
+  if (CAPS_ENABLED && id.startsWith('asset:')) {
     const assets = await capability('assets');
     try {
       await assets?.delete(id.slice(6));
@@ -300,7 +309,7 @@ export async function saveFile(filename: string, data: Blob | string): Promise<S
       return e?.code === 'declined' ? 'declined' : 'error';
     }
   }
-  if (findClaude()) return 'error'; // dentro do artefato sem a capacidade: o navegador bloquearia
+  // Sem a capacidade (fora do artefato, ou artefato publicado sem ela): download comum do navegador
   try {
     const blob = typeof data === 'string' ? new Blob([data], { type: 'text/plain;charset=utf-8' }) : data;
     const a = document.createElement('a');

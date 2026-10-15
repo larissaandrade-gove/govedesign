@@ -25,7 +25,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <section className="space-y-3 border-b border-border/70 px-5 py-5 last:border-b-0">
       <div>
-        <h2 className="text-sm font-semibold tracking-wide text-white">{title}</h2>
+        <h2 className="text-sm font-semibold tracking-wide text-foreground">{title}</h2>
         {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
       </div>
       {children}
@@ -35,8 +35,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 const LEVEL_ICON = {
   error: <OctagonX className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />,
-  warn: <AlertTriangle className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />,
-  ok: <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-300" aria-hidden />,
+  warn: <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />,
+  ok: <CircleCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />,
 };
 
 export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue }: Props) {
@@ -87,9 +87,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
 
   const imageUrl = useCallback(
     (el: { type: string; imageId?: string; which?: string }) => {
-      if (el.type === 'mockup-screen') return el.imageId ? api.imagemUrl(el.imageId) : null;
-      if (el.which === 'prefeitura') return municipio ? api.municipioLogoUrl(municipio) : null;
-      if (el.which === 'gove' || el.which === 'bb') return api.logoFixoUrl(el.which, logosFixos[el.which]?.atualizado ?? '');
+      if (el.type === 'mockup-screen') return el.imageId ? api.imagemUrl(el.imageId) || null : null;
+      if (el.which === 'prefeitura') return municipio ? api.municipioLogoUrl(municipio) || null : null;
+      if (el.which === 'gove' || el.which === 'bb') return api.logoFixoUrl(el.which, logosFixos[el.which]?.atualizado ?? '') || null;
       return null;
     },
     [municipio, logosFixos],
@@ -252,7 +252,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               })}
             </ol>
           )}
-          <p className={cn('text-xs', services.length > MAX_SERVICES_RECOMMENDED ? 'text-accent' : 'text-muted-foreground')}>
+          <p className={cn('text-xs', services.length > MAX_SERVICES_RECOMMENDED ? 'text-warning' : 'text-muted-foreground')}>
             {services.length} de {MAX_SERVICES_RECOMMENDED} recomendados · usados nos flyers
           </p>
         </Section>
@@ -333,7 +333,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               onClick={() => setActive(l.id)}
               className={cn(
                 '-mb-px border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium transition-colors',
-                l.id === activeLayout ? 'border-accent text-white' : 'border-transparent text-muted-foreground hover:text-foreground',
+                l.id === activeLayout ? 'border-accent text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {l.name}
@@ -360,12 +360,12 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
             )}
           </div>
           <div className="min-h-0 overflow-y-auto border-l border-border p-4">
-            <h2 className="mb-1 text-sm font-semibold text-white">Verificações</h2>
+            <h2 className="mb-1 text-sm font-semibold text-foreground">Verificações</h2>
             <p className="mb-3 text-xs text-muted-foreground">
               Arraste os blocos no preview; eles não saem da área de segurança (tracejado amarelo).
             </p>
             {checks.length === 0 ? (
-              <p className="flex items-center gap-2 text-sm text-emerald-300"><CircleCheck className="size-4" /> Nenhum problema nesta peça.</p>
+              <p className="flex items-center gap-2 text-sm text-success"><CircleCheck className="size-4" /> Nenhum problema nesta peça.</p>
             ) : (
               <ul className="space-y-2">
                 {checks.map((c, i) => (

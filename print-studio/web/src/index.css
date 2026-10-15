@@ -4,29 +4,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tokens do design system Gove (tema Noturno) no formato HSL do shadcn/ui */
+/*
+ * Tokens do design system Gove no formato HSL do shadcn/ui.
+ * Claro (padrão): interface branca. Escuro: classe `.dark` no <html>
+ * (o modo servidor usa `class="dark"` no index.html; o artefato segue o
+ * Design System via syncTheme()). As peças impressas não seguem o tema.
+ */
 @layer base {
   :root {
-    --background: 248 47% 15%;        /* #1A153A */
-    --foreground: 0 0% 92%;           /* #EAEAEA */
-    --card: 186 10% 18%;              /* #2A3233 */
-    --card-foreground: 0 0% 92%;
-    --popover: 186 10% 18%;
-    --popover-foreground: 0 0% 92%;
-    --primary: 260 100% 44%;          /* #4A00E0 */
+    --background: 0 0% 100%;          /* #FFFFFF */
+    --foreground: 258 53% 16%;        /* #20133D — 16:1 sobre branco */
+    --card: 0 0% 96%;                 /* #F4F4F4 */
+    --card-foreground: 258 53% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 258 53% 16%;
+    --primary: 264 100% 30%;          /* #3D0099 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 252 40% 30%;         /* #3A2E6B */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 248 35% 22%;
-    --muted-foreground: 249 18% 80%;
+    --secondary: 266 56% 94%;         /* lilás claro (tinta de #A278DA) */
+    --secondary-foreground: 260 53% 26%; /* #351F65 */
+    --muted: 0 0% 96%;                /* #F4F4F4 */
+    --muted-foreground: 207 6% 36%;   /* #5B6770 — 5,9:1 sobre branco */
     --accent: 44 100% 59%;            /* #FFC72C */
-    --accent-foreground: 248 47% 15%;
-    --destructive: 354 100% 71%;      /* status funcional */
-    --destructive-foreground: 248 47% 15%;
-    --border: 252 40% 30%;
-    --input: 252 40% 30%;
-    --ring: 44 100% 59%;
+    --accent-foreground: 258 53% 16%; /* #20133D */
+    --destructive: 0 70% 42%;         /* #B62020 — 6,2:1 sobre branco */
+    --destructive-foreground: 0 0% 100%;
+    --warning: 35 100% 27%;           /* #8A5300 — 6,3:1 sobre branco */
+    --success: 145 78% 25%;           /* #0E7237 — 6,0:1 sobre branco */
+    --border: 210 9% 86%;
+    --input: 210 9% 80%;
+    --ring: 264 100% 30%;             /* #3D0099 */
     --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 258 53% 16%;        /* #20133D */
+    --foreground: 0 0% 96%;           /* #F4F4F4 */
+    --card: 204 10% 20%;              /* #2F3539 */
+    --card-foreground: 0 0% 96%;
+    --popover: 204 10% 20%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 264 100% 30%;          /* #3D0099 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 260 53% 26%;         /* #351F65 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 258 40% 22%;
+    --muted-foreground: 266 40% 82%;
+    --accent: 44 100% 59%;            /* #FFC72C */
+    --accent-foreground: 258 53% 16%;
+    --destructive: 354 100% 71%;
+    --destructive-foreground: 258 53% 16%;
+    --warning: 44 100% 59%;           /* #FFC72C */
+    --success: 152 76% 70%;           /* emerald-300 */
+    --border: 260 40% 30%;
+    --input: 260 40% 30%;
+    --ring: 44 100% 59%;
   }
 }
 
@@ -38,7 +69,7 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
   h1, h2, h3 {
-    @apply font-display text-white;
+    @apply font-display text-foreground;
   }
   :focus-visible {
     outline: 2px solid hsl(var(--ring));

@@ -10,9 +10,11 @@ import { LAYOUTS } from '@/lib/studio';
 type Props = { queue: QueueItem[]; onRemove: (key: string) => void; onClear: () => void };
 
 const layoutName = (id: string) => LAYOUTS.find((l: { id: string }) => l.id === id)?.name ?? id;
+type Level = 'ok' | 'warn' | 'error';
+const RANK: Record<Level, number> = { ok: 0, warn: 1, error: 2 };
 const ICON = {
-  ok: <CircleCheck className="size-4 shrink-0 text-emerald-300" aria-hidden />,
-  warn: <AlertTriangle className="size-4 shrink-0 text-accent" aria-hidden />,
+  ok: <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />,
+  warn: <AlertTriangle className="size-4 shrink-0 text-warning" aria-hidden />,
   error: <OctagonX className="size-4 shrink-0 text-destructive" aria-hidden />,
 };
 
@@ -39,12 +41,8 @@ export function Fila({ queue, onRemove, onClear }: Props) {
     setExporting(true);
     try {
       const blob = await api.exportZip(queue);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `kit-boas-vindas_${new Date().toISOString().slice(0, 10)}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const outcome = await api.download(`kit-boas-vindas_${new Date().toISOString().slice(0, 10)}.zip`, blob);
+      if (outcome === 'declined') return toast.info('Download cancelado.');
       toast.success(`${total} PDF(s) exportado(s).`);
       setReport(null);
     } catch (err) {
@@ -54,11 +52,21 @@ export function Fila({ queue, onRemove, onClear }: Props) {
     }
   }
 
+  // Pior nível de cada categoria entre todas as peças ('warn' = atenção, não bloqueia).
+  const worst = (codes: string[], missing: Level = 'error'): Level => {
+    let lvl: Level = 'ok';
+    for (const p of report?.pecas ?? []) {
+      const found = p.checks.filter((c) => codes.includes(c.code));
+      const l: Level = !found.length ? missing : found.some((c) => c.level === 'error') ? 'error' : found.some((c) => c.level === 'warn') ? 'warn' : 'ok';
+      if (RANK[l] > RANK[lvl]) lvl = l;
+    }
+    return lvl;
+  };
   const summary = report && {
-    sangria: report.pecas.every((p) => p.checks.find((c) => c.code === 'sangria')?.level === 'ok'),
-    fontes: report.pecas.every((p) => p.checks.find((c) => c.code === 'fontes')?.level === 'ok'),
-    cmyk: report.pecas.every((p) => p.checks.find((c) => c.code === 'cmyk')?.level === 'ok'),
-    qr: report.pecas.every((p) => p.checks.find((c) => c.code === 'qr-contraste')?.level === 'ok' && !p.checks.some((c) => c.code === 'qr-min')),
+    sangria: worst(['sangria']),
+    fontes: worst(['fontes']),
+    cmyk: worst(['cmyk']),
+    qr: RANK[worst(['qr-min'], 'ok')] > 0 ? 'error' : worst(['qr-contraste']),
   };
 
   return (
@@ -85,7 +93,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
           {queue.map((q) => (
             <li key={q.key} className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-white">{q.municipioNome}</p>
+                <p className="font-medium text-foreground">{q.municipioNome}</p>
                 <p className="text-sm text-muted-foreground">
                   {q.layouts.map(layoutName).join(' · ')}
                   {q.options.includeBB ? ' · com Banco do Brasil' : ''} · {q.options.services.length} ícone(s)
@@ -112,10 +120,10 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                 ['Fontes embutidas', summary.fontes],
                 ['Cores em CMYK', summary.cmyk],
                 ['Contraste QR', summary.qr],
-              ].map(([label, ok]) => (
-                <div key={label as string} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                  {ok ? ICON.ok : ICON.error}
-                  <span>{label as string} {ok ? 'ok' : '— ALERTA'}</span>
+              ].map(([label, level]) => (
+                <div key={label} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                  {ICON[level as Level]}
+                  <span>{label} {level === 'ok' ? 'ok' : level === 'warn' ? '— atenção' : '— ALERTA'}</span>
                 </div>
               ))}
             </div>
@@ -125,7 +133,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
               const issues = p.checks.filter((c) => c.level !== 'ok');
               return (
                 <li key={p.arquivo} className="rounded-md border border-border p-3">
-                  <p className="flex items-center gap-2 font-mono text-sm text-white">{p.ok ? ICON.ok : ICON.error}{p.arquivo}</p>
+                  <p className="flex items-center gap-2 font-mono text-sm text-foreground">{p.ok ? ICON.ok : ICON.error}{p.arquivo}</p>
                   {issues.length > 0 && (
                     <ul className="mt-2 space-y-1">
                       {issues.map((c, i) => (

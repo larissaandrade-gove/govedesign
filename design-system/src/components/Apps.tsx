@@ -56,8 +56,8 @@ export function Apps() {
       </StaggerGrid>
 
       <Reveal className="mt-space-4 max-w-[760px] text-caption text-text-secondary">
-        Os dados criados nas aplicações (municípios, links, páginas, histórico de auditorias) ficam salvos neste design system e
-        aparecem para todos com acesso a ele. Arquivos gerados chegam por download, com confirmação.
+        Os dados criados nas aplicações (municípios, links, páginas, histórico de auditorias) ficam salvos no navegador de quem
+        usa. Para dados compartilhados pela equipe, rode as aplicações no servidor do projeto.
       </Reveal>
     </section>
   );

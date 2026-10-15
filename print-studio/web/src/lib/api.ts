@@ -81,4 +81,20 @@ export const api = {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Falha na exportação.');
     return res.blob();
   },
+
+  /** Entrega o arquivo gerado ao usuário (download comum do navegador). */
+  download: async (filename: string, blob: Blob): Promise<'saved' | 'declined'> => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return 'saved';
+  },
+
+  /** Avisa quando os dados mudam fora desta aba (no servidor: nunca). */
+  onChange: (_cb: () => void): (() => void) => () => undefined,
 };

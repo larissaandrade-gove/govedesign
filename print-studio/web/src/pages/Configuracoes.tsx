@@ -42,14 +42,14 @@ export function Configuracoes({ logos, onChanged }: Props) {
               <h2 className="text-base font-semibold">{titulo}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{texto}</p>
               <div className="mt-4 flex h-28 items-center justify-center rounded-md bg-white p-4">
-                {l ? (
+                {l && api.logoFixoUrl(chave, l.atualizado) ? (
                   <img src={api.logoFixoUrl(chave, l.atualizado)} alt={titulo} className="max-h-full max-w-full object-contain" />
                 ) : (
                   <span className="text-sm text-[#5C6B73]">Nenhum arquivo enviado</span>
                 )}
               </div>
               {l && <p className="mt-2 text-xs text-muted-foreground">{l.width}×{l.height} px</p>}
-              {l?.avisos.map((a) => <p key={a} className="mt-1 text-xs text-accent">{a}</p>)}
+              {l?.avisos.map((a) => <p key={a} className="mt-1 text-xs text-warning">{a}</p>)}
               <Button asChild variant="secondary" className="mt-4" disabled={busy === chave}>
                 <label className="cursor-pointer">
                   <Upload className="mr-2 size-4" /> {busy === chave ? 'Enviando…' : l ? 'Substituir arquivo' : 'Enviar arquivo'}

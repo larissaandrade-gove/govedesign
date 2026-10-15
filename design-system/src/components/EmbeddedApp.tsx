@@ -3,36 +3,19 @@ import { Loader2, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 
 /**
  * Roda um app do ecossistema dentro do design system: cada app é um HTML
- * autocontido (src/embedded/<id>.html) carregado num iframe `srcdoc`. O iframe
- * é do mesmo documento, então o app alcança as capacidades do artefato
- * (dados compartilhados, arquivos e downloads) e acompanha o tema.
+ * autocontido (src/embedded/<id>.html, publicado em apps/<id>.html) aberto num
+ * iframe da mesma origem, que acompanha o tema do design system.
  */
-const loaders = import.meta.glob<string>('../embedded/*.html', { query: '?raw', import: 'default' });
+declare const __GOVE_EMBEDDED__: string[];
 
-export const hasEmbedded = (id: string) => `../embedded/${id}.html` in loaders;
+export const hasEmbedded = (id: string) => __GOVE_EMBEDDED__.includes(id);
 
 export function EmbeddedApp({ id, name }: { id: string; name: string }) {
-  const [html, setHtml] = useState<string | null>(null);
-  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [full, setFull] = useState(false);
   const [nonce, setNonce] = useState(0);
 
-  useEffect(() => {
-    let alive = true;
-    setHtml(null);
-    setError(false);
-    const load = loaders[`../embedded/${id}.html`];
-    if (!load) {
-      setError(true);
-      return;
-    }
-    load()
-      .then((h) => alive && setHtml(h))
-      .catch(() => alive && setError(true));
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+  useEffect(() => setLoaded(false), [id, nonce]);
 
   useEffect(() => {
     if (!full) return;
@@ -45,7 +28,7 @@ export function EmbeddedApp({ id, name }: { id: string; name: string }) {
     };
   }, [full]);
 
-  if (error) return null;
+  if (!hasEmbedded(id)) return null;
 
   return (
     <section
@@ -81,19 +64,20 @@ export function EmbeddedApp({ id, name }: { id: string; name: string }) {
           </button>
         </div>
       </div>
-      {html ? (
+      <div className={`relative ${full ? 'flex-1' : 'h-[82vh] min-h-[560px]'}`}>
         <iframe
-          key={nonce}
+          key={`${id}-${nonce}`}
           title={name}
-          srcDoc={html}
-          allow="clipboard-read; clipboard-write; fullscreen"
-          className={`block w-full flex-1 border-0 bg-background ${full ? '' : 'h-[82vh] min-h-[560px]'}`}
+          src={`apps/${id}.html`}
+          onLoad={() => setLoaded(true)}
+          className="absolute inset-0 block h-full w-full border-0 bg-background"
         />
-      ) : (
-        <div className={`flex items-center justify-center gap-space-1 text-caption text-text-secondary ${full ? 'flex-1' : 'h-[82vh] min-h-[560px]'}`}>
-          <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando {name}…
-        </div>
-      )}
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center gap-space-1 bg-background text-caption text-text-secondary">
+            <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando {name}…
+          </div>
+        )}
+      </div>
     </section>
   );
 }

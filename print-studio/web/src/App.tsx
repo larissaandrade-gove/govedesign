@@ -34,6 +34,10 @@ export default function App() {
     loadPrintFonts().then(() => setFontsReady(true), () => setFontError(true));
     void refreshMunicipios();
     void refreshLogos();
+    return api.onChange(() => {
+      void refreshMunicipios();
+      void refreshLogos();
+    });
   }, [refreshMunicipios, refreshLogos]);
 
   useEffect(() => {
@@ -55,10 +59,10 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="flex h-14 shrink-0 items-center gap-8 border-b border-border px-5">
-        <a href="/" className="flex items-baseline gap-2 text-white no-underline">
+        <button type="button" onClick={() => setTab('editor')} className="flex items-baseline gap-2 text-foreground">
           <span className="font-display text-lg font-bold">Gove Print Studio</span>
           <span className="hidden text-xs text-muted-foreground lg:inline">Kit de Boas-Vindas</span>
-        </a>
+        </button>
         <nav className="flex h-full items-stretch gap-1" aria-label="Seções">
           {tabs.map((t) => (
             <button
@@ -67,7 +71,7 @@ export default function App() {
               aria-current={tab === t.id ? 'page' : undefined}
               className={cn(
                 'border-b-2 px-3 text-sm font-medium transition-colors',
-                tab === t.id ? 'border-accent text-white' : 'border-transparent text-muted-foreground hover:text-foreground',
+                tab === t.id ? 'border-accent text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {t.label}
@@ -77,7 +81,7 @@ export default function App() {
       </header>
 
       <main className="min-h-0 flex-1">
-        {fontError && <p className="p-6 text-destructive">Não foi possível carregar a Montserrat do servidor. Verifique se o Print Studio está rodando.</p>}
+        {fontError && <p className="p-6 text-destructive">Não foi possível carregar a fonte Montserrat. Recarregue a página.</p>}
         {!fontsReady && !fontError && <p className="p-6 text-sm text-muted-foreground">Carregando fontes…</p>}
         {fontsReady && (
           <>

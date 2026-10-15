@@ -1,6 +1,7 @@
 // Ponte para o módulo compartilhado (mesmo motor de layout usado no PDF) e
 // medição de texto com a mesma Montserrat .ttf que o servidor embute no PDF.
 import { FONT_FILES, FONT_WEIGHTS, ptToMm } from '../../../shared/tokens.js';
+import { fontSource } from '@/lib/fonts';
 
 import * as layout from '../../../shared/layout.js';
 
@@ -18,11 +19,11 @@ type Weight = keyof typeof FONT_WEIGHTS;
 
 let ready: Promise<void> | null = null;
 
-/** Carrega as 4 variações da Montserrat servidas pelo backend (/print-studio/fonts). */
+/** Carrega as 4 variações da Montserrat (servidas pelo backend ou embutidas no artefato). */
 export function loadPrintFonts() {
   ready ??= Promise.all(
     (Object.keys(FONT_FILES) as Weight[]).map(async (w) => {
-      const face = new FontFace(FONT_FAMILY, `url(fonts/${FONT_FILES[w]})`, { weight: String(FONT_WEIGHTS[w]) });
+      const face = new FontFace(FONT_FAMILY, fontSource(w), { weight: String(FONT_WEIGHTS[w]) });
       await face.load();
       document.fonts.add(face);
     }),

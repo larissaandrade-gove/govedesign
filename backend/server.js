@@ -28,6 +28,8 @@ export function createApp({ db = openDatabase(), storageDir: storageDirIn = proc
     const file = join(ROOT, 'design-system', 'dist', 'index.html');
     return existsSync(file) ? res.sendFile(file) : res.status(503).type('text').send('Design system não compilado. Rode: npm run ds:build');
   });
+  // Apps embutidos no design system (HTML autocontidos abertos em iframe)
+  app.use('/design-system/apps', express.static(join(ROOT, 'design-system', 'dist', 'apps')));
 
   // Gove Print Studio (Kit de Boas-Vindas): interface e API em /print-studio/
   app.get('/print-studio', (req, res, next) => (req.originalUrl.split('?')[0].endsWith('/') ? next() : res.redirect(301, '/print-studio/')));

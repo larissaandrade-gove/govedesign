@@ -1,14 +1,26 @@
-import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
+/** Tema atual a partir da classe `.dark` no <html> (servidor: fixa; artefato: segue o Design System). */
+function useHtmlTheme(): "light" | "dark" {
+  const read = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light")
+  const [theme, setTheme] = useState(read)
+  useEffect(() => {
+    const obs = new MutationObserver(() => setTheme(read()))
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => obs.disconnect()
+  }, [])
+  return theme
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const theme = useHtmlTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={theme}
       className="toaster group"
       toastOptions={{
         classNames: {

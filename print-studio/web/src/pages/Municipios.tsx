@@ -76,7 +76,7 @@ export function Municipios({ municipios, onChanged }: Props) {
             {list.map((m) => (
               <TableRow key={m.id}>
                 <TableCell>
-                  {m.tem_logo ? (
+                  {m.tem_logo && api.municipioLogoUrl(m) ? (
                     <div className="flex h-10 w-16 items-center justify-center rounded bg-white p-1">
                       <img src={api.municipioLogoUrl(m)} alt={`Logo de ${m.nome_municipio}`} className="max-h-full max-w-full object-contain" />
                     </div>
@@ -84,9 +84,9 @@ export function Municipios({ municipios, onChanged }: Props) {
                     <span className="text-xs text-destructive">sem logo</span>
                   )}
                 </TableCell>
-                <TableCell className="font-medium text-white">
+                <TableCell className="font-medium text-foreground">
                   {m.nome_municipio}{m.uf ? ` - ${m.uf}` : ''}
-                  {m.logo_avisos.length > 0 && <p className="text-xs font-normal text-accent">{m.logo_avisos[0]}</p>}
+                  {m.logo_avisos.length > 0 && <p className="text-xs font-normal text-warning">{m.logo_avisos[0]}</p>}
                 </TableCell>
                 <TableCell className="tabular-nums">{formatPhone(m.ddd, m.numero_whatsapp)}</TableCell>
                 <TableCell>{m.incluir_logo_banco_do_brasil ? 'Sim' : 'Não'}</TableCell>

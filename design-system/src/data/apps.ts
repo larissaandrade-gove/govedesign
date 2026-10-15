@@ -42,7 +42,7 @@ export const APPS: GoveApp[] = [
     folder: 'backend/ · db/ · frontend/revisor/',
     run: 'npm start  →  http://localhost:3040/revisor/',
     sameServer: true,
-    embeddedNote: 'Roda aqui mesmo, no navegador.',
+    embeddedNote: 'Roda aqui no navegador. O histórico de auditorias fica salvo neste navegador; relatórios saem por download.',
     shots: [
       { src: revisor1, caption: 'Envio da peça: Modo A (Fabric.js JSON) ou Modo B (PNG/JPG).' },
       { src: revisor2, caption: 'Resultado com status geral, preview anotado e itens a corrigir.' },
@@ -59,7 +59,7 @@ export const APPS: GoveApp[] = [
     folder: 'criativos/',
     run: 'npm run criativos:install && npm run criativos:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui mesmo, no navegador.',
+    embeddedNote: 'Roda aqui no navegador. Sem busca no Pexels: envie imagens do dispositivo. Vídeo em MP4 quando o navegador permite, senão WebM.',
     shots: [
       { src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' },
       { src: criativos2, caption: 'Gerador em lote: 8 variações por rodada.' },
@@ -76,7 +76,7 @@ export const APPS: GoveApp[] = [
     folder: 'links/',
     run: 'npm run links:install && npm run links:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui mesmo, no navegador.',
+    embeddedNote: 'Roda aqui no navegador. O link curto só redireciona publicamente no servidor; aqui, "Testar link" registra o clique e abre o destino.',
     shots: [{ src: links1, caption: 'Acesso institucional da equipe de marketing (contas criadas pela administração).' }],
   },
   {
@@ -90,7 +90,7 @@ export const APPS: GoveApp[] = [
     folder: 'lp-builder/',
     run: 'npm run lp:install && npm run lp:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui mesmo, no navegador.',
+    embeddedNote: 'Roda aqui no navegador. Páginas salvas neste navegador; o HTML sai por download ou cópia.',
     shots: [
       { src: lp2, caption: 'Nova landing page a partir de um preset de Hero.' },
       { src: lp1, caption: 'Editor com biblioteca de blocos e visualização desktop/mobile.' },
@@ -107,7 +107,7 @@ export const APPS: GoveApp[] = [
     folder: 'print-studio/',
     run: 'npm start  →  http://localhost:3040/print-studio/',
     sameServer: true,
-    embeddedNote: 'Roda aqui mesmo, no navegador.',
+    embeddedNote: 'Roda aqui no navegador. Vetores e textos em CMYK; imagens saem em RGB — converta antes de imprimir.',
     shots: [
       { src: print1, caption: 'Editor com preview fiel ao PDF, sangria e área de segurança.' },
       { src: print2, caption: 'Verificação antes do download: sangria, fontes, CMYK e QR code.' },
