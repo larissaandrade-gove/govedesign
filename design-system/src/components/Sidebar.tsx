@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Blocks, Box, Home, Menu, Palette, Ruler, Type, X } from 'lucide-react';
+import { AppWindow, Blocks, Box, Home, Menu, Palette, Ruler, Type, X } from 'lucide-react';
 import { EASE } from '../lib/motion';
 
 export const SECTIONS = [
   { id: 'inicio', label: 'Início', icon: Home },
+  { id: 'aplicacoes', label: 'Aplicações', icon: AppWindow },
   { id: 'cores', label: 'Cores', icon: Palette },
   { id: 'tipografia', label: 'Tipografia', icon: Type },
   { id: 'espacamento', label: 'Espaçamento', icon: Ruler },

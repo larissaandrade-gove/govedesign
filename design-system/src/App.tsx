@@ -1,3 +1,4 @@
+import { Apps } from './components/Apps';
 import { ColorPalette } from './components/ColorPalette';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
@@ -16,6 +17,7 @@ export default function App() {
       <Sidebar />
       <main className="lg:pl-[264px]">
         <Hero />
+        <Apps />
         <ColorPalette />
         <Typography />
         <Spacing />

@@ -46,11 +46,11 @@ export function Hero() {
           antecipam e agem — para facilitar a vida de quem precisa e de quem serve.
         </motion.p>
         <motion.div variants={fadeUp} className="flex flex-wrap gap-space-2 pt-space-1">
-          <Button variant="action" size="lg" onClick={() => scrollTo('componentes')}>
-            Explorar componentes <ArrowRight className="size-5" aria-hidden />
+          <Button variant="action" size="lg" onClick={() => scrollTo('aplicacoes')}>
+            Ver aplicações <ArrowRight className="size-5" aria-hidden />
           </Button>
-          <Button variant="secondary" size="lg" onClick={() => scrollTo('cores')}>
-            Ver tokens de cor
+          <Button variant="secondary" size="lg" onClick={() => scrollTo('componentes')}>
+            Explorar componentes
           </Button>
         </motion.div>
         <motion.dl
@@ -59,8 +59,8 @@ export function Hero() {
           className="mt-space-4 grid max-w-[620px] grid-cols-3 gap-space-2 border-t border-secondary pt-space-3"
         >
           {[
+            ['5', 'aplicações'],
             ['8', 'tokens de cor'],
-            ['7', 'níveis tipográficos'],
             ['8px', 'grade de espaçamento'],
           ].map(([n, label]) => (
             <div key={label} className="flex flex-col gap-1">

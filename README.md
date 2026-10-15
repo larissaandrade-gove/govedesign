@@ -76,7 +76,8 @@ Dark Mode nativo, neon roxo e amarelo, cidade noturna ao fundo.
 - `src/data/tokens.js` é a fonte única dos tokens (cores, escala tipográfica,
   espaçamento de 8px, raios, sombras e movimento). O `tailwind.config.js`
   importa esse arquivo, e a documentação lê os mesmos valores.
-- Seções: hero com parallax, cores (cards com brilho da própria cor, cópia do
+- Seções: hero com parallax, aplicações (um card por app do repositório, com
+  link para abrir quando servido pelo projeto), cores (cards com brilho da própria cor, cópia do
   HEX e contraste sobre o fundo, mais a paleta institucional do manual de
   marca), tipografia (Montserrat × Inter, nota do fallback impresso Helvetica),
   espaçamento, raio e sombras e componentes ao vivo (botões, cards, inputs).
