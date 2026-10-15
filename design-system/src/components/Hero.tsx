@@ -4,6 +4,8 @@ import { ArrowRight, Layers } from 'lucide-react';
 import { Button } from './ui/Button';
 import { CityBackdrop } from './CityBackdrop';
 import { EASE, fadeUp, stagger } from '../lib/motion';
+import { APPS } from '../data/apps';
+import { colors } from '../data/tokens.js';
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -59,8 +61,8 @@ export function Hero() {
           className="mt-space-4 grid max-w-[620px] grid-cols-3 gap-space-2 border-t border-secondary pt-space-3"
         >
           {[
-            ['5', 'aplicações'],
-            ['8', 'tokens de cor'],
+            [String(APPS.length), 'aplicações'],
+            [String(Object.keys(colors).length), 'tokens de cor'],
             ['8px', 'grade de espaçamento'],
           ].map(([n, label]) => (
             <div key={label} className="flex flex-col gap-1">

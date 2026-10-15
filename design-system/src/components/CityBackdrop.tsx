@@ -18,16 +18,16 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number,
 
   // Neblina de luz da cidade no horizonte
   const haze = ctx.createLinearGradient(0, h * 0.35, 0, h);
-  haze.addColorStop(0, 'rgba(74, 0, 224, 0)');
-  haze.addColorStop(0.7, 'rgba(74, 0, 224, 0.22)');
-  haze.addColorStop(1, 'rgba(255, 199, 44, 0.08)');
+  haze.addColorStop(0, 'rgba(61, 0, 153, 0)');
+  haze.addColorStop(0.7, 'rgba(61, 0, 153, 0.35)');
+  haze.addColorStop(1, 'rgba(90, 194, 205, 0.08)');
   ctx.fillStyle = haze;
   ctx.fillRect(0, 0, w, h);
 
   const layers = [
-    { color: '#2B2358', min: 0.25, max: 0.55, width: [28, 70], windows: 0.05 },
-    { color: '#211B47', min: 0.35, max: 0.75, width: [36, 90], windows: 0.09 },
-    { color: '#15112F', min: 0.45, max: 0.92, width: [44, 110], windows: 0.14 },
+    { color: '#2E1C57', min: 0.25, max: 0.55, width: [28, 70], windows: 0.05 },
+    { color: '#251648', min: 0.35, max: 0.75, width: [36, 90], windows: 0.09 },
+    { color: '#170D2E', min: 0.45, max: 0.92, width: [44, 110], windows: 0.14 },
   ];
 
   for (const [li, L] of layers.entries()) {
@@ -49,14 +49,15 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number,
         for (let wx = x + 5; wx < x + bw - 6; wx += 8) {
           if (rand() < L.windows) {
             const r = rand();
-            ctx.fillStyle = r < 0.55 ? 'rgba(255, 199, 44, 0.55)' : r < 0.85 ? 'rgba(234, 234, 234, 0.35)' : 'rgba(157, 140, 255, 0.6)';
+            ctx.fillStyle = r < 0.5 ? 'rgba(255, 199, 44, 0.55)' : r < 0.75 ? 'rgba(244, 244, 244, 0.35)' : r < 0.9 ? 'rgba(162, 120, 218, 0.6)' : 'rgba(90, 194, 205, 0.55)';
             ctx.fillRect(wx, wy, 3, 4);
           }
         }
       }
       // Letreiro neon vertical na camada da frente
       if (li === 2 && rand() > 0.78 && bh > h * 0.35) {
-        const neon = rand() > 0.5 ? '#4A00E0' : '#FFC72C';
+        const pick = rand();
+        const neon = pick > 0.66 ? '#A278DA' : pick > 0.33 ? '#5AC2CD' : '#FFC72C';
         ctx.save();
         ctx.shadowColor = neon;
         ctx.shadowBlur = 14;

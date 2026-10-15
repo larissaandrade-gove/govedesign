@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppWindow, Blocks, Box, Home, Menu, Palette, Ruler, Type, X } from 'lucide-react';
 import { EASE } from '../lib/motion';
+import { APPS } from '../data/apps';
+import { appHref, type View } from '../lib/router';
 
 export const SECTIONS = [
   { id: 'inicio', label: 'Início', icon: Home },
@@ -14,9 +16,10 @@ export const SECTIONS = [
 ];
 
 /** Seção visível no momento (scrollspy com Intersection Observer). */
-function useActiveSection() {
+function useActiveSection(view: View) {
   const [active, setActive] = useState('inicio');
   useEffect(() => {
+    if (view.kind === 'app') return;
     const io = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -29,8 +32,8 @@ function useActiveSection() {
       if (el) io.observe(el);
     });
     return () => io.disconnect();
-  }, []);
-  return active;
+  }, [view.kind]);
+  return view.kind === 'app' ? `app-${view.appId}` : active;
 }
 
 function Brand() {
@@ -66,6 +69,29 @@ function NavList({ active, onNavigate }: { active: string; onNavigate?: () => vo
               <Icon className={`size-[18px] ${on ? 'text-accent' : ''}`} aria-hidden />
               {label}
             </a>
+            {id === 'aplicacoes' && (
+              <ul className="ml-[26px] mt-1 flex flex-col gap-0.5 border-l border-secondary pl-space-1" aria-label="Aplicações">
+                {APPS.map((app) => {
+                  const AppIcon = app.icon;
+                  const appOn = active === `app-${app.id}`;
+                  return (
+                    <li key={app.id}>
+                      <a
+                        href={appHref(app.id)}
+                        onClick={onNavigate}
+                        aria-current={appOn ? 'page' : undefined}
+                        className={`flex items-center gap-space-1 rounded-md px-space-1 py-2 text-caption no-underline transition-colors duration-200 ${
+                          appOn ? 'bg-secondary/80 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
+                        }`}
+                      >
+                        <AppIcon className={`size-4 shrink-0 ${appOn ? 'text-accent' : ''}`} aria-hidden />
+                        {app.name}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </li>
         );
       })}
@@ -73,8 +99,8 @@ function NavList({ active, onNavigate }: { active: string; onNavigate?: () => vo
   );
 }
 
-export function Sidebar() {
-  const active = useActiveSection();
+export function Sidebar({ view }: { view: View }) {
+  const active = useActiveSection(view);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -87,7 +113,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop: sidebar fixa */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] flex-col justify-between border-r border-secondary/70 bg-background/85 px-space-2 py-space-3 backdrop-blur-md lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] flex-col justify-between gap-space-3 overflow-y-auto border-r border-secondary/70 bg-background/85 px-space-2 py-space-3 backdrop-blur-md lg:flex">
         <div className="flex flex-col gap-space-4">
           <div className="px-space-1">
             <Brand />
@@ -130,7 +156,7 @@ export function Sidebar() {
             />
             <motion.nav
               aria-label="Seções do design system"
-              className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-space-4 border-r border-secondary bg-background px-space-2 py-space-3 lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-space-4 overflow-y-auto border-r border-secondary bg-background px-space-2 py-space-3 lg:hidden"
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)', paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))' }}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}

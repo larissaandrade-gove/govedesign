@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { AppPage } from './components/AppPage';
 import { Apps } from './components/Apps';
 import { ColorPalette } from './components/ColorPalette';
 import { Footer } from './components/Footer';
@@ -7,22 +9,43 @@ import { Sidebar } from './components/Sidebar';
 import { Spacing } from './components/Spacing';
 import { Typography } from './components/Typography';
 import { UIKit } from './components/UIKit';
+import { useView } from './lib/router';
 
 export default function App() {
+  const view = useView();
+  const key = view.kind === 'app' ? `app-${view.appId}` : 'docs';
+
+  // Ao trocar de página, vai para o topo (app) ou para a seção pedida (documentação)
+  useEffect(() => {
+    if (view.kind === 'app') {
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    const el = document.getElementById(view.section);
+    if (el && view.section !== 'inicio') requestAnimationFrame(() => el.scrollIntoView({ block: 'start' }));
+    else if (view.section === 'inicio') window.scrollTo({ top: 0 });
+  }, [key, view]);
+
   return (
     <div className="min-h-screen bg-background">
       <a href="#cores" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-background">
         Pular para o conteúdo
       </a>
-      <Sidebar />
+      <Sidebar view={view} />
       <main className="lg:pl-[264px]">
-        <Hero />
-        <Apps />
-        <ColorPalette />
-        <Typography />
-        <Spacing />
-        <RadiusShadows />
-        <UIKit />
+        {view.kind === 'app' ? (
+          <AppPage key={view.appId} appId={view.appId} />
+        ) : (
+          <>
+            <Hero />
+            <Apps />
+            <ColorPalette />
+            <Typography />
+            <Spacing />
+            <RadiusShadows />
+            <UIKit />
+          </>
+        )}
         <Footer />
       </main>
     </div>

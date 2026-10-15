@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { ArrowUpRight, FolderGit2 } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, FolderGit2 } from 'lucide-react';
+import { appHref } from '../lib/router';
 import { APPS } from '../data/apps';
 import { hoverTransition } from '../lib/motion';
 import { Reveal, RevealItem, StaggerGrid } from './Reveal';
@@ -20,7 +21,7 @@ export function Apps() {
         {APPS.map(({ id, name, route, icon: Icon, summary, features, stack, folder }) => (
           <RevealItem key={id}>
             <motion.article
-              whileHover={{ scale: 1.02, y: -4, borderColor: '#4A00E0', boxShadow: '0 8px 16px rgba(0,0,0,0.6), 0 0 20px rgba(74, 0, 224, 0.4)' }}
+              whileHover={{ scale: 1.02, y: -4, borderColor: '#A278DA', boxShadow: '0 8px 16px rgba(0,0,0,0.6), 0 0 20px rgba(162, 120, 218, 0.4)' }}
               transition={hoverTransition}
               className="flex h-full flex-col gap-space-2 rounded-lg border border-secondary bg-surface p-space-3"
             >
@@ -44,18 +45,20 @@ export function Apps() {
                 <span className="token min-w-0 break-words">{folder}</span>
               </p>
               <p className="text-caption text-text-secondary/80">{stack.join(' · ')}</p>
-              <div className="mt-auto pt-space-1">
-                {onProjectServer ? (
+              <div className="mt-auto flex flex-wrap gap-space-1 pt-space-1">
+                <a
+                  href={appHref(id)}
+                  className="inline-flex h-12 items-center gap-space-1 rounded-md bg-primary px-space-3 font-semibold text-text-primary no-underline shadow-glow-purple transition-[box-shadow,transform] duration-200 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(162,120,218,0.6)]"
+                >
+                  Ver aplicação<span className="sr-only">: {name}</span> <ArrowRight className="size-4" aria-hidden />
+                </a>
+                {onProjectServer && (
                   <a
                     href={route}
-                    className="inline-flex h-12 items-center gap-space-1 rounded-md bg-primary px-space-3 font-semibold text-text-primary no-underline shadow-glow-purple transition-shadow duration-200 hover:shadow-[0_0_30px_rgba(74,0,224,0.7)]"
+                    className="inline-flex h-12 items-center gap-space-1 rounded-md border border-secondary px-space-3 font-semibold text-text-primary no-underline transition-[border-color,transform] duration-200 hover:scale-[1.02] hover:border-lilac"
                   >
-                    Abrir aplicação<span className="sr-only">: {name}</span> <ArrowUpRight className="size-4" aria-hidden />
+                    Abrir<span className="sr-only"> {name}</span> <ArrowUpRight className="size-4" aria-hidden />
                   </a>
-                ) : (
-                  <p className="rounded-md border border-dashed border-secondary px-space-2 py-space-1 text-caption text-text-secondary">
-                    Abre em <span className="token">{route}</span> no servidor do projeto (<span className="token">npm start</span>).
-                  </p>
                 )}
               </div>
             </motion.article>
@@ -64,8 +67,8 @@ export function Apps() {
       </StaggerGrid>
 
       <Reveal className="mt-space-4 max-w-[760px] text-caption text-text-secondary">
-        Revisor e Print Studio rodam no próprio servidor do projeto. Gerador de criativos, Gove Links e LP Builder têm servidor
-        próprio; a tela inicial redireciona para o endereço de cada um (variáveis CRIATIVOS_URL, LINKS_URL e LP_URL).
+        "Ver aplicação" abre a página de cada app aqui dentro: telas, recursos e como rodar. Com o projeto rodando, "Abrir" leva
+        ao app; Revisor e Print Studio também podem ser vistos ao vivo dentro da página.
       </Reveal>
     </section>
   );

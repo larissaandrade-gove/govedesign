@@ -16,7 +16,7 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const HOVER_SHADOW: Record<Variant, string | undefined> = {
-  primary: '0 0 30px rgba(74, 0, 224, 0.7)',
+  primary: '0 0 30px rgba(162, 120, 218, 0.6)',
   action: shadows['glow-yellow-strong'],
   secondary: shadows['glow-purple'],
 };

@@ -35,7 +35,7 @@ export function ColorPalette() {
   return (
     <section id="cores" className="gutter scroll-mt-[72px] py-space-12">
       <SectionHeader id="cores" token="tokens / color" title="Cores">
-        Oito tokens de interface. O amarelo é raro e importa: uma ação por tela. Passe o mouse para ver o brilho de cada cor e
+        {Object.keys(colors).length} tokens de interface, derivados da paleta oficial. O amarelo é raro e importa: uma ação por tela. Passe o mouse para ver o brilho de cada cor e
         clique para copiar o HEX.
       </SectionHeader>
 
@@ -76,13 +76,13 @@ export function ColorPalette() {
       </StaggerGrid>
 
       <Reveal className="mt-space-8 flex flex-col gap-space-2">
-        <h3 className="text-h3">Paleta institucional</h3>
+        <h3 className="text-h3">Paleta institucional oficial</h3>
         <p className="max-w-[640px] text-body text-text-secondary">
-          Cores do manual de marca, para peças e logotipo. A interface usa os tokens acima; estas entram quando a peça precisa
-          reproduzir a marca.
+          As 10 cores oficiais da marca Gove. Os tokens acima usam exatamente estes valores; aqui elas aparecem na ordem do
+          manual, para peças, apresentações e gráficos.
         </p>
       </Reveal>
-      <StaggerGrid className="mt-space-3 grid grid-cols-4 gap-space-1 sm:grid-cols-7">
+      <StaggerGrid className="mt-space-3 grid grid-cols-2 gap-space-1 min-[480px]:grid-cols-5">
         {brandPalette.map((hex) => (
           <RevealItem key={hex}>
             <motion.button

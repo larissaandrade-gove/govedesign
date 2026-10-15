@@ -73,11 +73,14 @@ visíveis no JavaScript publicado.
 Documentação navegável e UI Kit no visual "Cyberpunk Premium / Urban Tech":
 Dark Mode nativo, neon roxo e amarelo, cidade noturna ao fundo.
 
-- `src/data/tokens.js` é a fonte única dos tokens (cores, escala tipográfica,
+- `src/data/tokens.js` é a fonte única dos tokens (cores da paleta oficial —
+  `#FFC72C #3D0099 #351F65 #F4F4F4 #2F3539 #A278DA #5B6770 #20133D #5AC2CD #16499F` —, escala tipográfica,
   espaçamento de 8px, raios, sombras e movimento). O `tailwind.config.js`
   importa esse arquivo, e a documentação lê os mesmos valores.
-- Seções: hero com parallax, aplicações (um card por app do repositório, com
-  link para abrir quando servido pelo projeto), cores (cards com brilho da própria cor, cópia do
+- Seções: hero com parallax, aplicações (cada app tem página própria em
+  `#app-<id>`, navegável pela barra lateral e por botões: telas, recursos,
+  stack e como rodar; servido pelo projeto, "Abrir aplicação" leva ao app e
+  Revisor/Print Studio abrem ao vivo dentro da página), cores (cards com brilho da própria cor, cópia do
   HEX e contraste sobre o fundo, mais a paleta institucional do manual de
   marca), tipografia (Montserrat × Inter, nota do fallback impresso Helvetica),
   espaçamento, raio e sombras e componentes ao vivo (botões, cards, inputs).
