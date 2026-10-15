@@ -1,19 +1,89 @@
 // Fonte única dos tokens do design system Gove.
 // Usada pelo tailwind.config.js (classes utilitárias) e pela documentação (src/).
 
-/** Cores de interface — valores exatos. Nunca usar preto puro (#000). */
+/**
+ * Papéis de cor da interface. Os valores (HEX) vêm de `themes` — o mesmo papel
+ * muda de cor entre o tema claro (padrão) e o escuro. Nunca usar preto puro (#000).
+ */
 export const colors = {
-  primary: { hex: '#3D0099', name: 'Roxo Gove', usage: 'Botões principais e elementos de marca. Texto sobre ele: branco.' },
-  secondary: { hex: '#351F65', name: 'Roxo Profundo', usage: 'Hover, bordas de cards e elementos secundários. Contraste baixo: sempre com outra pista visual.' },
-  background: { hex: '#20133D', name: 'Roxo Noite', usage: 'Fundo de toda a interface — o chão da cidade à noite.' },
-  surface: { hex: '#2F3539', name: 'Grafite', usage: 'Cards, modais e popovers sobre o background.' },
-  'text-primary': { hex: '#FFFFFF', name: 'Branco', usage: 'Títulos e ênfases.' },
-  'text-secondary': { hex: '#F4F4F4', name: 'Gelo', usage: 'Corpo de texto e parágrafos.' },
-  'text-muted': { hex: '#5B6770', name: 'Cinza Azulado', usage: 'Somente desabilitado e placeholder (abaixo de 4,5:1 sobre o background).' },
-  accent: { hex: '#FFC72C', name: 'Amarelo Ouro', usage: 'Uma ação importante por tela, foco e destaques. Texto sobre ele: background.' },
-  lilac: { hex: '#A278DA', name: 'Lilás', usage: 'Links, itens ativos em texto e brilho neon sobre fundos escuros.' },
-  cyan: { hex: '#5AC2CD', name: 'Ciano', usage: 'Destaques informativos e séries de gráficos.' },
-  blue: { hex: '#16499F', name: 'Azul', usage: 'Elementos informativos e séries de gráficos secundárias.' },
+  background: { name: 'Fundo', usage: 'Fundo de toda a interface: Branco no claro, Roxo Noite no escuro.' },
+  surface: { name: 'Superfície', usage: 'Cards, modais e popovers: Gelo no claro, Grafite no escuro.' },
+  secondary: { name: 'Sutil', usage: 'Bordas, divisores e preenchimentos de hover. Contraste baixo: sempre com outra pista visual.' },
+  'text-primary': { name: 'Texto forte', usage: 'Títulos e ênfases.' },
+  'text-secondary': { name: 'Texto', usage: 'Corpo de texto e parágrafos.' },
+  'text-muted': { name: 'Texto apagado', usage: 'Somente desabilitado e placeholder.' },
+  primary: { name: 'Roxo Gove', usage: 'Botões principais e elementos de marca. Texto sobre ele: on-primary (branco).' },
+  accent: { name: 'Amarelo Ouro', usage: 'Uma ação importante por tela. Texto sobre ele: on-accent (Roxo Noite).' },
+  highlight: { name: 'Destaque', usage: 'Ícones e textos em destaque: Roxo Gove no claro, Amarelo Ouro no escuro.' },
+  link: { name: 'Link', usage: 'Links e itens ativos em texto: Roxo Gove no claro, Lilás no escuro.' },
+  lilac: { name: 'Lilás', usage: 'Bordas em hover e brilho neon. Não usar como texto sobre o branco.' },
+  cyan: { name: 'Ciano', usage: 'Destaques informativos e séries de gráficos.' },
+  blue: { name: 'Azul', usage: 'Elementos informativos e séries de gráficos secundárias.' },
+  'on-primary': { name: 'Sobre o primary', usage: 'Texto e ícones sobre o Roxo Gove.' },
+  'on-accent': { name: 'Sobre o accent', usage: 'Texto e ícones sobre o Amarelo Ouro.' },
+};
+
+/**
+ * Temas da interface. Claro é o padrão (predominantemente branco); escuro sob demanda.
+ * Cada papel vira uma variável CSS (--c-<papel>) e uma classe Tailwind.
+ */
+export const themes = {
+  light: {
+    background: '#FFFFFF',
+    surface: '#F4F4F4',
+    secondary: '#E3D8F3', // bordas e preenchimentos sutis (tinta do Lilás)
+    'text-primary': '#20133D',
+    'text-secondary': '#2F3539',
+    'text-muted': '#5B6770',
+    primary: '#3D0099',
+    accent: '#FFC72C',
+    highlight: '#3D0099', // ênfase em texto e ícones (amarelo não tem contraste no branco)
+    link: '#3D0099',
+    lilac: '#A278DA',
+    cyan: '#5AC2CD',
+    blue: '#16499F',
+    'on-primary': '#FFFFFF',
+    'on-accent': '#20133D',
+  },
+  dark: {
+    background: '#20133D',
+    surface: '#2F3539',
+    secondary: '#351F65',
+    'text-primary': '#FFFFFF',
+    'text-secondary': '#F4F4F4',
+    'text-muted': '#5B6770',
+    primary: '#3D0099',
+    accent: '#FFC72C',
+    highlight: '#FFC72C',
+    link: '#A278DA',
+    lilac: '#A278DA',
+    cyan: '#5AC2CD',
+    blue: '#16499F',
+    'on-primary': '#FFFFFF',
+    'on-accent': '#20133D',
+  },
+};
+
+/** Sombras por tema (variáveis --shadow-<nome>). */
+export const themeShadows = {
+  light: {
+    sm: '0 1px 3px rgba(32, 19, 61, 0.12)',
+    md: '0 8px 24px rgba(32, 19, 61, 0.10)',
+    'glow-purple': '0 8px 24px rgba(61, 0, 153, 0.18)',
+    'glow-purple-strong': '0 10px 30px rgba(61, 0, 153, 0.30)',
+    'glow-yellow': '0 6px 18px rgba(255, 199, 44, 0.45)',
+    'glow-yellow-strong': '0 8px 26px rgba(255, 199, 44, 0.7)',
+    'card-hover': '0 12px 28px rgba(32, 19, 61, 0.14), 0 0 0 1px rgba(162, 120, 218, 0.5)',
+  },
+  dark: {
+    sm: '0 2px 4px rgba(0,0,0,0.5)',
+    md: '0 8px 16px rgba(0,0,0,0.6)',
+    'glow-purple': '0 0 20px rgba(162, 120, 218, 0.4)',
+    'glow-purple-strong': '0 0 30px rgba(162, 120, 218, 0.6)',
+    'glow-yellow': '0 0 15px rgba(255, 199, 44, 0.5)',
+    'glow-yellow-strong': '0 0 28px rgba(255, 199, 44, 0.75)',
+    'card-hover': '0 8px 16px rgba(0,0,0,0.6), 0 0 20px rgba(162, 120, 218, 0.4)',
+  },
 };
 
 /** Paleta institucional oficial (color.adobe.com), na ordem do manual. */
@@ -50,16 +120,6 @@ export const spacing = {
 };
 
 export const radius = { sm: '4px', md: '8px', lg: '16px', full: '9999px' };
-
-export const shadows = {
-  sm: '0 2px 4px rgba(0,0,0,0.5)',
-  md: '0 8px 16px rgba(0,0,0,0.6)',
-  // Brilho roxo em lilás: o #3D0099 quase não aparece como luz sobre o fundo escuro
-  'glow-purple': '0 0 20px rgba(162, 120, 218, 0.4)',
-  'glow-yellow': '0 0 15px rgba(255, 199, 44, 0.5)',
-  // Estado de hover do CTA amarelo (glow intensificado)
-  'glow-yellow-strong': '0 0 28px rgba(255, 199, 44, 0.75)',
-};
 
 /** Movimento: entrada em 600ms com ease-out exponencial; estados entre 200 e 300ms. */
 export const motion = {

@@ -2,16 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark Mode nativo: um único visual, sempre noturno. */
+/* Tema claro por padrão; o escuro vem de <html data-gove-theme="dark"> (variáveis no tailwind.config.js). */
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
   body {
+    transition: background-color 300ms, color 300ms;
     @apply bg-background font-sans text-body text-text-secondary antialiased;
     margin: 0;
   }
@@ -20,10 +18,10 @@
     text-wrap: balance;
   }
   ::selection {
-    @apply bg-primary text-text-primary;
+    @apply bg-primary text-on-primary;
   }
   :focus-visible {
-    outline: 2px solid theme('colors.accent');
+    outline: 2px solid rgb(var(--c-highlight));
     outline-offset: 2px;
   }
   @media (prefers-reduced-motion: reduce) {
@@ -44,7 +42,7 @@
     }
   }
   .eyebrow {
-    @apply font-sans text-caption uppercase tracking-[0.14em] text-accent;
+    @apply font-sans text-caption uppercase tracking-[0.14em] text-highlight;
   }
   .token {
     font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;

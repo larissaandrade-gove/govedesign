@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Copy, FolderGit2, MonitorPlay, Terminal, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Copy, FolderGit2, Terminal } from 'lucide-react';
 import { APPS } from '../data/apps';
 import { appHref } from '../lib/router';
-import { EASE, fadeUp, stagger } from '../lib/motion';
+import { fadeUp, stagger } from '../lib/motion';
+import { EmbeddedApp, hasEmbedded } from './EmbeddedApp';
 import { Button } from './ui/Button';
 import { Reveal } from './Reveal';
-
-/** Os apps só abrem de verdade quando o design system é servido pelo servidor do projeto. */
-const onProjectServer = typeof window !== 'undefined' && window.location.pathname.startsWith('/design-system');
 
 const go = (hash: string) => {
   window.location.hash = hash;
@@ -19,7 +17,6 @@ export function AppPage({ appId }: { appId: string }) {
   const app = APPS[index];
   const prev = APPS[(index - 1 + APPS.length) % APPS.length];
   const next = APPS[(index + 1) % APPS.length];
-  const [live, setLive] = useState(false);
   const [copied, setCopied] = useState(false);
   const Icon = app.icon;
 
@@ -55,57 +52,25 @@ export function AppPage({ appId }: { appId: string }) {
         <motion.header variants={fadeUp} className="flex flex-col gap-space-2">
           <p className="eyebrow">ecosystem / apps / {app.id}</p>
           <div className="flex flex-wrap items-center gap-space-2">
-            <span className="flex size-14 items-center justify-center rounded-lg bg-secondary text-accent shadow-glow-purple">
+            <span className="flex size-14 items-center justify-center rounded-lg bg-secondary text-highlight shadow-glow-purple">
               <Icon className="size-7" aria-hidden />
             </span>
             <h1 id="app-title" className="text-[36px] font-black leading-[1.1] sm:text-h1">{app.name}</h1>
           </div>
           <p className="max-w-[720px] text-body-large text-text-secondary">{app.summary}</p>
           <div className="flex flex-wrap items-center gap-space-2 pt-space-1">
-            {onProjectServer ? (
-              <>
-                <a
-                  href={app.route}
-                  className="inline-flex h-14 items-center gap-space-1 rounded-md bg-accent px-space-4 text-body-large font-semibold text-background no-underline shadow-glow-yellow transition-[box-shadow,transform] duration-200 hover:scale-[1.02] hover:shadow-glow-yellow-strong"
-                >
-                  Abrir aplicação <ArrowUpRight className="size-5" aria-hidden />
-                </a>
-                {app.sameServer && (
-                  <Button variant="primary" size="lg" onClick={() => setLive((v) => !v)} aria-pressed={live}>
-                    {live ? <X className="size-5" aria-hidden /> : <MonitorPlay className="size-5" aria-hidden />}
-                    {live ? 'Fechar visualização ao vivo' : 'Ver ao vivo aqui'}
-                  </Button>
-                )}
-              </>
-            ) : (
-              <p className="max-w-[560px] rounded-md border border-dashed border-secondary px-space-2 py-space-1 text-caption text-text-secondary">
-                Esta é a versão publicada do design system. Para abrir a aplicação, rode o projeto e acesse{' '}
-                <span className="token">{app.route}</span>.
-              </p>
-            )}
             <span className="token rounded-sm border border-secondary px-2 py-1">{app.route}</span>
+            <span className="text-caption text-text-secondary">{app.embeddedNote}</span>
           </div>
         </motion.header>
 
-        {/* Visualização ao vivo (mesmo servidor) */}
-        {live && onProjectServer && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            className="overflow-hidden rounded-lg border border-lilac/60 bg-surface shadow-glow-purple"
-          >
-            <div className="flex items-center justify-between gap-space-2 border-b border-secondary px-space-2 py-space-1 text-caption text-text-secondary">
-              <span className="token">{app.route}</span>
-              <a href={app.route} className="inline-flex items-center gap-1 text-lilac no-underline hover:underline">
-                Abrir em tela cheia <ArrowUpRight className="size-3.5" aria-hidden />
-              </a>
-            </div>
-            <iframe title={`${app.name} ao vivo`} src={app.route} className="block h-[75vh] min-h-[480px] w-full bg-background" />
-          </motion.div>
-        )}
+        {/* App em execução aqui dentro */}
+        <motion.div variants={fadeUp}>
+          <EmbeddedApp id={app.id} name={app.name} />
+        </motion.div>
 
         {/* Capturas */}
+        {!hasEmbedded(app.id) && (<>
         <motion.section variants={fadeUp} aria-label="Telas da aplicação" className={`grid grid-cols-1 gap-space-3 ${app.shots.length > 1 ? 'lg:grid-cols-2' : ''}`}>
           {app.shots.map((s) => (
             <figure key={s.src} className="m-0 flex flex-col gap-space-1">
@@ -119,6 +84,7 @@ export function AppPage({ appId }: { appId: string }) {
         <motion.p variants={fadeUp} className="-mt-space-2 text-caption text-text-secondary/80">
           Capturas feitas com dados e logos de exemplo.
         </motion.p>
+        </>)}
 
         {/* Detalhes */}
         <div className="grid grid-cols-1 gap-space-3 lg:grid-cols-3">
@@ -127,7 +93,7 @@ export function AppPage({ appId }: { appId: string }) {
             <ul className="flex flex-col gap-space-1">
               {app.features.map((f) => (
                 <li key={f} className="flex items-start gap-space-1 text-body text-text-secondary">
-                  <Check className="mt-1 size-4 shrink-0 text-accent" aria-hidden /> {f}
+                  <Check className="mt-1 size-4 shrink-0 text-highlight" aria-hidden /> {f}
                 </li>
               ))}
             </ul>
@@ -146,13 +112,13 @@ export function AppPage({ appId }: { appId: string }) {
             </p>
           </Reveal>
           <Reveal className="flex min-w-0 flex-col gap-space-2 rounded-lg border border-secondary bg-surface p-space-3">
-            <h2 className="font-display text-h3 font-bold">Como rodar</h2>
+            <h2 className="font-display text-h3 font-bold">Como rodar no servidor</h2>
             <div className="flex items-start gap-space-1 rounded-md bg-background p-space-2">
-              <Terminal className="mt-0.5 size-4 shrink-0 text-lilac" aria-hidden />
+              <Terminal className="mt-0.5 size-4 shrink-0 text-link" aria-hidden />
               <code className="token min-w-0 flex-1 select-all break-words">{app.run}</code>
             </div>
             <Button variant="secondary" onClick={copyRun} className="self-start">
-              {copied ? <Check className="size-4 text-accent" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+              {copied ? <Check className="size-4 text-highlight" aria-hidden /> : <Copy className="size-4" aria-hidden />}
               {copied ? 'Copiado' : 'Copiar comando'}
             </Button>
           </Reveal>
@@ -170,7 +136,7 @@ export function AppPage({ appId }: { appId: string }) {
                   href={appHref(a.id)}
                   className="inline-flex h-12 items-center gap-space-1 rounded-md border border-secondary px-space-2 text-body text-text-primary no-underline transition-[border-color,box-shadow,transform] duration-200 hover:scale-[1.02] hover:border-lilac hover:shadow-glow-purple"
                 >
-                  <AIcon className="size-4 text-accent" aria-hidden /> {a.name}
+                  <AIcon className="size-4 text-highlight" aria-hidden /> {a.name}
                 </a>
               );
             })}

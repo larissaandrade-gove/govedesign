@@ -4,6 +4,7 @@ import { AppWindow, Blocks, Box, Home, Menu, Palette, Ruler, Type, X } from 'luc
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
+import { ThemeToggle } from './ThemeToggle';
 
 export const SECTIONS = [
   { id: 'inicio', label: 'Início', icon: Home },
@@ -66,7 +67,7 @@ function NavList({ active, onNavigate }: { active: string; onNavigate?: () => vo
               }`}
             >
               {on && <motion.span layoutId="nav-active" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-accent shadow-glow-yellow" transition={{ duration: 0.3, ease: EASE }} />}
-              <Icon className={`size-[18px] ${on ? 'text-accent' : ''}`} aria-hidden />
+              <Icon className={`size-[18px] ${on ? 'text-highlight' : ''}`} aria-hidden />
               {label}
             </a>
             {id === 'aplicacoes' && (
@@ -84,7 +85,7 @@ function NavList({ active, onNavigate }: { active: string; onNavigate?: () => vo
                           appOn ? 'bg-secondary/80 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
                         }`}
                       >
-                        <AppIcon className={`size-4 shrink-0 ${appOn ? 'text-accent' : ''}`} aria-hidden />
+                        <AppIcon className={`size-4 shrink-0 ${appOn ? 'text-highlight' : ''}`} aria-hidden />
                         {app.name}
                       </a>
                     </li>
@@ -122,10 +123,13 @@ export function Sidebar({ view }: { view: View }) {
             <NavList active={active} />
           </nav>
         </div>
-        <p className="px-space-1 text-caption text-text-secondary">
-          <span className="block font-display font-bold text-text-primary">Governo Zero Clique</span>
-          Tokens v1.0
-        </p>
+        <div className="flex flex-col gap-space-2 px-space-1">
+          <ThemeToggle />
+          <p className="text-caption text-text-secondary">
+            <span className="block font-display font-bold text-text-primary">Governo Zero Clique</span>
+            Tokens v1.0
+          </p>
+        </div>
       </aside>
 
       {/* Mobile: barra superior + gaveta */}
@@ -134,6 +138,8 @@ export function Sidebar({ view }: { view: View }) {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <Brand />
+        <div className="flex items-center gap-space-1">
+        <ThemeToggle compact />
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -143,6 +149,7 @@ export function Sidebar({ view }: { view: View }) {
         >
           <Menu className="size-5" />
         </button>
+        </div>
       </header>
       <AnimatePresence>
         {open && (

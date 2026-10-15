@@ -30,7 +30,7 @@ function Row({ level, family }: { level: Level; family: 'display' | 'sans' }) {
   return (
     <RevealItem className="flex flex-col gap-space-1 border-b border-secondary/70 py-space-3 last:border-b-0">
       <p className="token flex flex-wrap gap-x-space-2 text-text-secondary/90">
-        <span className="text-accent">{level}</span>
+        <span className="text-highlight">{level}</span>
         <span className="tabular-nums">{size} / {meta.lineHeight}</span>
         <span>peso {meta.fontWeight}</span>
       </p>
@@ -72,7 +72,7 @@ export function Typography() {
       </div>
 
       <Reveal className="mt-space-4 flex max-w-[760px] gap-space-2 rounded-lg border border-secondary bg-background p-space-3">
-        <Printer className="mt-1 size-5 shrink-0 text-accent" aria-hidden />
+        <Printer className="mt-1 size-5 shrink-0 text-highlight" aria-hidden />
         <div className="flex flex-col gap-space-1">
           <p className="font-display text-body-large font-bold text-text-primary">Fallback impresso: Helvetica</p>
           <p className="text-body text-text-secondary">

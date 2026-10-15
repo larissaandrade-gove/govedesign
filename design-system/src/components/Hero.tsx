@@ -6,26 +6,29 @@ import { CityBackdrop } from './CityBackdrop';
 import { EASE, fadeUp, stagger } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { colors } from '../data/tokens.js';
+import { useTheme } from '../lib/theme';
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
+  const [theme] = useTheme();
+  const dark = theme === 'dark';
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   // Parallax sutil: a cidade anda mais devagar que o conteúdo (fator ~0.8)
   const cityY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
   const glowY = useTransform(scrollYProgress, [0, 1], ['0%', '35%']);
 
   return (
-    <section ref={ref} id="inicio" className="relative isolate overflow-hidden bg-gradient-to-br from-background from-35% to-primary">
-      {/* Cidade à noite com overlay escuro para manter a leitura */}
+    <section ref={ref} id="inicio" className={`relative isolate overflow-hidden bg-gradient-to-br from-background from-35% ${dark ? 'to-primary' : 'to-secondary'}`}>
+      {/* Cidade (noturna no escuro, em tons de lilás no claro) com overlay para manter a leitura */}
       <motion.div style={{ y: cityY }} className="absolute inset-x-0 bottom-0 -z-10 h-[85%]">
-        <CityBackdrop className="h-full w-full opacity-80" seed={11} />
+        <CityBackdrop className={`h-full w-full ${dark ? 'opacity-80' : 'opacity-70'}`} seed={11} theme={theme} />
       </motion.div>
       <motion.div
         style={{ y: glowY }}
         aria-hidden
-        className="absolute -right-24 top-10 -z-10 h-72 w-72 rounded-full bg-primary/50 blur-[120px]"
+        className={`absolute -right-24 top-10 -z-10 h-72 w-72 rounded-full ${dark ? 'bg-primary/50' : 'bg-lilac/30'} blur-[120px]`}
       />
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/70 to-background/40 md:via-background/55 md:to-background/20" />
 
@@ -41,7 +44,7 @@ export function Hero() {
         <motion.h1 variants={fadeUp} className="text-[44px] font-black leading-[1.05] tracking-[-0.02em] sm:text-display">
           Governo Zero Clique,
           <br />
-          em <span className="text-accent">tokens</span> e componentes.
+          em <span className="text-highlight">tokens</span> e componentes.
         </motion.h1>
         <motion.p variants={fadeUp} className="max-w-[620px] text-body-large text-text-secondary">
           A base visual das interfaces da Gove: cores, tipografia, espaçamento e componentes para produtos que sabem,

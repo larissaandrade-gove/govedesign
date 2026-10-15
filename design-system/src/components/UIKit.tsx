@@ -6,6 +6,7 @@ import { Input } from './ui/Input';
 import { Reveal, RevealItem, StaggerGrid } from './Reveal';
 import { SectionHeader } from './SectionHeader';
 import { CityBackdrop } from './CityBackdrop';
+import { useTheme } from '../lib/theme';
 
 function Demo({ title, code, children }: { title: string; code: string; children: React.ReactNode }) {
   return (
@@ -27,10 +28,11 @@ const LAYERS = [
 
 export function UIKit() {
   const [sent, setSent] = useState(false);
+  const [theme] = useTheme();
   return (
     <section id="componentes" className="relative isolate scroll-mt-[72px] overflow-hidden border-t border-secondary/60">
       {/* Skyline discreto ao fundo, com overlay para não competir com os componentes */}
-      <CityBackdrop className="absolute inset-x-0 bottom-0 -z-10 h-[420px] w-full opacity-40" seed={3} density={0.8} />
+      <CityBackdrop className="absolute inset-x-0 bottom-0 -z-10 h-[420px] w-full opacity-40" seed={3} density={0.8} theme={theme} />
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-background/90 to-background/70" />
 
       <div className="gutter py-space-12">
@@ -71,7 +73,7 @@ export function UIKit() {
               {LAYERS.map(({ icon: Icon, title, text }) => (
                 <RevealItem key={title}>
                   <Card className="flex h-full flex-col gap-space-2">
-                    <span className="flex size-12 items-center justify-center rounded-md bg-secondary text-accent">
+                    <span className="flex size-12 items-center justify-center rounded-md bg-secondary text-highlight">
                       <Icon className="size-6" aria-hidden />
                     </span>
                     <h4 className="font-display text-h3 font-bold text-text-primary">{title}</h4>
@@ -100,7 +102,7 @@ export function UIKit() {
                 </div>
                 {sent ? (
                   <p className="flex items-center gap-space-1 rounded-md bg-background p-space-2 text-body text-text-primary" role="status">
-                    <CheckCircle2 className="size-5 text-accent" aria-hidden /> Pedido registrado nesta demonstração.
+                    <CheckCircle2 className="size-5 text-highlight" aria-hidden /> Pedido registrado nesta demonstração.
                   </p>
                 ) : (
                   <form

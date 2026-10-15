@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { radius, shadows } from '../data/tokens.js';
+import { radius, themeShadows } from '../data/tokens.js';
+import { useTheme } from '../lib/theme';
 import { hoverTransition } from '../lib/motion';
 import { Reveal, RevealItem, StaggerGrid } from './Reveal';
 import { SectionHeader } from './SectionHeader';
@@ -13,10 +14,12 @@ const SHADOW_USE: Record<string, string> = {
 };
 
 export function RadiusShadows() {
+  const [theme] = useTheme();
+  const shadows = themeShadows[theme] as Record<string, string>;
   return (
     <section id="raio-sombras" className="gutter scroll-mt-[72px] border-t border-secondary/60 py-space-12">
       <SectionHeader id="raio-sombras" token="tokens / radius · shadow" title="Raio e sombras">
-        Profundidade com sombra escura; o neon fica reservado a botões e CTAs.
+        Sombras suaves no tema claro, profundas no escuro; o brilho fica reservado a botões e CTAs.
       </SectionHeader>
 
       <Reveal>
@@ -54,10 +57,10 @@ export function RadiusShadows() {
               className={`flex h-40 flex-col justify-end gap-1 rounded-lg p-space-3 ${
                 token === 'glow-yellow' ? 'border border-accent/40 bg-surface' : token === 'glow-purple' ? 'border border-primary/60 bg-surface' : 'bg-surface'
               }`}
-              style={{ boxShadow: (shadows as Record<string, string>)[token] }}
+              style={{ boxShadow: `var(--shadow-${token})` }}
             >
               <p className="font-display text-body font-bold text-text-primary">shadow-{token}</p>
-              <p className="token break-all text-[12px]">{(shadows as Record<string, string>)[token]}</p>
+              <p className="token break-all text-[12px]">{shadows[token]}</p>
               <p className="text-caption text-text-secondary">{use}</p>
             </motion.div>
           </RevealItem>
