@@ -8,6 +8,8 @@
     "dev": "node --watch backend/server.js",
     "db:init": "node db/init.js",
     "test": "node --test test/*.test.js",
+    "revisor:artifact:install": "npm --prefix frontend/revisor-artifact install",
+    "revisor:artifact": "npm --prefix frontend/revisor-artifact run build",
     "criativos:install": "npm --prefix criativos install",
     "criativos:dev": "npm --prefix criativos run dev -- --port 5173",
     "criativos:build": "npm --prefix criativos run build",

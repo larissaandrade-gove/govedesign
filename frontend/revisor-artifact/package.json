@@ -1,0 +1,17 @@
+{
+  "name": "gove-revisor-artifact",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Build 100% client-side (arquivo HTML único) do Revisor de identidade visual para o artefato do Design System.",
+  "scripts": {
+    "prebuild": "node scripts/build-data.mjs",
+    "build": "vite build && node scripts/emit.mjs"
+  },
+  "devDependencies": {
+    "buffer": "^6.0.3",
+    "fflate": "^0.8.3",
+    "vite": "^6.4.4",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}

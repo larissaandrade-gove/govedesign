@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revisor de identidade</title>
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Gove Digital · Identidade visual</p>
+        <h1>Revisor de identidade visual</h1>
+        <p class="lead">Envie uma peça de marketing ou um slide e receba um relatório com o que está conforme, o que precisa de atenção e como corrigir.</p>
+        <p class="local-note">A análise roda inteira neste navegador: a peça não é enviada para nenhum servidor.</p>
+      </div>
+      <button type="button" class="btn-ghost theme-toggle" id="theme-toggle" hidden aria-pressed="false">Tema escuro</button>
+    </header>
+
+    <section class="card" aria-labelledby="t-enviar">
+      <h2 id="t-enviar">Revisar uma peça</h2>
+      <form id="audit-form">
+        <div class="modes">
+          <div class="mode">
+            <h3>Modo A · Vetorial</h3>
+            <p>Fabric.js JSON (<code>canvas.toJSON()</code>). Checagens exatas de fonte, cor, gradiente, margens, logomarca, ícones e QR code.</p>
+          </div>
+          <div class="mode">
+            <h3>Modo B · Raster</h3>
+            <p>PNG ou JPG final. Paleta e contraste por pixel; tipografia, logomarca e ícones ficam para revisão manual.</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Peça (.json, .png ou .jpg)</span>
+          <input type="file" name="file" accept=".json,application/json,image/png,image/jpeg,image/webp" required>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>Tipo de peça</span>
+            <select name="pieceType">
+              <option value="">Detectar pelo arquivo</option>
+              <option value="post">Post</option>
+              <option value="story">Story</option>
+              <option value="flyer">Flyer</option>
+              <option value="slide">Slide</option>
+              <option value="banner">Banner</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Largura do artboard (px, opcional)</span>
+            <input type="number" name="artboardWidth" min="1" inputmode="numeric">
+          </label>
+          <label class="field">
+            <span>Altura do artboard (px, opcional)</span>
+            <input type="number" name="artboardHeight" min="1" inputmode="numeric">
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Regiões de texto/QR code (.regions.json, opcional — Modo B)</span>
+          <input type="file" name="regions" accept=".json,application/json">
+        </label>
+
+        <button class="btn-accent" type="submit">Revisar peça</button>
+        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="result" class="card" hidden aria-labelledby="t-resultado">
+      <div class="result-head">
+        <div>
+          <p class="eyebrow" id="r-mode"></p>
+          <h2 id="t-resultado">Resultado</h2>
+          <p class="file-name" id="r-file"></p>
+        </div>
+        <span class="pill" id="r-status"></span>
+      </div>
+      <div id="r-callouts"></div>
+      <div class="tiles" id="r-tiles"></div>
+      <div class="actions">
+        <button type="button" class="btn-primary" id="r-zip">Baixar ZIP (relatório + preview)</button>
+        <button type="button" class="btn-ghost" id="r-html">Baixar relatório HTML</button>
+        <button type="button" class="btn-ghost" id="r-json">Baixar relatório JSON</button>
+      </div>
+      <p class="form-status" id="r-dl-status" role="status" aria-live="polite"></p>
+      <div class="result-grid">
+        <figure class="preview" id="r-figure">
+          <img id="r-preview" alt="Preview da peça com os itens não conformes destacados e numerados">
+          <figcaption>Os números no preview correspondem aos itens ao lado. Vermelho: não conforme · amarelo: atenção.</figcaption>
+        </figure>
+        <ol class="checks" id="r-checks"></ol>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="t-qr">
+      <h2 id="t-qr">Gerar QR code</h2>
+      <p>Gerado já no padrão Gove: módulos azul-noite sobre branco sólido, com zona de silêncio de 4 módulos.</p>
+      <form id="qr-form" class="row">
+        <label class="field grow">
+          <span>Conteúdo (URL ou texto)</span>
+          <input type="text" name="text" value="https://www.gove.digital/" required>
+        </label>
+        <label class="field">
+          <span>Tamanho (px)</span>
+          <input type="number" name="width" value="600" min="150">
+        </label>
+        <button class="btn-primary" type="submit">Gerar QR code</button>
+      </form>
+      <div id="qr-out" class="qr-out"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-hist">
+      <div class="result-head">
+        <h2 id="t-hist">Histórico de auditorias</h2>
+        <span class="store-mode" id="store-mode"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Arquivo</th><th>Modo</th><th>Status</th><th>Reprovados</th><th>Arquivos</th></tr></thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+      <p class="hint">O histórico guarda só o resumo de cada revisão. Os relatórios completos e o ZIP podem ser baixados enquanto esta página estiver aberta.</p>
+    </section>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
