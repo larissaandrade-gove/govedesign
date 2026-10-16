@@ -13,6 +13,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { goveLogos } from "./brand-logos";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const app = path.resolve(here, "..");
@@ -24,6 +25,7 @@ const swaps: Record<string, string> = {
   [path.join(src, "lib/gove/storage.ts")]: path.join(here, "storage.ts"),
   [path.join(src, "lib/gove/auth.tsx")]: path.join(here, "auth.tsx"),
   [path.join(src, "routes/__root.tsx")]: path.join(here, "root.tsx"),
+  [path.join(src, "components/gove/AppBrand.tsx")]: path.join(here, "AppBrand.tsx"),
 };
 
 /** Ajustes pontuais no código do app (falham o build se o trecho mudar). */
@@ -110,7 +112,7 @@ export default defineConfig({
     },
     dedupe: ["react", "react-dom", "@tanstack/react-router"],
   },
-  plugins: [artifactSwaps(), react(), tailwindcss(), viteSingleFile({ removeViteModuleLoader: true })],
+  plugins: [goveLogos(path.resolve(app, "..")), artifactSwaps(), react(), tailwindcss(), viteSingleFile({ removeViteModuleLoader: true })],
   build: {
     outDir,
     emptyOutDir: false,

@@ -17,6 +17,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { goveLogos } from "./brand-logos";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const linksRoot = path.resolve(here, "..");
@@ -37,7 +38,7 @@ export default defineConfig({
   define: {
     __GOVE_SHORT_DOMAIN__: JSON.stringify(shortDomain),
   },
-  plugins: [react(), tailwindcss(), viteSingleFile({ removeViteModuleLoader: true })],
+  plugins: [goveLogos(repoRoot), react(), tailwindcss(), viteSingleFile({ removeViteModuleLoader: true })],
   resolve: {
     alias: [
       { find: /^@\/lib\/short-links$/, replacement: path.resolve(here, "lib/short-links.ts") },

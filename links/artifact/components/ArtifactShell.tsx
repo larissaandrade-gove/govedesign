@@ -3,9 +3,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info, LayoutDashboard, Link2, Moon, Plus, Sun } from "lucide-react";
 import { currentTheme, isEmbedded, setStandaloneTheme, type Theme } from "@gove/runtime";
 
-import { GoveMark } from "@/components/GoveMark";
 import { getShortDomainLabel } from "../lib/short-domain";
 import { clicksCol, linksCol, ready, storageMode } from "../lib/store";
+import { GoveLogo } from "./GoveLogo";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -144,8 +144,9 @@ export function ArtifactShell({ children }: { children: ReactNode }) {
               aria-label="Gove Links — início"
               className="flex min-h-11 items-center gap-2"
             >
-              <GoveMark />
-              <span className="hidden text-xs font-semibold uppercase tracking-widest text-muted-foreground min-[480px]:inline">
+              {/* Fundo real do cabeçalho: branco (claro) / #20133D (escuro). */}
+              <GoveLogo height={24} box={[76, 24]} light="#FFFFFF" dark="#20133D" />
+              <span className="hidden text-sm font-semibold text-muted-foreground min-[480px]:inline">
                 Links
               </span>
             </Link>

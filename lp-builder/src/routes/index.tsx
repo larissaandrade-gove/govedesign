@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, FilePlus2, LayoutTemplate, LogOut, Pencil, Trash2 } from "lucide-react";
+import { Clock, FilePlus2, LogOut, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { HERO_PRESETS, pageFromPreset, type HeroPresetId } from "@/lib/gove/presets";
 import { createPage, deletePage, listPages, type StoredPage } from "@/lib/gove/storage";
@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PresetThumb } from "@/components/gove/PresetThumb";
+import { AppBrand } from "@/components/gove/AppBrand";
 import { useAuth } from "@/lib/gove/auth";
 
 export const Route = createFileRoute("/")({
@@ -66,15 +67,7 @@ function Dashboard() {
     <main className="min-h-screen bg-secondary">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
-          <div className="flex min-h-11 items-center gap-3">
-            <span
-              className="flex size-9 items-center justify-center rounded-xl"
-              style={{ backgroundColor: "var(--gove-primary)" }}
-            >
-              <LayoutTemplate className="size-5" color="#FFFFFF" aria-hidden />
-            </span>
-            <span className="text-lg font-bold">GOVE LP Builder</span>
-          </div>
+          <AppBrand />
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
             <Button variant="ghost" size="iconTouch" onClick={signOut} aria-label="Sair" title="Sair">
