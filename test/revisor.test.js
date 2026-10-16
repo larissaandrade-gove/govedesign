@@ -50,7 +50,7 @@ test('banco de tokens: seed, edição e histórico', async () => {
   assert.ok(t.colors.filter((c) => !c.role.startsWith('brand-')).every((c) => c.placeholder));
   // Cores e arquivos oficiais da logomarca (brand/logos.js) não são provisórios
   assert.ok(t.colors.filter((c) => c.role.startsWith('brand-')).every((c) => !c.placeholder));
-  assert.equal(t.logos.length, 6);
+  assert.equal(t.logos.length, 7);
   assert.ok(t.logos.every((l) => !l.placeholder));
   assert.ok(['hig', 'typography', 'text_palette'].every((k) => t.settings[k]));
   upsertToken(db, { category: 'color', name: 'amarelo-ouro', value: { hex: '#FFC72C', role: 'accent' } });
@@ -111,7 +111,7 @@ test('Modo A: detecta cada tipo de desvio', async () => {
   assert.ok(failed(/Sobreposição/), 'sobreposição');
   assert.ok(failed(/Logomarca com filtros/), 'logo recolorido');
   assert.ok(failed(/Contraste da logomarca insuficiente/), 'logo roxa sobre fundo escuro');
-  assert.match(byTitle(r.checks, /Contraste da logomarca insuficiente/)[0].suggestion, /gove-logo-branco\.webp/);
+  assert.match(byTitle(r.checks, /Contraste da logomarca insuficiente/)[0].suggestion, /gove-logo-branco-amarelo\.webp/);
   assert.ok(failed(/Logomarca deformada/), 'logo distorcido');
   assert.ok(failed(/QR code fora de fundo branco/), 'QR sobre gradiente');
   assert.ok(byTitle(r.checks, /Possível ícone não identificado/).length, 'ícone fora dos sets');

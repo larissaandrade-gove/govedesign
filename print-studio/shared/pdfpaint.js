@@ -12,7 +12,7 @@ export function cmyk(key) {
 }
 
 /** Chaves de cor de cada versão da logomarca oficial. */
-export const LOGO_VARIANT_COLORS = { cor: ['roxoGove', 'amareloGove'], roxo: ['roxoGove'], branco: ['branco'] };
+export const LOGO_VARIANT_COLORS = { cor: ['roxoGove', 'amareloGove'], roxo: ['roxoGove'], branco: ['branco'], 'branco-amarelo': ['branco', 'amareloGove'] };
 
 /**
  * Separa um logo RGBA em máscaras de 1 bit, uma por cor da marca (pixel opaco →

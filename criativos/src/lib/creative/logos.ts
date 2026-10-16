@@ -18,13 +18,14 @@ import simboloBranco from "@/assets/logos/gove-simbolo-branco.png";
 import logoCor from "@/assets/logos/gove-logo-cor.webp";
 import logoRoxo from "@/assets/logos/gove-logo-roxo.webp";
 import logoBranco from "@/assets/logos/gove-logo-branco.webp";
+import logoBrancoAmarelo from "@/assets/logos/gove-logo-branco-amarelo.webp";
 
 export const LOGO_MIN_CONTRAST = 4.5;
 
 export const LOGO_COLORS = { roxo: "#3E0099", amarelo: "#FEC526", branco: "#FFFFFF" } as const;
 
 export type LogoKind = "simbolo" | "logotipo";
-export type LogoVariantId = "cor" | "roxo" | "branco";
+export type LogoVariantId = "cor" | "branco-amarelo" | "roxo" | "branco";
 
 export type LogoVariant = {
   id: LogoVariantId;
@@ -44,6 +45,13 @@ export const LOGO_VARIANTS: LogoVariant[] = [
     label: "Colorida",
     colors: [LOGO_COLORS.roxo, LOGO_COLORS.amarelo],
     urls: { simbolo: simboloCor, logotipo: logoCor },
+  },
+  {
+    // Preferida em fundos escuros. Não há símbolo branco + amarelo: o símbolo usa o branco.
+    id: "branco-amarelo",
+    label: "Branca + amarelo",
+    colors: [LOGO_COLORS.branco, LOGO_COLORS.amarelo],
+    urls: { simbolo: simboloBranco, logotipo: logoBrancoAmarelo },
   },
   {
     id: "roxo",

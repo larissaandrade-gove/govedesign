@@ -14,7 +14,7 @@
 //
 // Regra: toda cor presente na logomarca precisa de contraste ≥ 4,5:1 com o
 // fundo onde ela é aplicada. A versão colorida só entra quando roxo E amarelo
-// passam; senão, a monocromática que passar. Sem nenhuma que passe, o fundo
+// passam; em fundos escuros, a branca com arco amarelo; senão, a monocromática que passar. Sem nenhuma que passe, o fundo
 // precisa mudar (o retorno traz `ok: false` e o melhor contraste possível).
 
 export const LOGO_MIN_CONTRAST = 4.5;
@@ -34,10 +34,10 @@ export const LOGOS = {
     aspect: 2000 / 637,
     variants: [
       { id: 'cor', file: 'gove-logo-cor.webp', colors: [LOGO_COLORS.roxo, LOGO_COLORS.amarelo] },
+      // Preferida em fundos escuros: letras brancas + arco amarelo
+      { id: 'branco-amarelo', file: 'gove-logo-branco-amarelo.webp', colors: [LOGO_COLORS.branco, LOGO_COLORS.amarelo] },
       { id: 'roxo', file: 'gove-logo-roxo.webp', colors: [LOGO_COLORS.roxo] },
       { id: 'branco', file: 'gove-logo-branco.webp', colors: [LOGO_COLORS.branco] },
-      // Variação para fundos escuros: letras brancas + arco amarelo
-      { id: 'branco-amarelo', file: 'gove-logo-branco-amarelo.webp', colors: [LOGO_COLORS.branco, LOGO_COLORS.amarelo] },
     ],
   },
 };

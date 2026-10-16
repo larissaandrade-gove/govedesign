@@ -4,6 +4,7 @@ import { LOGO_VARIANTS, type LogoVariantId, type VariantStatus } from "@/lib/cre
 /** Fundo de amostra em que cada versão aparece com contraste na prévia. */
 const SWATCH: Record<LogoVariantId, string> = {
   cor: "#FFFFFF",
+  "branco-amarelo": "#20133D",
   roxo: "#F4F4F4",
   branco: "#20133D",
 };
