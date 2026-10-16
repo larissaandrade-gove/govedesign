@@ -99,11 +99,12 @@ export function Sidebar({ view }: { view: View }) {
     <>
       {/* Computador: barra lateral que recolhe para só ícones */}
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden flex-col gap-space-2 overflow-y-auto border-r border-secondary/70 bg-background/90 px-space-1 py-space-2 backdrop-blur-md transition-[width] duration-300 ease-entry lg:flex"
+        className="fixed inset-y-0 left-0 z-30 hidden flex-col gap-space-2 overflow-hidden border-r border-secondary/70 bg-background/90 px-space-1 py-space-2 backdrop-blur-md transition-[width] duration-300 ease-entry lg:flex"
         style={{ width: 'var(--rail, 248px)' }}
         aria-label="Navegação"
       >
-        <div className={`flex items-center gap-space-1 pb-space-2 ${open ? 'justify-between pl-space-1' : 'flex-col'}`}>
+        {/* Topo fixo: logomarca e recolher */}
+        <div className={`flex shrink-0 items-center gap-space-1 pb-space-1 ${open ? 'justify-between pl-space-1' : 'flex-col'}`}>
           <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
             {open ? <GoveLogo kind="logotipo" height={26} /> : <GoveLogo kind="simbolo" height={32} />}
           </a>
@@ -118,7 +119,8 @@ export function Sidebar({ view }: { view: View }) {
             <PanelLeft className="size-5" aria-hidden />
           </button>
         </div>
-        <nav aria-label="Seções do design system">
+        {/* Só a lista de seções rola */}
+        <nav aria-label="Seções do design system" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
           <ul className="flex flex-col gap-1">
             {SECTIONS.map(({ id, label, icon }) => (
               <li key={id}>
@@ -136,7 +138,8 @@ export function Sidebar({ view }: { view: View }) {
             ))}
           </ul>
         </nav>
-        <div className="mt-auto flex flex-col gap-space-1">
+        {/* Rodapé fixo: tema e sair */}
+        <div className="flex shrink-0 flex-col gap-space-1 border-t border-secondary/70 pt-space-2">
           <ThemeToggle compact={!open} />
           <LogoutButton compact={!open} />
         </div>
