@@ -3,7 +3,7 @@ import { backgroundCss } from "./background";
 import { imageFrameCss } from "./imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "./animations";
 import { embedUrl } from "./video";
-import type { BoxProps, Leaf, PageContent, RowBlock, SectionBlock } from "./types";
+import type { BoxProps, ImageCredit, Leaf, PageContent, RowBlock, SectionBlock } from "./types";
 import { cursorCss, followerCss, followerScript } from "./cursor";
 
 const esc = (value: string) =>
@@ -81,7 +81,9 @@ function leafHtml(leaf: Leaf): string {
         "object-fit": frame.objectFit,
         display: "inline-block",
       });
-      return `<div style="${wrapper}"><img src="${esc(leaf.src)}" alt="${esc(leaf.alt)}" style="${img}" /></div>`;
+      const credit = leaf.credit ? creditHtml(leaf.credit, false) : "";
+      const data = leaf.credit ? ` data-pexels-id="${leaf.credit.id}"` : "";
+      return `<div style="${wrapper}"><img src="${esc(leaf.src)}" alt="${esc(leaf.alt)}"${data} style="${img}" />${credit}</div>`;
     }
     case "card": {
       const card = styleString({
@@ -166,12 +168,43 @@ function rowHtml(row: RowBlock): string {
         .map((pair) => pair.split(/:(.+)/) as [string, string]),
     ),
   });
-  return `<div class="gove-row ${bgAnimClass(row.box.animation)}" style="${style}">${cols}</div>`;
+  const credit = row.box.fill === "image" && row.box.bgImage && row.box.bgCredit ? row.box.bgCredit : null;
+  const data = credit ? ` data-pexels-id="${credit.id}"` : "";
+  return `<div class="gove-row ${bgAnimClass(row.box.animation)}"${data} style="${credit ? "position:relative;" : ""}${style}">${cols}${credit ? creditHtml(credit, true) : ""}</div>`;
+}
+
+/**
+ * Crédito discreto da foto do Pexels (atribuição recomendada pela licença):
+ * comentário + selo pequeno com contraste fixo (branco sobre roxo escuro).
+ */
+function creditHtml(credit: ImageCredit, overlay: boolean): string {
+  const chip = styleString({
+    display: "inline-block",
+    margin: overlay ? undefined : "6px 0 0",
+    position: overlay ? "absolute" : undefined,
+    right: overlay ? "8px" : undefined,
+    bottom: overlay ? "8px" : undefined,
+    "font-size": "12px",
+    "line-height": "1.4",
+    padding: "2px 8px",
+    "border-radius": "4px",
+    background: "rgba(32,19,61,0.85)",
+    color: "#FFFFFF",
+  });
+  const link = "color:#FFFFFF;text-decoration:underline;";
+  const comment = `Foto: ${credit.photographer} no Pexels (${credit.pexelsUrl})`.replace(/--+/g, "-").replace(/[<>]/g, "");
+  return `<!-- ${comment} --><small class="gove-credit" style="${chip}">Foto: <a href="${esc(credit.photographerUrl)}" target="_blank" rel="noopener" style="${link}">${esc(credit.photographer)}</a> / <a href="${esc(credit.pexelsUrl)}" target="_blank" rel="noopener" style="${link}">Pexels</a></small>`;
 }
 
 function sectionHtml(section: SectionBlock): string {
   const cls = bgAnimClass(section.box.animation);
-  return `<section${cls ? ` class="${cls}"` : ""} style="${boxStyle(section.box)}"><div class="gove-container" style="max-width:1120px;margin:0 auto;">${section.children.map(rowHtml).join("")}</div></section>`;
+  const credit =
+    section.box.fill === "image" && section.box.bgImage && section.box.bgCredit
+      ? section.box.bgCredit
+      : null;
+  const style = credit ? `position:relative;${boxStyle(section.box)}` : boxStyle(section.box);
+  const data = credit ? ` data-pexels-id="${credit.id}"` : "";
+  return `<section${cls ? ` class="${cls}"` : ""}${data} style="${style}"><div class="gove-container" style="max-width:1120px;margin:0 auto;">${section.children.map(rowHtml).join("")}</div>${credit ? creditHtml(credit, true) : ""}</section>`;
 }
 
 function hasCountdown(page: PageContent) {

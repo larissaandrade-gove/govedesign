@@ -26,6 +26,8 @@ const swaps: Record<string, string> = {
   [path.join(src, "lib/gove/auth.tsx")]: path.join(here, "auth.tsx"),
   [path.join(src, "routes/__root.tsx")]: path.join(here, "root.tsx"),
   [path.join(src, "components/gove/AppBrand.tsx")]: path.join(here, "AppBrand.tsx"),
+  // Banco de imagens: rota /api/pexels do servidor do Design System (a chave fica lá).
+  [path.join(src, "lib/gove/pexelsClient.ts")]: path.join(here, "pexelsClient.ts"),
 };
 
 /** Ajustes pontuais no código do app (falham o build se o trecho mudar). */
@@ -58,10 +60,6 @@ const patches: Record<string, Patch[]> = {
     ],
     [/function download\(\) \{[\s\S]*?\n  \}\n/, "function download() {\n    void downloadCode(nome, code);\n  }\n"],
     ["Baixar como .txt", "Baixar .html"],
-  ],
-  "components/gove/PexelsSearch.tsx": [
-    [/^/, 'import { openExternal } from "@gove/runtime";\n'],
-    ['window.open(url, "_blank", "noopener,noreferrer");', "openExternal(url);"],
   ],
 };
 

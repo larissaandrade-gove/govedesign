@@ -1,6 +1,6 @@
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
-import { PexelsSearch } from "./PexelsSearch";
+import { PexelsSearch, creditFor } from "./PexelsSearch";
 import { checkContrast } from "@/lib/gove/contrast";
 import { BUTTON_VARIANTS } from "@/lib/gove/buttonStyle";
 import { BG_ANIMATIONS, BUTTON_ANIMATIONS } from "@/lib/gove/animations";
@@ -245,9 +245,17 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
       {box.fill === "image" ? (
         <>
           <Field label="Imagem de fundo (URL)">
-            <Input value={box.bgImage} onChange={(e) => onChange({ bgImage: e.target.value })} placeholder="https://…" />
+            <Input
+              value={box.bgImage}
+              onChange={(e) => onChange({ bgImage: e.target.value, bgCredit: null })}
+              placeholder="https://…"
+            />
           </Field>
-          <PexelsSearch />
+          <PexelsSearch
+            orientation="landscape"
+            credit={box.bgImage ? box.bgCredit : null}
+            onPick={(photo) => onChange({ bgImage: photo.src.large, bgCredit: creditFor(photo) })}
+          />
           <Field label="Ajuste da imagem">
             <select
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -653,9 +661,22 @@ export function PropertiesPanel({
       {node.type === "image" ? (
         <>
           <Field label="URL da imagem">
-            <Input value={node.src} onChange={(e) => onChange({ src: e.target.value })} placeholder="https://…" />
+            <Input
+              value={node.src}
+              onChange={(e) => onChange({ src: e.target.value, credit: null })}
+              placeholder="https://…"
+            />
           </Field>
-          <PexelsSearch />
+          <PexelsSearch
+            credit={node.src ? node.credit : null}
+            onPick={(photo) =>
+              onChange({
+                src: photo.src.large,
+                alt: node.alt.trim() ? node.alt : photo.alt,
+                credit: creditFor(photo),
+              })
+            }
+          />
           <Field label="Upload">
             <input
               type="file"
@@ -665,7 +686,7 @@ export function PropertiesPanel({
                 const file = e.target.files?.[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = () => onChange({ src: String(reader.result) });
+                reader.onload = () => onChange({ src: String(reader.result), credit: null });
                 reader.readAsDataURL(file);
               }}
             />

@@ -22,6 +22,7 @@ export function normalizeBox(box: BoxProps): BoxProps {
     paddingY: box.paddingY,
     paddingX: box.paddingX,
     animation: box.animation ?? "none",
+    bgCredit: box.bgCredit ?? null,
   };
 }
 

@@ -7,6 +7,15 @@ export type BgPosition = "center" | "top" | "bottom" | "left" | "right";
 export type BgAnimation = "none" | "pan" | "kenburns" | "reveal" | "shimmer";
 export type ButtonAnimation = "none" | "pulse" | "float" | "glow" | "shine";
 
+/** Crédito de foto de banco de imagens (Pexels pede atribuição ao fotógrafo). */
+export interface ImageCredit {
+  source: "pexels";
+  id: number;
+  photographer: string;
+  photographerUrl: string;
+  pexelsUrl: string;
+}
+
 export interface BoxProps {
   fill: BoxFill;
   bgColor: string;
@@ -27,6 +36,8 @@ export interface BoxProps {
   paddingY: number; // múltiplos de 8
   paddingX: number; // múltiplos de 8
   animation?: BgAnimation;
+  /** Crédito da imagem de fundo vinda do Pexels (null = imagem própria). */
+  bgCredit?: ImageCredit | null;
 }
 
 export interface TextStyle {
@@ -66,6 +77,8 @@ export interface ImageBlock {
   frame?: ImageFrame;
   align: Align;
   width: number; // %
+  /** Crédito da foto vinda do Pexels (null = imagem própria). */
+  credit?: ImageCredit | null;
 }
 
 export interface CardBlock {
