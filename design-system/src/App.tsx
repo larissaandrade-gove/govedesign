@@ -3,12 +3,11 @@ import { AppPage } from './components/AppPage';
 import { Apps } from './components/Apps';
 import { ColorPalette } from './components/ColorPalette';
 import { Footer } from './components/Footer';
+import { BackToTop } from './components/BackToTop';
 import { Diretrizes } from './components/Diretrizes';
 import { Logomarca } from './components/Logomarca';
 import { Hero } from './components/Hero';
-import { RadiusShadows } from './components/RadiusShadows';
 import { Sidebar } from './components/Sidebar';
-import { Spacing } from './components/Spacing';
 import { Typography } from './components/Typography';
 import { UIKit } from './components/UIKit';
 import { useView } from './lib/router';
@@ -44,13 +43,12 @@ export default function App() {
             <ColorPalette />
             <Logomarca />
             <Typography />
-            <Spacing />
-            <RadiusShadows />
             <UIKit />
             <Diretrizes />
           </>
         )}
         {view.kind !== 'app' && <Footer />}
+        <BackToTop />
       </main>
     </div>
   );

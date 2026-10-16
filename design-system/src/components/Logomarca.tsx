@@ -47,7 +47,10 @@ export function Logomarca() {
               <th scope="col" className="px-space-2 py-space-1 font-semibold">Versão</th>
               {BACKGROUNDS.map((bg) => (
                 <th key={bg.hex} scope="col" className="px-space-1 py-space-1 font-semibold">
-                  {bg.name}
+                  <span className="flex items-center gap-1">
+                    <span className="size-4 shrink-0 rounded-sm border border-secondary" style={{ background: bg.hex }} aria-hidden />
+                    {bg.name}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -58,24 +61,29 @@ export function Logomarca() {
                 <tr key={v.file} className="border-t border-secondary">
                   <th scope="row" className="px-space-2 py-space-1 text-left font-normal">
                     <span className="flex items-center gap-space-1">
-                      <span className="flex h-8 w-12 items-center justify-center rounded-sm bg-surface">
-                        <img src={logoSrc(v.file)} alt="" className="max-h-6 max-w-10" style={v.id === 'branco' ? { filter: 'drop-shadow(0 0 1px #20133D)' } : undefined} />
+                      <span className={`flex h-8 w-12 items-center justify-center rounded-sm ${v.id.startsWith('branco') ? 'bg-[#20133D]' : 'bg-surface'}`}>
+                        <img src={logoSrc(v.file)} alt="" className="max-h-6 max-w-10" style={v.id.startsWith('branco') ? { filter: 'drop-shadow(0 0 1px #20133D)' } : undefined} />
                       </span>
-                      <span className="text-text-primary">{kind === 'simbolo' ? 'Símbolo' : 'Logotipo'} {v.id}</span>
+                      <span className="text-text-primary">{kind === 'simbolo' ? 'Símbolo' : 'Logotipo'} {v.id.replace('-', ' + ')}</span>
                     </span>
                   </th>
-                  {BACKGROUNDS.map((bg) => {
-                    const min = Math.min(...v.colors.map((c) => contrast(c, bg.hex)));
-                    const ok = min >= LOGO_MIN_CONTRAST;
-                    return (
-                      <td key={bg.hex} className="px-space-1 py-space-1 tabular-nums">
-                        <span className={`inline-flex items-center gap-1 ${ok ? 'text-text-primary' : 'text-text-muted'}`}>
-                          {ok ? <Check className="size-4 text-highlight" aria-label="Aprovado" /> : <X className="size-4" aria-label="Reprovado" />}
-                          {min.toFixed(1).replace('.', ',')}
-                        </span>
-                      </td>
-                    );
-                  })}
+                  {BACKGROUNDS.map((bg) => (
+                    <td key={bg.hex} className="px-space-1 py-space-1 align-top tabular-nums">
+                      <span className="flex flex-col gap-0.5">
+                        {v.colors.map((c) => {
+                          const ratio = contrast(c, bg.hex);
+                          const ok = ratio >= LOGO_MIN_CONTRAST;
+                          return (
+                            <span key={c} className={`inline-flex items-center gap-1 ${ok ? 'text-text-primary' : 'text-text-muted'}`} title={`${c} sobre ${bg.hex}`}>
+                              <span className="size-3 shrink-0 rounded-full border border-secondary" style={{ background: c }} aria-hidden />
+                              {ratio.toFixed(1).replace('.', ',')}
+                              {ok ? <Check className="size-3.5 text-highlight" aria-label="Aprovado" /> : <X className="size-3.5" aria-label="Reprovado" />}
+                            </span>
+                          );
+                        })}
+                      </span>
+                    </td>
+                  ))}
                 </tr>
               )),
             )}

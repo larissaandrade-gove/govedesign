@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Box, Home, PanelLeft, Palette, Ruler, Type } from 'lucide-react';
+import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Type } from 'lucide-react';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
@@ -14,8 +14,6 @@ export const SECTIONS = [
   { id: 'cores', label: 'Cores', icon: Palette },
   { id: 'logomarca', label: 'Logomarca', icon: BadgeCheck },
   { id: 'tipografia', label: 'Tipografia', icon: Type },
-  { id: 'espacamento', label: 'Espaçamento', icon: Ruler },
-  { id: 'raio-sombras', label: 'Raio e sombras', icon: Box },
   { id: 'componentes', label: 'Componentes', icon: Blocks },
   { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
 ];
@@ -24,7 +22,7 @@ export const SECTIONS = [
 const TABS = [
   { id: 'inicio', label: 'Início', icon: Home },
   { id: 'aplicacoes', label: 'Apps', icon: AppWindow },
-  { id: 'cores', label: 'Tokens', icon: Palette, also: ['logomarca', 'tipografia', 'espacamento', 'raio-sombras'] },
+  { id: 'cores', label: 'Tokens', icon: Palette, also: ['logomarca', 'tipografia'] },
   { id: 'componentes', label: 'Componentes', icon: Blocks },
   { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
 ];

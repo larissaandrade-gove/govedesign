@@ -17,10 +17,11 @@ const PALETTES = {
   },
   // Dia: prédios em tintas de lilás sobre o branco, janelas discretas
   light: {
-    haze: ['rgba(162, 120, 218, 0)', 'rgba(162, 120, 218, 0.18)', 'rgba(90, 194, 205, 0.10)'],
-    layers: ['#EFE9F8', '#E3D8F3', '#D3C3EC'],
-    windows: ['rgba(255, 199, 44, 0.8)', 'rgba(255, 255, 255, 0.9)', 'rgba(162, 120, 218, 0.55)', 'rgba(90, 194, 205, 0.6)'],
-    antenna: 'rgba(61, 0, 153, 0.6)',
+    // Dia: Lilás claro e Ciano da identidade visual
+    haze: ['rgba(162, 120, 218, 0)', 'rgba(162, 120, 218, 0.14)', 'rgba(90, 194, 205, 0.18)'],
+    layers: ['#E4F4F6', '#E6DAF6', '#C9B2EC'],
+    windows: ['rgba(90, 194, 205, 0.75)', 'rgba(255, 255, 255, 0.95)', 'rgba(162, 120, 218, 0.6)', 'rgba(90, 194, 205, 0.5)'],
+    antenna: 'rgba(90, 194, 205, 0.9)',
     neonAlpha: 0.6,
   },
 };

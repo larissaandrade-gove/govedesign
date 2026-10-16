@@ -10,6 +10,7 @@
 //     gove-logo-cor.webp       roxo + arco amarelo
 //     gove-logo-roxo.webp      roxo
 //     gove-logo-branco.webp    branco
+//     gove-logo-branco-amarelo.webp  branco + arco amarelo (fundos escuros)
 //
 // Regra: toda cor presente na logomarca precisa de contraste ≥ 4,5:1 com o
 // fundo onde ela é aplicada. A versão colorida só entra quando roxo E amarelo
@@ -35,6 +36,8 @@ export const LOGOS = {
       { id: 'cor', file: 'gove-logo-cor.webp', colors: [LOGO_COLORS.roxo, LOGO_COLORS.amarelo] },
       { id: 'roxo', file: 'gove-logo-roxo.webp', colors: [LOGO_COLORS.roxo] },
       { id: 'branco', file: 'gove-logo-branco.webp', colors: [LOGO_COLORS.branco] },
+      // Variação para fundos escuros: letras brancas + arco amarelo
+      { id: 'branco-amarelo', file: 'gove-logo-branco-amarelo.webp', colors: [LOGO_COLORS.branco, LOGO_COLORS.amarelo] },
     ],
   },
 };
