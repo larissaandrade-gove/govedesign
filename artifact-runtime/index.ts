@@ -22,12 +22,12 @@ type AnyFn = (...args: any[]) => any;
 type ClaudeLike = { use: (name: string) => Promise<any> };
 
 /**
- * Capacidades do artefato (db, assets, downloads) ligadas só no build com
- * VITE_GOVE_CAPS=on. Desligadas, o código de acesso some do bundle e os apps
- * usam o armazenamento do navegador e o download comum.
+ * Capacidades do artefato (db, assets, downloads): ligadas por padrão; o build
+ * com VITE_GOVE_CAPS=off remove o código de acesso. Fora do artefato (ou sem a
+ * capacidade concedida) os apps usam o armazenamento do navegador e o download comum.
  */
 // @ts-ignore — substituído pelo Vite em tempo de build
-const CAPS_ENABLED = import.meta.env.VITE_GOVE_CAPS === 'on';
+const CAPS_ENABLED = import.meta.env.VITE_GOVE_CAPS !== 'off';
 
 function findClaude(): ClaudeLike | null {
   if (!CAPS_ENABLED) return null;

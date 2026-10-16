@@ -98,7 +98,18 @@ export function Diretrizes() {
     }
   }
 
-  function download() {
+  async function download() {
+    // Dentro do artefato do claude.ai, o arquivo sai pela capacidade de downloads (o visitante confirma)
+    try {
+      const c = (window as unknown as { claude?: { use: (n: string) => Promise<any> } }).claude;
+      const downloads = c ? await c.use('downloads') : null;
+      if (downloads) {
+        await downloads.save({ filename: 'diretrizes-gove.md', data: guide });
+        return;
+      }
+    } catch {
+      return; // recusado ou indisponível
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([guide], { type: 'text/markdown;charset=utf-8' }));
     a.download = 'diretrizes-gove.md';
