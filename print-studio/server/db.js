@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS municipios (
   ddd                          TEXT    NOT NULL CHECK (length(ddd) = 2),
   numero_whatsapp              TEXT    NOT NULL CHECK (length(numero_whatsapp) BETWEEN 8 AND 9),
   incluir_logo_banco_do_brasil INTEGER NOT NULL DEFAULT 0,
+  endereco                     TEXT,
+  email                        TEXT,
   logo_original                TEXT,
   logo_hires                   TEXT,
   logo_largura                 INTEGER,
@@ -52,7 +54,17 @@ export function openPrintDb(path = join(DATA_DIR, 'print-studio.sqlite')) {
   mkdirSync(FILES_DIR, { recursive: true });
   const db = new Database(path);
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+/** Migração segura: só acrescenta colunas que faltam (bases criadas antes dos campos novos). */
+function migrate(db) {
+  const cols = new Set(db.prepare('PRAGMA table_info(municipios)').all().map((c) => c.name));
+  const add = { endereco: 'TEXT', email: 'TEXT' };
+  db.transaction(() => {
+    for (const [c, type] of Object.entries(add)) if (!cols.has(c)) db.exec(`ALTER TABLE municipios ADD COLUMN ${c} ${type}`);
+  })();
 }
 
 const toMunicipio = (r) =>
@@ -80,18 +92,20 @@ export function saveMunicipio(db, data, id = null) {
     ddd: data.ddd,
     numero_whatsapp: data.numero_whatsapp,
     incluir_logo_banco_do_brasil: data.incluir_logo_banco_do_brasil ? 1 : 0,
+    endereco: data.endereco || null,
+    email: data.email || null,
   };
   if (id) {
     db.prepare(
       `UPDATE municipios SET nome_municipio=@nome_municipio, uf=@uf, ddd=@ddd, numero_whatsapp=@numero_whatsapp,
-       incluir_logo_banco_do_brasil=@incluir_logo_banco_do_brasil, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=@id`,
+       incluir_logo_banco_do_brasil=@incluir_logo_banco_do_brasil, endereco=@endereco, email=@email, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=@id`,
     ).run({ ...row, id });
     return getMunicipio(db, id);
   }
   const info = db
     .prepare(
-      `INSERT INTO municipios (nome_municipio, uf, ddd, numero_whatsapp, incluir_logo_banco_do_brasil)
-       VALUES (@nome_municipio, @uf, @ddd, @numero_whatsapp, @incluir_logo_banco_do_brasil)`,
+      `INSERT INTO municipios (nome_municipio, uf, ddd, numero_whatsapp, incluir_logo_banco_do_brasil, endereco, email)
+       VALUES (@nome_municipio, @uf, @ddd, @numero_whatsapp, @incluir_logo_banco_do_brasil, @endereco, @email)`,
     )
     .run(row);
   return getMunicipio(db, Number(info.lastInsertRowid));

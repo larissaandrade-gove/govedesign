@@ -63,6 +63,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
     fontes: worst(['fontes']),
     cmyk: worst(['cmyk']),
     qr: RANK[worst(['qr-min'], 'ok')] > 0 ? 'error' : worst(['qr-contraste']),
+    logo: worst(['logo-contraste']),
   };
 
   return (
@@ -118,19 +119,20 @@ export function Fila({ queue, onRemove, onClear }: Props) {
       {queue.length > 0 && <p className="mt-3 font-mono text-xs text-muted-foreground">{'{layout}_{municipio}_{ddmmaaaa}.pdf'}</p>}
 
       <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Verificação antes do download</DialogTitle>
             <DialogDescription className="sr-only">Os PDFs foram gerados e conferidos. Revise o resumo antes de baixar.</DialogDescription>
           </DialogHeader>
           {summary && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {(
                 [
                   ['Sangria', summary.sangria],
                   ['Fontes embutidas', summary.fontes],
                   ['Cores em CMYK', summary.cmyk],
                   ['Contraste QR', summary.qr],
+                  ['Logomarca ≥ 4,5:1', summary.logo],
                 ] as [string, Level][]
               ).map(([label, level]) => (
                 <div

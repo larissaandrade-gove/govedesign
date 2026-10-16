@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { api, type Municipio } from '@/lib/api';
+import { isEmail } from '../../../../shared/layout.js';
 
 type Props = {
   open: boolean;
@@ -22,6 +23,8 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
   const [ddd, setDdd] = useState('');
   const [numero, setNumero] = useState('');
   const [bb, setBb] = useState(false);
+  const [endereco, setEndereco] = useState('');
+  const [email, setEmail] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -33,12 +36,15 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
     setDdd(municipio?.ddd ?? '');
     setNumero(municipio?.numero_whatsapp ?? '');
     setBb(municipio?.incluir_logo_banco_do_brasil ?? false);
+    setEndereco(municipio?.endereco ?? '');
+    setEmail(municipio?.email ?? '');
     setLogo(null);
     setError('');
   }, [open, municipio]);
 
   const numeroOk = digits(numero).length >= 8 && digits(numero).length <= 9;
-  const valid = nome.trim() && digits(ddd).length === 2 && numeroOk && (municipio?.tem_logo || logo);
+  const emailOk = !email.trim() || isEmail(email);
+  const valid = nome.trim() && digits(ddd).length === 2 && numeroOk && emailOk && (municipio?.tem_logo || logo);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +56,8 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
     form.append('ddd', digits(ddd));
     form.append('numero_whatsapp', digits(numero));
     form.append('incluir_logo_banco_do_brasil', String(bb));
+    form.append('endereco', endereco.trim());
+    form.append('email', email.trim());
     if (logo) form.append('logo', logo);
     try {
       const saved = await api.saveMunicipio(form, municipio?.id);
@@ -66,7 +74,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
             <DialogTitle>{municipio ? 'Editar município' : 'Novo município'}</DialogTitle>
@@ -103,6 +111,25 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
                 <p id="mun-num-erro" className="text-xs text-destructive">Fixo (8 dígitos) ou celular (9 dígitos).</p>
               )}
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="mun-end">Endereço <span className="font-normal text-muted-foreground">· opcional</span></Label>
+            <Input id="mun-end" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua, número - Bairro - Cidade - UF" maxLength={200} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="mun-email">E-mail <span className="font-normal text-muted-foreground">· opcional</span></Label>
+            <Input
+              id="mun-email"
+              type="email"
+              inputMode="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="contato@municipio.gov.br"
+              aria-invalid={!emailOk}
+              aria-describedby={!emailOk ? 'mun-email-erro' : undefined}
+              maxLength={120}
+            />
+            {!emailOk && <p id="mun-email-erro" className="text-xs text-destructive">E-mail inválido.</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="mun-logo">Logo da prefeitura {municipio?.tem_logo && <span className="font-normal text-muted-foreground">· já cadastrado</span>}</Label>

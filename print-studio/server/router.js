@@ -5,13 +5,13 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
-import { LAYOUTS, onlyDigits, pdfFileName } from '../shared/layout.js';
+import { LAYOUTS, isEmail, onlyDigits, pdfFileName } from '../shared/layout.js';
 import { FONT_FILES } from '../shared/tokens.js';
 import {
   deleteMunicipio, getImagem, getLogosFixos, getMunicipio, listMunicipios, openPrintDb,
   saveImagem, saveMunicipio, setLogoFixo, setMunicipioLogo,
 } from './db.js';
-import { ImageInputError, readStored, storeLogo, storeMockupImage } from './images.js';
+import { BRAND_DIR, ImageInputError, readStored, storeLogo, storeMockupImage } from './images.js';
 import { fontPath, renderPiece } from './pdf.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,8 +33,11 @@ function validateMunicipio(body) {
   if (ddd.length !== 2) throw new InputError('DDD deve ter 2 dígitos.');
   if (numero.length < 8 || numero.length > 9) throw new InputError('Número de WhatsApp deve ter 8 ou 9 dígitos.');
   if (uf && !/^[A-Z]{2}$/.test(uf)) throw new InputError('UF deve ter 2 letras.');
+  const endereco = String(body.endereco ?? '').trim().slice(0, 200);
+  const email = String(body.email ?? '').trim().slice(0, 120);
+  if (email && !isEmail(email)) throw new InputError('E-mail inválido.');
   const bb = body.incluir_logo_banco_do_brasil;
-  return { nome_municipio: nome, uf, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: bb === true || bb === 'true' || bb === '1' || bb === 'on' };
+  return { nome_municipio: nome, uf, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: bb === true || bb === 'true' || bb === '1' || bb === 'on', endereco, email };
 }
 
 /** Monta a entrada do motor de layout e os arquivos de uma peça. */
@@ -44,6 +47,7 @@ function pieceContext(db, item, layoutId) {
   const fixos = getLogosFixos(db);
   const opts = item.options ?? {};
   const img = opts.mockup?.imageId ? getImagem(db, opts.mockup.imageId) : null;
+  const mode = opts.mockup?.mode ?? (img ? 'upload' : 'generated');
   const includeBB = opts.includeBB ?? municipio.incluir_logo_banco_do_brasil;
   const dims = (w, h) => (w && h ? { width: w, height: h } : null);
   return {
@@ -54,9 +58,10 @@ function pieceContext(db, item, layoutId) {
       services: opts.services ?? [],
       texts: opts.texts?.[layoutId] ?? {},
       overrides: opts.overrides?.[layoutId] ?? {},
-      mockup: img ? { imageId: img.id, width: img.largura, height: img.altura, focus: opts.mockup.focus } : null,
+      mockup: { mode, ...(img ? { imageId: img.id, width: img.largura, height: img.altura, focus: opts.mockup.focus } : {}) },
       assets: {
-        gove: fixos.gove ? dims(fixos.gove.largura, fixos.gove.altura) : null,
+        // Sem upload em "Logos fixos", vale a logomarca oficial (brand/logos)
+        gove: fixos.gove ? dims(fixos.gove.largura, fixos.gove.altura) : { official: true },
         bb: fixos.bb ? dims(fixos.bb.largura, fixos.bb.altura) : null,
         prefeitura: dims(municipio.logo_largura, municipio.logo_altura),
       },
@@ -126,7 +131,7 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
   router.get('/api/logos-fixos', (_req, res) => {
     const f = getLogosFixos(db);
     const view = (k) => (f[k] ? { width: f[k].largura, height: f[k].altura, avisos: f[k].avisos, atualizado: f[k].data_atualizacao } : null);
-    res.json({ gove: view('gove'), bb: view('bb') });
+    res.json({ gove: view('gove') ?? { official: true, width: 2000, height: 637, avisos: [], atualizado: '' }, bb: view('bb') });
   });
   router.put('/api/logos-fixos/:chave', upload.single('logo'), async (req, res, next) => {
     try {
@@ -139,6 +144,11 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
     } catch (err) {
       next(err);
     }
+  });
+  // Logomarca oficial da Gove (versões cor/roxo/branco), usada no preview
+  router.get('/marca/:file', (req, res) => {
+    if (!/^gove-(logo|simbolo)-(cor|roxo|branco)\.(webp|png)$/.test(req.params.file)) return res.status(404).end();
+    res.sendFile(join(BRAND_DIR, req.params.file), { maxAge: '1d' });
   });
   router.get('/api/logos-fixos/:chave/imagem', (req, res) => {
     const f = getLogosFixos(db)[req.params.chave];

@@ -8,6 +8,7 @@ import * as layout from '../../../shared/layout.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const DEFAULT_TEXTS = layout.DEFAULT_TEXTS as Record<string, Record<string, string>>;
 export const TEXT_LABELS = layout.TEXT_LABELS as Record<string, string>;
+export const DEFAULT_SERVICES = layout.DEFAULT_SERVICES as string[];
 export const { LAYOUTS, MAX_SERVICES_RECOMMENDED, formatPhone, gradientLine, pdfFileName, whatsappLink } = layout;
 /** Resultado do motor de layout (elementos em mm + checagens). */
 export const buildLayout = layout.buildLayout as (id: string, input: any, m: typeof measure) => any;

@@ -2,7 +2,8 @@
 // conversão para JPEG CMYK antes de entrar no PDF.
 import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { FILES_DIR } from './db.js';
 
@@ -65,14 +66,14 @@ export async function storeMockupImage(buffer) {
 export const readStored = (file) => readFileSync(join(FILES_DIR, file));
 
 /**
- * Recorte 9:16 centrado no foco (0–1) e conversão para JPEG CMYK no tamanho de
- * impressão a 300 dpi (sem ampliar além do original).
+ * Recorte na proporção da tela do celular (padrão 9:16), centrado no foco (0–1), e
+ * conversão para JPEG CMYK no tamanho de impressão a 300 dpi (sem ampliar além do original).
  */
-export async function mockupCmyk(file, focus, screenWmm) {
+export async function mockupCmyk(file, focus, screenWmm, aspect = 9 / 16) {
   const src = readStored(file);
   const { width: W, height: H } = await sharp(src).metadata();
-  const cropW = Math.min(W, Math.floor((H * 9) / 16));
-  const cropH = Math.floor((cropW * 16) / 9);
+  const cropW = Math.min(W, Math.floor(H * aspect));
+  const cropH = Math.floor(cropW / aspect);
   const fx = Math.min(1, Math.max(0, focus?.x ?? 0.5));
   const fy = Math.min(1, Math.max(0, focus?.y ?? 0.5));
   const left = Math.round((W - cropW) * fx);
@@ -98,4 +99,24 @@ export async function logoCmyk(file, widthMm) {
     .toColourspace('cmyk')
     .jpeg({ quality: 100, chromaSubsampling: '4:4:4' })
     .toBuffer();
+}
+
+// ---------------------------------------------------------------- logomarca Gove oficial
+
+/** Pasta das logomarcas oficiais (brand/logos na raiz do projeto). */
+export const BRAND_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'brand', 'logos');
+const rgbaCache = new Map();
+
+/** Pixels RGBA de um arquivo da logomarca oficial (cache em memória). */
+export async function brandRgba(file) {
+  if (!rgbaCache.has(file)) {
+    rgbaCache.set(file, sharp(readFileSync(join(BRAND_DIR, file))).ensureAlpha().raw().toBuffer({ resolveWithObject: true }).then(({ data, info }) => ({ data, width: info.width, height: info.height })));
+  }
+  return rgbaCache.get(file);
+}
+
+/** Pixels RGBA de um logo enviado (versão de trabalho). */
+export async function storedRgba(file) {
+  const { data, info } = await sharp(readStored(file)).resize({ width: 600, withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  return { data, width: info.width, height: info.height };
 }

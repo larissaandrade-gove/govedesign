@@ -15,7 +15,8 @@ import { ServiceIcon } from '@/components/studio/ServiceIcon';
 import { CheckList } from '@/components/studio/CheckList';
 import { LayoutGlyph, layoutShort } from '@/components/studio/LayoutGlyph';
 import { api, type Check, type Imagem, type LogosFixos, type Municipio, type PieceOptions, type QueueItem } from '@/lib/api';
-import { DEFAULT_TEXTS, LAYOUTS, MAX_SERVICES_RECOMMENDED, SERVICE_ICONS, TEXT_LABELS, buildLayout, formatPhone, measure } from '@/lib/studio';
+import { brandLogoUrl } from '@/lib/brand';
+import { DEFAULT_SERVICES, DEFAULT_TEXTS, LAYOUTS, MAX_SERVICES_RECOMMENDED, SERVICE_ICONS, TEXT_LABELS, buildLayout, formatPhone, measure } from '@/lib/studio';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -63,10 +64,12 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   const [active, setActive] = useState<string>('flyer-a4');
   const [municipioId, setMunicipioId] = useState<number | null>(null);
   const [includeBB, setIncludeBB] = useState(false);
-  const [services, setServices] = useState<string[]>(['iptu', 'certidoes', 'agendamento', 'saude']);
+  const [services, setServices] = useState<string[]>([...DEFAULT_SERVICES]);
   const [texts, setTexts] = useState<Record<string, Record<string, string>>>({});
   const [overrides, setOverrides] = useState<PieceOptions['overrides']>({});
   const [mockup, setMockup] = useState<(Imagem & { focus: { x: number; y: number } }) | null>(null);
+  // Tela do celular: gerada para o município (padrão) ou captura própria enviada
+  const [mockMode, setMockMode] = useState<'generated' | 'upload'>('generated');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const dragFrom = useRef<number | null>(null);
@@ -88,14 +91,14 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
       services,
       texts: texts[activeLayout] ?? {},
       overrides: overrides[activeLayout] ?? {},
-      mockup: mockup ? { imageId: mockup.id, width: mockup.width, height: mockup.height, focus: mockup.focus } : null,
+      mockup: { mode: mockMode, ...(mockup ? { imageId: mockup.id, width: mockup.width, height: mockup.height, focus: mockup.focus } : {}) },
       assets: {
         gove: logosFixos.gove,
         bb: logosFixos.bb,
         prefeitura: municipio?.logo_largura ? { width: municipio.logo_largura, height: municipio.logo_altura } : null,
       },
     };
-  }, [activeLayout, municipio, includeBB, services, texts, overrides, mockup, logosFixos]);
+  }, [activeLayout, municipio, includeBB, services, texts, overrides, mockup, mockMode, logosFixos]);
 
   const result = useMemo(() => (input && activeLayout ? buildLayout(activeLayout, input, measure) : null), [input, activeLayout]);
   const checks: Check[] = useMemo(() => {
@@ -105,8 +108,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   const errorBlocks = useMemo(() => new Set(checks.filter((c) => c.level === 'error' && c.blockId).map((c) => c.blockId as string)), [checks]);
 
   const imageUrl = useCallback(
-    (el: { type: string; imageId?: string; which?: string }) => {
+    (el: { type: string; imageId?: string; which?: string; official?: boolean; file?: string }) => {
       if (el.type === 'mockup-screen') return el.imageId ? api.imagemUrl(el.imageId) || null : null;
+      if (el.which === 'gove' && el.official && el.file) return brandLogoUrl(el.file) || null;
       if (el.which === 'prefeitura') return municipio ? api.municipioLogoUrl(municipio) || null : null;
       if (el.which === 'gove' || el.which === 'bb') return api.logoFixoUrl(el.which, logosFixos[el.which]?.atualizado ?? '') || null;
       return null;
@@ -143,6 +147,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     try {
       const img = await api.uploadImagem(file);
       setMockup({ ...img, focus: { x: 0.5, y: 0.5 } });
+      setMockMode('upload');
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -163,7 +168,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         services,
         texts,
         overrides,
-        mockup: mockup ? { imageId: mockup.id, focus: mockup.focus } : null,
+        mockup: { mode: mockMode, ...(mockup ? { imageId: mockup.id, focus: mockup.focus } : {}) },
       },
     });
     toast.success(`${municipio.nome_municipio}: ${selected.length} peça(s) na fila de exportação.`);
@@ -313,7 +318,34 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
           )}
         </Section>
 
-        <Section title="Imagem do mockup" icon={Smartphone} aside={<span className="text-xs text-muted-foreground">recorte 9:16</span>}>
+        <Section title="Tela do celular" icon={Smartphone}>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Tela do celular">
+            {(
+              [
+                ['generated', 'Tela gerada', 'Tela do app gerada com os dados do município'],
+                ['upload', 'Captura própria', 'Usar uma captura de tela enviada'],
+              ] as const
+            ).map(([id, label, hint]) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={mockMode === id}
+                title={hint}
+                onClick={() => setMockMode(id)}
+                className={cn(
+                  'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors',
+                  mockMode === id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {mockMode === 'generated' ? (
+            <p className="text-xs text-muted-foreground">Logo, número, QR, endereço e e-mail vêm do cadastro do município; ícones: os 4 primeiros serviços.</p>
+          ) : (
+          <>
           <div className="flex items-center gap-3">
             <label
               className={cn(
@@ -367,6 +399,8 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               })}
             </div>
           )}
+          </>
+          )}
         </Section>
 
         {activeLayout && (
@@ -388,7 +422,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               </div>
             ))}
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">Hierarquia tipográfica fixa.</p>
+              <p className="text-xs text-muted-foreground">Nova linha quebra o texto; **trecho** fica em negrito.</p>
               <Button
                 variant="ghost"
                 size="icon"

@@ -5,7 +5,7 @@
 // .zip gerados aqui mesmo.
 import { zipSync } from 'fflate';
 import { collection, deleteFile, fileUrl, getFile, putFile, saveFile, type Doc } from '../../../../artifact-runtime/index.ts';
-import { LAYOUTS, onlyDigits, pdfFileName } from '../../../shared/layout.js';
+import { LAYOUTS, isEmail, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
 import { renderPiece } from '@/lib/pdf.browser';
 import type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem } from './api';
@@ -48,8 +48,11 @@ function validateMunicipio(form: FormData) {
   if (ddd.length !== 2) throw new Error('DDD deve ter 2 dígitos.');
   if (numero.length < 8 || numero.length > 9) throw new Error('Número de WhatsApp deve ter 8 ou 9 dígitos.');
   if (uf && !/^[A-Z]{2}$/.test(uf)) throw new Error('UF deve ter 2 letras.');
+  const endereco = get('endereco').trim().slice(0, 200);
+  const email = get('email').trim().slice(0, 120);
+  if (email && !isEmail(email)) throw new Error('E-mail inválido.');
   const bb = get('incluir_logo_banco_do_brasil');
-  return { nome_municipio: nome, uf: uf || null, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: ['true', '1', 'on'].includes(bb) };
+  return { nome_municipio: nome, uf: uf || null, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: ['true', '1', 'on'].includes(bb), endereco: endereco || null, email: email || null };
 }
 
 function uploadedFile(form: FormData, field: string): File | null {
@@ -112,9 +115,13 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
           services: opts.services ?? [],
           texts: opts.texts?.[layoutId] ?? {},
           overrides: opts.overrides?.[layoutId] ?? {},
-          mockup: mockDims && opts.mockup ? { imageId: opts.mockup.imageId, ...mockDims, focus: opts.mockup.focus } : null,
+          mockup: {
+            mode: opts.mockup?.mode ?? (opts.mockup?.imageId ? 'upload' : 'generated'),
+            ...(mockDims && opts.mockup ? { imageId: opts.mockup.imageId, ...mockDims, focus: opts.mockup.focus } : {}),
+          },
           assets: {
-            gove: dims(gove?.width, gove?.height, goveBlob),
+            // Sem upload em "Logos fixos", vale a logomarca oficial (brand/logos)
+            gove: gove ? dims(gove.width, gove.height, goveBlob) : { official: true },
             bb: dims(bb?.width, bb?.height, bbBlob),
             prefeitura: dims(doc.logo_largura, doc.logo_altura, prefBlob),
           },
@@ -186,8 +193,9 @@ export const api = {
       const d = logosCol.get(k);
       return d ? { width: d.width, height: d.height, avisos: d.avisos ?? [], atualizado: d.atualizado } : null;
     };
+    const official: LogoFixo = { width: 2000, height: 637, avisos: [], atualizado: '', official: true };
     await Promise.all(['gove', 'bb'].map((k) => resolveUrl(logosCol.get(k)?.file)));
-    return { gove: view('gove'), bb: view('bb') };
+    return { gove: view('gove') ?? official, bb: view('bb') };
   },
 
   saveLogoFixo: async (chave: 'gove' | 'bb', file: File) => {

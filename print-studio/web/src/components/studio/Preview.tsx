@@ -1,17 +1,25 @@
 // Preview em tempo real (Fabric.js) — desenha exatamente os elementos que o
-// servidor coloca no PDF, mais as guias de sangria, corte e área de segurança.
+// servidor coloca no PDF (mesmo desenhista: shared/draw.js), mais as guias de
+// sangria, corte e área de segurança. Cada bloco é um objeto do Fabric que
+// pinta seus elementos em vetor no canvas; os blocos móveis podem ser arrastados.
 import { useEffect, useRef, useState } from 'react';
-import { Canvas, FabricImage, FabricObject, FabricText, Gradient, Group, Rect, loadSVGFromString, util } from 'fabric';
+import { Canvas, FabricObject, Rect } from 'fabric';
 import QRCode from 'qrcode';
-import { COLORS, FONT_FAMILY, gradientLine } from '@/lib/studio';
+import { drawElements, walkElements } from '../../../../shared/draw.js';
+import { COLORS, FONT_WEIGHTS, ptToMm } from '../../../../shared/tokens.js';
+import { FONT_FAMILY } from '@/lib/studio';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type LayoutResult = any;
 type El = any;
+type Img = CanvasImageSource & { width: number; height: number };
 
-const ptToMm = (pt: number) => pt / 2.834645669;
 const hex = (key: string) => (COLORS as Record<string, { hex: string }>)[key].hex;
-const BASELINE_FRACTION = 1.13 - 0.222; // posição da linha de base no FabricText (lineHeight 1)
+const qrCache = new Map<string, any>();
+const qrModules = (data: string) => {
+  if (!qrCache.has(data)) qrCache.set(data, QRCode.create(data, { errorCorrectionLevel: 'H' }).modules);
+  return qrCache.get(data);
+};
 
 type Props = {
   result: LayoutResult;
@@ -22,101 +30,119 @@ type Props = {
 
 const base = { originX: 'left' as const, originY: 'top' as const, objectCaching: false };
 
-async function svgObject(svg: string, x: number, y: number, scale: number) {
-  const { objects, options } = await loadSVGFromString(svg);
-  const g = util.groupSVGElements(objects.filter(Boolean) as FabricObject[], options);
-  const br = g.getBoundingRect();
-  g.set({ ...base, left: x + br.left * scale, top: y + br.top * scale, scaleX: scale, scaleY: scale });
-  return g;
+// ---------------------------------------------------------------- imagens
+const imgCache = new Map<string, Promise<Img | null>>();
+function loadImage(url: string): Promise<Img | null> {
+  if (!imgCache.has(url)) {
+    imgCache.set(
+      url,
+      new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+      }),
+    );
+  }
+  return imgCache.get(url)!;
 }
 
-async function toFabric(e: El, k: number, imageUrl: Props['imageUrl']): Promise<FabricObject[]> {
-  const x = e.x * k;
-  const y = e.y * k;
-  const w = e.w * k;
-  const h = e.h * k;
-  switch (e.type) {
-    case 'gradient': {
-      const [x1, y1, x2, y2] = gradientLine(e);
-      return [
-        new Rect({
-          ...base, left: x, top: y, width: w, height: h,
-          fill: new Gradient({
-            type: 'linear',
-            gradientUnits: 'pixels',
-            coords: { x1: (x1 - e.x) * k, y1: (y1 - e.y) * k, x2: (x2 - e.x) * k, y2: (y2 - e.y) * k },
-            colorStops: [{ offset: 0, color: hex(e.from) }, { offset: 1, color: hex(e.to) }],
-          }),
-        }),
-      ];
-    }
-    case 'rect':
-      return [new Rect({ ...base, left: x, top: y, width: w, height: h, rx: (e.r ?? 0) * k, ry: (e.r ?? 0) * k, fill: hex(e.fill) })];
-    case 'text': {
-      const size = ptToMm(e.size) * k;
-      return e.lines.map(
-        (l: El) =>
-          new FabricText(l.text, {
-            ...base, left: l.x * k, top: l.baseline * k - size * BASELINE_FRACTION,
-            fontFamily: FONT_FAMILY, fontWeight: { regular: 400, semibold: 600, bold: 700, black: 900 }[e.weight as string],
-            fontSize: size, lineHeight: 1, fill: hex(e.color),
-          }),
-      );
-    }
-    case 'icon': {
-      const inner = e.inner
-        ? `<g transform="translate(${e.inner.offset.join(' ')}) scale(${e.inner.scale})" stroke-width="${e.lineWidth / e.inner.scale}">${e.inner.paths.map((d: string) => `<path d="${d}"/>`).join('')}</g>`
-        : '';
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><g fill="none" stroke="${hex(e.stroke)}" stroke-opacity="${e.opacity}" stroke-width="${e.lineWidth}" stroke-linecap="round" stroke-linejoin="round">${e.paths.map((d: string) => `<path d="${d}"/>`).join('')}${inner}</g></svg>`;
-      return [await svgObject(svg, x, y, w / 24)];
-    }
-    case 'qr': {
-      const qr = QRCode.create(e.data, { errorCorrectionLevel: 'H' });
-      const n = qr.modules.size;
-      let d = '';
-      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.modules.get(r, c)) d += `M${c} ${r}h1.02v1.02h-1.02z`;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}"><path fill="${hex(e.color)}" d="${d}"/></svg>`;
-      return [await svgObject(svg, x, y, w / n)];
-    }
-    case 'mockup-screen': {
-      const url = imageUrl(e);
-      if (!url) {
-        const ph = new Rect({ ...base, left: x, top: y, width: w, height: h, rx: e.r * k, ry: e.r * k, fill: hex(e.fill) });
-        const label = new FabricText('Imagem do app', { ...base, fontFamily: 'Inter, sans-serif', fontSize: Math.max(9, w / 9), fill: '#5C6B73' });
-        label.set({ left: x + (w - (label.width ?? 0)) / 2, top: y + h / 2 - (label.height ?? 0) / 2 });
-        return [ph, label];
-      }
-      const img = await FabricImage.fromURL(url);
-      const W = img.width ?? 1;
-      const H = img.height ?? 1;
-      const cropW = Math.min(W, Math.floor((H * 9) / 16));
-      const cropH = Math.floor((cropW * 16) / 9);
-      img.set({
-        ...base,
-        cropX: (W - cropW) * (e.focus?.x ?? 0.5),
-        cropY: (H - cropH) * (e.focus?.y ?? 0.5),
-        width: cropW, height: cropH, left: x, top: y, scaleX: w / cropW, scaleY: h / cropH,
-        clipPath: new Rect({ originX: 'center', originY: 'center', width: cropW, height: cropH, rx: (e.r * k) / (w / cropW), ry: (e.r * k) / (h / cropH) }),
-      });
-      return [img];
-    }
-    case 'logo': {
-      if (e.missing) {
-        const box = new Rect({ ...base, left: x, top: y, width: w, height: h, fill: '', stroke: '#C2410C', strokeDashArray: [5, 3], strokeWidth: 1.5 });
-        const label = new FabricText({ gove: 'Logo Gove', prefeitura: 'Logo prefeitura', bb: 'Logo BB' }[e.which as string] ?? 'Logo', {
-          ...base, fontFamily: 'Inter, sans-serif', fontSize: Math.max(8, Math.min(h * 0.28, w / 8)), fill: '#9A3412',
-        });
-        label.set({ left: x + (w - (label.width ?? 0)) / 2, top: y + (h - (label.height ?? 0)) / 2 });
-        return [box, label];
-      }
-      const url = imageUrl(e);
-      if (!url) return [];
-      const img = await FabricImage.fromURL(url);
-      img.set({ ...base, left: x, top: y, scaleX: w / (img.width ?? 1), scaleY: h / (img.height ?? 1) });
-      return [img];
-    }
-    default:
-      return [];
+// ---------------------------------------------------------------- pintor canvas
+function canvasPainter(ctx: CanvasRenderingContext2D, images: Map<El, Img>) {
+  const paintOf = (paint: any) => {
+    if (typeof paint === 'string') return hex(paint);
+    const g =
+      paint.kind === 'radial'
+        ? ctx.createRadialGradient(paint.cx, paint.cy, 0, paint.cx, paint.cy, paint.r)
+        : ctx.createLinearGradient(paint.x1, paint.y1, paint.x2, paint.y2);
+    for (const [o, k] of paint.stops) g.addColorStop(o, hex(k));
+    return g;
+  };
+  return {
+    save: () => ctx.save(),
+    restore: () => ctx.restore(),
+    translate: (x: number, y: number) => ctx.translate(x, y),
+    rotate: (deg: number) => ctx.rotate((deg * Math.PI) / 180),
+    scale: (sx: number, sy: number) => ctx.scale(sx, sy),
+    fill(d: string, paint: any, o: { rule?: string; opacity?: number } = {}) {
+      ctx.save();
+      if (o.opacity != null) ctx.globalAlpha *= o.opacity;
+      ctx.fillStyle = paintOf(paint);
+      ctx.fill(new Path2D(d), o.rule === 'evenodd' ? 'evenodd' : 'nonzero');
+      ctx.restore();
+    },
+    stroke(d: string, key: string, width: number, o: { opacity?: number } = {}) {
+      ctx.save();
+      if (o.opacity != null) ctx.globalAlpha *= o.opacity;
+      ctx.strokeStyle = hex(key);
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke(new Path2D(d));
+      ctx.restore();
+    },
+    clip: (d: string) => ctx.clip(new Path2D(d)),
+    text(str: string, x: number, y: number, weight: string, sizePt: number, key: string) {
+      ctx.save();
+      ctx.translate(x, y);
+      const s = ptToMm(sizePt) / 100; // desenha a 100 px e escala (evita o piso de tamanho de fonte)
+      ctx.scale(s, s);
+      ctx.font = `${(FONT_WEIGHTS as Record<string, number>)[weight] ?? 400} 100px "${FONT_FAMILY}"`;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = hex(key);
+      ctx.fillText(str, 0, 0);
+      ctx.restore();
+    },
+    image(e: El, x: number, y: number, w: number, h: number) {
+      const img = images.get(e);
+      if (!img) return;
+      if (e.type === 'mockup-screen') {
+        const aspect = w / h;
+        const cropW = Math.min(img.width, img.height * aspect);
+        const cropH = cropW / aspect;
+        const sx = (img.width - cropW) * (e.focus?.x ?? 0.5);
+        const sy = (img.height - cropH) * (e.focus?.y ?? 0.5);
+        ctx.drawImage(img, sx, sy, cropW, cropH, x, y, w, h);
+      } else ctx.drawImage(img, x, y, w, h);
+    },
+  };
+}
+
+/** Marcação só do preview: logo não cadastrado (tracejado com rótulo). */
+function drawMissing(ctx: CanvasRenderingContext2D, elements: El[]) {
+  for (const e of elements) {
+    if (e.type !== 'logo' || !e.missing) continue;
+    ctx.save();
+    ctx.strokeStyle = '#C2410C';
+    ctx.lineWidth = 0.35;
+    ctx.setLineDash([1.6, 1]);
+    ctx.strokeRect(e.x, e.y, e.w, e.h);
+    const label = ({ gove: 'Logo Gove', prefeitura: 'Logo prefeitura', bb: 'Logo BB' } as Record<string, string>)[e.which] ?? 'Logo';
+    const size = Math.max(1.6, Math.min(e.h * 0.28, e.w / 8));
+    ctx.font = `500 ${size * 10}px Inter, sans-serif`;
+    ctx.scale(0.1, 0.1);
+    ctx.fillStyle = '#9A3412';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, (e.x + e.w / 2) * 10, (e.y + e.h / 2) * 10);
+    ctx.restore();
+  }
+}
+
+/** Objeto do Fabric que pinta um bloco do layout (em mm, escala k). */
+class BlockObject extends FabricObject {
+  block!: El;
+  k = 1;
+  images!: Map<El, Img>;
+  _render(ctx: CanvasRenderingContext2D) {
+    const bb = this.block.bbox;
+    ctx.save();
+    ctx.translate(-(this.width ?? 0) / 2, -(this.height ?? 0) / 2);
+    ctx.scale(this.k, this.k);
+    ctx.translate(-bb.x, -bb.y);
+    drawElements(canvasPainter(ctx, this.images), this.block.elements, { qr: qrModules });
+    drawMissing(ctx, this.block.elements);
+    ctx.restore();
   }
 }
 
@@ -126,7 +152,9 @@ export function Preview({ result, imageUrl, errorBlocks, onMove }: Props) {
   const canvasRef = useRef<Canvas | null>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const onMoveRef = useRef(onMove);
-  onMoveRef.current = onMove;
+  useEffect(() => {
+    onMoveRef.current = onMove;
+  });
 
   useEffect(() => {
     const c = new Canvas(elRef.current!, { selection: false, preserveObjectStacking: true, renderOnAddRemove: false });
@@ -148,18 +176,30 @@ export function Preview({ result, imageUrl, errorBlocks, onMove }: Props) {
     const info = new WeakMap<FabricObject, { id: string; left: number; top: number; bbox: El }>();
 
     (async () => {
+      // Pré-carrega as imagens (logos, logomarca oficial, foto do mockup)
+      const images = new Map<El, Img>();
+      const pending: Promise<void>[] = [];
+      for (const b of result.blocks) {
+        for (const e of walkElements(b.elements)) {
+          if (!((e.type === 'logo' && !e.missing) || (e.type === 'mockup-screen' && e.imageId))) continue;
+          const url = imageUrl(e);
+          if (url) pending.push(loadImage(url).then((img) => void (img && images.set(e, img))));
+        }
+      }
+      await Promise.all(pending);
+      if (cancelled) return;
+
       const layers: FabricObject[] = [];
       for (const b of result.blocks) {
-        const objs = (await Promise.all(b.elements.map((e: El) => toFabric(e, k, imageUrl)))).flat();
-        if (cancelled) return;
-        if (b.movable && objs.length) {
-          const g = new Group(objs, { hasControls: false, hoverCursor: 'move', borderColor: '#FFC72C', padding: 2, objectCaching: false });
-          info.set(g, { id: b.id, left: g.left ?? 0, top: g.top ?? 0, bbox: b.bbox });
-          layers.push(g);
-        } else {
-          objs.forEach((o) => o.set({ selectable: false, evented: false }));
-          layers.push(...objs);
-        }
+        const o = new BlockObject({ ...base, left: b.bbox.x * k, top: b.bbox.y * k, width: b.bbox.w * k, height: b.bbox.h * k, strokeWidth: 0 });
+        o.block = b;
+        o.k = k;
+        o.images = images;
+        if (b.movable) {
+          o.set({ hasControls: false, hoverCursor: 'move', borderColor: '#FFC72C', padding: 2 });
+          info.set(o, { id: b.id, left: o.left ?? 0, top: o.top ?? 0, bbox: b.bbox });
+        } else o.set({ selectable: false, evented: false });
+        layers.push(o);
       }
       // Guias: sangria esmaecida, linha de corte e área de segurança tracejada
       const tint = { fill: 'rgba(26,21,58,0.55)', selectable: false, evented: false, ...base };

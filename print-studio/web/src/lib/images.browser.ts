@@ -140,15 +140,15 @@ export async function imageSize(blob: Blob): Promise<{ width: number; height: nu
 const bytes = async (b: Blob) => new Uint8Array(await b.arrayBuffer());
 
 /**
- * Recorte 9:16 centrado no foco (0–1) e JPEG no tamanho de impressão a 300 dpi
+ * Recorte na proporção da tela (padrão 9:16) centrado no foco (0–1) e JPEG no tamanho de impressão a 300 dpi
  * (sem ampliar além do original). RGB — ver aviso no relatório.
  */
-export async function mockupJpeg(blob: Blob, focus: { x: number; y: number } | undefined, screenWmm: number): Promise<Uint8Array> {
+export async function mockupJpeg(blob: Blob, focus: { x: number; y: number } | undefined, screenWmm: number, aspect = 9 / 16): Promise<Uint8Array> {
   const src = await decode(blob);
   const W = src.width;
   const H = src.height;
-  const cropW = Math.min(W, Math.floor((H * 9) / 16));
-  const cropH = Math.floor((cropW * 16) / 9);
+  const cropW = Math.min(W, Math.floor(H * aspect));
+  const cropH = Math.floor(cropW / aspect);
   const fx = Math.min(1, Math.max(0, focus?.x ?? 0.5));
   const fy = Math.min(1, Math.max(0, focus?.y ?? 0.5));
   const left = Math.round((W - cropW) * fx);
@@ -172,4 +172,14 @@ export async function logoJpeg(blob: Blob, widthMm: number): Promise<Uint8Array>
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(src, 0, 0, c.width, c.height);
   return bytes(await toBlob(c, 'image/jpeg', 1));
+}
+
+/** Pixels RGBA de uma imagem (para as máscaras da logomarca e a medição de contraste). */
+export async function rgbaOf(blob: Blob, maxW = 4000): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
+  const src = await decode(blob);
+  const w = Math.min(src.width, maxW);
+  const h = Math.round((w * src.height) / src.width);
+  const { c, ctx } = canvas(w, h);
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  return { data: ctx.getImageData(0, 0, c.width, c.height).data, width: c.width, height: c.height };
 }

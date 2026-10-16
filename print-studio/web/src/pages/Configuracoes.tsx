@@ -4,6 +4,7 @@ import { StatusIcon } from '@/components/studio/CheckList';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { api, type LogosFixos } from '@/lib/api';
+import { brandLogoUrl } from '@/lib/brand';
 
 type Props = { logos: LogosFixos; onChanged: () => void };
 
@@ -41,7 +42,9 @@ export function Configuracoes({ logos, onChanged }: Props) {
               <h2 className="text-base font-semibold">{titulo}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">{texto}</p>
               <div className="mt-4 flex h-28 items-center justify-center rounded-md bg-white p-4">
-                {l && api.logoFixoUrl(chave, l.atualizado) ? (
+                {l?.official ? (
+                  <img src={brandLogoUrl('gove-logo-roxo.webp')} alt={`${titulo} (oficial)`} className="max-h-full max-w-full object-contain" />
+                ) : l && api.logoFixoUrl(chave, l.atualizado) ? (
                   <img src={api.logoFixoUrl(chave, l.atualizado)} alt={titulo} className="max-h-full max-w-full object-contain" />
                 ) : (
                   <span className="flex flex-col items-center gap-1 text-xs text-[#5B6770]">
@@ -55,7 +58,9 @@ export function Configuracoes({ logos, onChanged }: Props) {
                 </p>
               ))}
               <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="text-xs tabular-nums text-muted-foreground">{l ? `${l.width}×${l.height} px` : ''}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {l?.official ? 'Oficial · versão escolhida pelo contraste do fundo' : l ? `${l.width}×${l.height} px` : ''}
+                </span>
                 <Button asChild variant="secondary" disabled={busy === chave}>
                   <label className="cursor-pointer">
                     {busy === chave ? <Loader2 className="animate-spin" aria-hidden /> : <Upload aria-hidden />} {busy === chave ? 'Enviando…' : l ? 'Substituir' : 'Enviar'}

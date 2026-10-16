@@ -57,6 +57,7 @@ export default defineConfig({
     alias: [
       { find: /^@\/lib\/api$/, replacement: path.resolve(import.meta.dirname, './src/lib/api.local.ts') },
       { find: /^@\/lib\/fonts$/, replacement: path.resolve(import.meta.dirname, './src/lib/fonts.embedded.ts') },
+      { find: /^@\/lib\/brand$/, replacement: path.resolve(import.meta.dirname, './src/lib/brand.embedded.ts') },
       { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
     ],
   },

@@ -8,6 +8,8 @@ export type Municipio = {
   ddd: string;
   numero_whatsapp: string;
   incluir_logo_banco_do_brasil: boolean;
+  endereco?: string | null;
+  email?: string | null;
   logo_largura: number | null;
   logo_altura: number | null;
   logo_avisos: string[];
@@ -16,7 +18,8 @@ export type Municipio = {
   data_atualizacao: string;
 };
 
-export type LogoFixo = { width: number; height: number; avisos: string[]; atualizado: string } | null;
+/** `official`: logomarca oficial da Gove (brand/logos), usada quando nada foi enviado. */
+export type LogoFixo = { width: number; height: number; avisos: string[]; atualizado: string; official?: boolean } | null;
 export type LogosFixos = { gove: LogoFixo; bb: LogoFixo };
 export type Imagem = { id: string; width: number; height: number };
 
@@ -28,7 +31,7 @@ export type PieceOptions = {
   services: string[];
   texts: Record<string, Record<string, string>>;
   overrides: Record<string, Record<string, { dx: number; dy: number }>>;
-  mockup: { imageId: string; focus: { x: number; y: number } } | null;
+  mockup: { mode?: 'generated' | 'upload'; imageId?: string; focus?: { x: number; y: number } } | null;
 };
 export type QueueItem = { key: string; municipioId: number; municipioNome: string; layouts: string[]; options: PieceOptions };
 
