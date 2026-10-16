@@ -1,27 +1,32 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppWindow, Blocks, Box, Home, PanelLeft, Palette, Ruler, Type } from 'lucide-react';
+import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Box, Home, PanelLeft, Palette, Ruler, Type } from 'lucide-react';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
 import { ThemeToggle } from './ThemeToggle';
+import { GoveLogo } from './GoveLogo';
+import { LogoutButton } from './LogoutButton';
 
 export const SECTIONS = [
   { id: 'inicio', label: 'Início', icon: Home },
   { id: 'aplicacoes', label: 'Aplicações', icon: AppWindow },
   { id: 'cores', label: 'Cores', icon: Palette },
+  { id: 'logomarca', label: 'Logomarca', icon: BadgeCheck },
   { id: 'tipografia', label: 'Tipografia', icon: Type },
   { id: 'espacamento', label: 'Espaçamento', icon: Ruler },
   { id: 'raio-sombras', label: 'Raio e sombras', icon: Box },
   { id: 'componentes', label: 'Componentes', icon: Blocks },
+  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
 ];
 
 /** Abas do celular (padrão de barra de abas): poucas, com ícone e nome curto. */
 const TABS = [
   { id: 'inicio', label: 'Início', icon: Home },
   { id: 'aplicacoes', label: 'Apps', icon: AppWindow },
-  { id: 'cores', label: 'Tokens', icon: Palette, also: ['tipografia', 'espacamento', 'raio-sombras'] },
+  { id: 'cores', label: 'Tokens', icon: Palette, also: ['logomarca', 'tipografia', 'espacamento', 'raio-sombras'] },
   { id: 'componentes', label: 'Componentes', icon: Blocks },
+  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
 ];
 
 const RAIL_KEY = 'gove-rail';
@@ -67,13 +72,6 @@ export function useRail(): [boolean, () => void] {
   return [open, () => setOpen((o) => !o)];
 }
 
-function Mark() {
-  return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary shadow-glow-purple" aria-hidden>
-      <span className="size-3 rounded-full border-2 border-accent border-l-transparent" />
-    </span>
-  );
-}
 
 /** Item de navegação: ícone sempre; nome visível com a barra aberta, senão dica e rótulo acessível. */
 function NavItem({ href, label, icon: Icon, on, open, small = false }: { href: string; label: string; icon: typeof Home; on: boolean; open: boolean; small?: boolean }) {
@@ -109,8 +107,7 @@ export function Sidebar({ view }: { view: View }) {
       >
         <div className={`flex items-center gap-space-1 pb-space-2 ${open ? 'justify-between pl-space-1' : 'flex-col'}`}>
           <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
-            <Mark />
-            {open && <span className="font-display text-body font-black text-text-primary">gove</span>}
+            {open ? <GoveLogo kind="logotipo" height={26} /> : <GoveLogo kind="simbolo" height={32} />}
           </a>
           <button
             type="button"
@@ -141,8 +138,9 @@ export function Sidebar({ view }: { view: View }) {
             ))}
           </ul>
         </nav>
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-space-1">
           <ThemeToggle compact={!open} />
+          <LogoutButton compact={!open} />
         </div>
       </aside>
 
@@ -152,14 +150,16 @@ export function Sidebar({ view }: { view: View }) {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
-          <Mark />
-          <span className="font-display text-body font-black text-text-primary">gove</span>
+          <GoveLogo kind="logotipo" height={24} />
         </a>
-        <ThemeToggle compact />
+        <span className="flex gap-space-1">
+          <ThemeToggle compact />
+          <LogoutButton compact />
+        </span>
       </header>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-secondary/70 bg-background/95 px-space-1 pt-1 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-secondary/70 bg-background/95 px-space-1 pt-1 backdrop-blur-md lg:hidden"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
       >
         {TABS.map(({ id, label, icon: Icon }) => {

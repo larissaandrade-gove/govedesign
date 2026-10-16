@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar — Gove</title>
+<link rel="icon" href="/login-assets/gove-simbolo-roxo.png">
+<style>
+  :root { --bg:#FFFFFF; --surface:#F4F4F4; --line:#E3D8F3; --strong:#20133D; --body:#2F3539; --muted:#5B6770; --primary:#3D0099; --accent:#FFC72C; --on-accent:#20133D; --err:#B42318; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#20133D; --surface:#2F3539; --line:#351F65; --strong:#FFFFFF; --body:#F4F4F4; --muted:#A9B1B8; --err:#FF8A80; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--surface); color: var(--body); font: 16px/1.5 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { width: 100%; max-width: 400px; background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 32px 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 8px 24px rgba(32,19,61,.08); }
+  .logo { height: 36px; width: auto; align-self: flex-start; }
+  .logo-dark { display: none; }
+  @media (prefers-color-scheme: dark) { .logo-light { display: none; } .logo-dark { display: block; } }
+  h1 { margin: 0; font: 800 24px/1.2 Montserrat, Inter, system-ui, sans-serif; color: var(--strong); }
+  p { margin: 0; }
+  .hint { font-size: 14px; color: var(--body); }
+  form { display: flex; flex-direction: column; gap: 16px; }
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; color: var(--strong); }
+  input { height: 48px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--strong); font: 17px Inter, system-ui, sans-serif; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input.code { letter-spacing: 8px; font-size: 24px; text-align: center; font-variant-numeric: tabular-nums; }
+  .primary { min-height: 48px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); font: 600 16px Inter, system-ui, sans-serif; cursor: pointer; }
+  .primary:disabled { opacity: .6; cursor: progress; }
+  .link { min-height: 44px; border: 0; background: none; color: var(--primary); font: 600 14px Inter, system-ui, sans-serif; cursor: pointer; padding: 0; align-self: flex-start; }
+  @media (prefers-color-scheme: dark) { .link { color: #A278DA; } }
+  .error { color: var(--err); font-size: 14px; min-height: 1.5em; }
+  .row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <img class="logo logo-light" src="/login-assets/gove-logo-roxo.webp" alt="Gove" width="113" height="36">
+  <img class="logo logo-dark" src="/login-assets/gove-logo-branco.webp" alt="Gove" width="113" height="36">
+  <h1 id="title">Entrar</h1>
+  <p class="hint" id="hint">Use seu e-mail @gove.digital.</p>
+
+  <form id="f-email" novalidate>
+    <label>E-mail <input id="email" type="email" autocomplete="username" inputmode="email" required placeholder="nome@gove.digital"></label>
+    <button class="primary" type="submit">Continuar</button>
+  </form>
+
+  <form id="f-password" hidden novalidate>
+    <label>Senha <input id="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit">Entrar</button>
+    <div class="row">
+      <button class="link" type="button" data-back>Trocar e-mail</button>
+      <button class="link" type="button" id="forgot">Esqueci a senha</button>
+    </div>
+  </form>
+
+  <form id="f-code" hidden novalidate>
+    <label>Código de 6 dígitos <input id="code" class="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required></label>
+    <button class="primary" type="submit">Confirmar código</button>
+    <div class="row">
+      <button class="link" type="button" data-back>Trocar e-mail</button>
+      <button class="link" type="button" id="resend">Reenviar código</button>
+    </div>
+  </form>
+
+  <form id="f-new" hidden novalidate>
+    <label>Nova senha <input id="newpass" type="password" autocomplete="new-password" minlength="10" required></label>
+    <label>Repita a senha <input id="newpass2" type="password" autocomplete="new-password" minlength="10" required></label>
+    <button class="primary" type="submit">Salvar senha e entrar</button>
+  </form>
+
+  <p class="error" id="error" role="alert"></p>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const forms = ['f-email', 'f-password', 'f-code', 'f-new'].map($);
+  let email = '';
+  let setupToken = '';
+  const params = new URLSearchParams(location.search);
+  const rawNext = params.get('next') || '/';
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+
+  function show(id, title, hint) {
+    forms.forEach((f) => (f.hidden = f.id !== id));
+    $('title').textContent = title;
+    $('hint').textContent = hint;
+    $('error').textContent = '';
+    const input = $(id).querySelector('input');
+    if (input) setTimeout(() => input.focus(), 0);
+  }
+
+  async function post(path, body, form) {
+    const btn = form?.querySelector('.primary');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/auth/' + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), credentials: 'same-origin' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Algo deu errado. Tente de novo.');
+      return data;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  const guard = (fn) => async (e) => {
+    e?.preventDefault();
+    try { await fn(); } catch (err) { $('error').textContent = err.message; }
+  };
+
+  async function start(forgot = false) {
+    const r = await post('start', { email, forgot }, forgot ? null : forms[0]);
+    if (r.next === 'password') return show('f-password', 'Entrar', email);
+    show('f-code', 'Confira seu e-mail', r.resendIn ? `Já enviamos um código para ${email}. Aguarde ${r.resendIn}s para pedir outro.` : `Enviamos um código para ${email}.`);
+  }
+
+  $('f-email').addEventListener('submit', guard(async () => {
+    email = $('email').value.trim().toLowerCase();
+    if (!/^[^@\s]+@gove\.digital$/.test(email)) throw new Error('Use seu e-mail @gove.digital.');
+    await start();
+  }));
+  $('f-password').addEventListener('submit', guard(async () => {
+    await post('login', { email, password: $('password').value }, forms[1]);
+    location.assign(next);
+  }));
+  $('forgot').addEventListener('click', guard(() => start(true)));
+  $('resend').addEventListener('click', guard(() => start(true)));
+  $('f-code').addEventListener('submit', guard(async () => {
+    const r = await post('verify', { email, code: $('code').value }, forms[2]);
+    setupToken = r.setupToken;
+    show('f-new', 'Crie sua senha', 'Pelo menos 10 caracteres.');
+  }));
+  $('f-new').addEventListener('submit', guard(async () => {
+    const p = $('newpass').value;
+    if (p.length < 10) throw new Error('A senha precisa de pelo menos 10 caracteres.');
+    if (p !== $('newpass2').value) throw new Error('As senhas não conferem.');
+    await post('password', { setupToken, password: p }, forms[3]);
+    location.assign(next);
+  }));
+  document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => show('f-email', 'Entrar', 'Use seu e-mail @gove.digital.')));
+})();
+</script>
+</body>
+</html>

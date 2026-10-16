@@ -270,3 +270,19 @@ Marcações opcionais nos objetos: `gove.role` = `logo` | `icon` | `qrcode` |
 QR code) prontos para inserir numa peça nova; eles passam na checagem de QR code.
 Cores ou tamanhos fora do padrão são corrigidos e listados no cabeçalho
 `X-Gove-QR-Adjustments`.
+
+## Login do ambiente
+
+Todo o ambiente servido por `npm start` (tela inicial, Design System, Revisor, Print Studio) exige login com e-mail `@gove.digital`.
+
+- Primeiro acesso: e-mail → código de 6 dígitos enviado ao e-mail → a pessoa cria a senha (mínimo 10 caracteres).
+- Acessos seguintes: e-mail + senha. "Esqueci a senha" envia um novo código.
+- Variáveis: `AUTH_SECRET` (obrigatória em produção), `AUTH_EMAIL_DOMAIN` (padrão `gove.digital`), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE=1`, `MAIL_FROM`. Sem SMTP em desenvolvimento, o código aparece no log do servidor. `AUTH_DISABLED=1` desliga o login (só desenvolvimento).
+
+## Diretrizes de design
+
+`docs/diretrizes-gove.md` reúne as regras de marca para pessoas e ferramentas de IA (apresentações, mídia, impressos, e-mails, páginas). O Design System mostra o documento na seção Diretrizes, com botão para copiar as instruções para IA.
+
+## Logomarcas
+
+Arquivos oficiais em `brand/logos/`; a escolha da versão por contraste (≥ 4,5:1) está em `brand/logos.js` (`pickLogo`).

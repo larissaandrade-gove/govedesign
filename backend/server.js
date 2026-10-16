@@ -10,13 +10,21 @@ import { generateQr, qrFabricObjects } from './lib/qrcode.js';
 import { writeZip } from './report/package.js';
 import { AuditInputError, runAudit, storedEntries } from './services/auditService.js';
 import { createPrintStudioRouter } from '../print-studio/server/router.js';
+import { createAuth } from './auth/index.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
 
-export function createApp({ db = openDatabase(), storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
+export function createApp({ db = openDatabase(), authOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
   const storageDir = resolve(storageDirIn);
   const app = express();
+
+  // Login único do ambiente: tudo abaixo exige sessão (e-mail @gove.digital)
+  const auth = createAuth({ db, ...authOptions });
+  app.use('/auth', auth.router);
+  app.get('/login', (_req, res) => res.sendFile(join(ROOT, 'frontend', 'login.html')));
+  app.use('/login-assets', express.static(join(ROOT, 'brand', 'logos')));
+  app.use(auth.guard);
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
 
   app.use(express.json({ limit: '20mb' }));

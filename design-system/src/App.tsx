@@ -3,6 +3,8 @@ import { AppPage } from './components/AppPage';
 import { Apps } from './components/Apps';
 import { ColorPalette } from './components/ColorPalette';
 import { Footer } from './components/Footer';
+import { Diretrizes } from './components/Diretrizes';
+import { Logomarca } from './components/Logomarca';
 import { Hero } from './components/Hero';
 import { RadiusShadows } from './components/RadiusShadows';
 import { Sidebar } from './components/Sidebar';
@@ -40,10 +42,12 @@ export default function App() {
             <Hero />
             <Apps />
             <ColorPalette />
+            <Logomarca />
             <Typography />
             <Spacing />
             <RadiusShadows />
             <UIKit />
+            <Diretrizes />
           </>
         )}
         {view.kind !== 'app' && <Footer />}
