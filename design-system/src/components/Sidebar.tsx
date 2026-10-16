@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AppWindow, Blocks, Box, Home, Menu, Palette, Ruler, Type, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { AppWindow, Blocks, Box, Home, PanelLeft, Palette, Ruler, Type } from 'lucide-react';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
@@ -15,6 +15,16 @@ export const SECTIONS = [
   { id: 'raio-sombras', label: 'Raio e sombras', icon: Box },
   { id: 'componentes', label: 'Componentes', icon: Blocks },
 ];
+
+/** Abas do celular (padrão de barra de abas): poucas, com ícone e nome curto. */
+const TABS = [
+  { id: 'inicio', label: 'Início', icon: Home },
+  { id: 'aplicacoes', label: 'Apps', icon: AppWindow },
+  { id: 'cores', label: 'Tokens', icon: Palette, also: ['tipografia', 'espacamento', 'raio-sombras'] },
+  { id: 'componentes', label: 'Componentes', icon: Blocks },
+];
+
+const RAIL_KEY = 'gove-rail';
 
 /** Seção visível no momento (scrollspy com Intersection Observer). */
 function useActiveSection(view: View) {
@@ -37,150 +47,136 @@ function useActiveSection(view: View) {
   return view.kind === 'app' ? `app-${view.appId}` : active;
 }
 
-function Brand() {
+/** Barra lateral recolhida ou aberta; lembrada neste navegador. */
+export function useRail(): [boolean, () => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem(RAIL_KEY) !== 'closed';
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    document.documentElement.style.setProperty('--rail', open ? '248px' : '76px');
+    try {
+      window.localStorage.setItem(RAIL_KEY, open ? 'open' : 'closed');
+    } catch {
+      /* sem armazenamento */
+    }
+  }, [open]);
+  return [open, () => setOpen((o) => !o)];
+}
+
+function Mark() {
   return (
-    <a href="#inicio" className="flex items-center gap-space-1 no-underline">
-      <span className="flex size-8 items-center justify-center rounded-full bg-primary shadow-glow-purple" aria-hidden>
-        <span className="size-3 rounded-full border-2 border-accent border-l-transparent" />
-      </span>
-      <span className="flex flex-col leading-tight">
-        <span className="font-display text-body font-black text-text-primary">gove</span>
-        <span className="text-[12px] text-text-secondary">design system</span>
-      </span>
-    </a>
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary shadow-glow-purple" aria-hidden>
+      <span className="size-3 rounded-full border-2 border-accent border-l-transparent" />
+    </span>
   );
 }
 
-function NavList({ active, onNavigate }: { active: string; onNavigate?: () => void }) {
+/** Item de navegação: ícone sempre; nome visível com a barra aberta, senão dica e rótulo acessível. */
+function NavItem({ href, label, icon: Icon, on, open, small = false }: { href: string; label: string; icon: typeof Home; on: boolean; open: boolean; small?: boolean }) {
   return (
-    <ul className="flex flex-col gap-1">
-      {SECTIONS.map(({ id, label, icon: Icon }) => {
-        const on = active === id;
-        return (
-          <li key={id}>
-            <a
-              href={`#${id}`}
-              onClick={onNavigate}
-              aria-current={on ? 'true' : undefined}
-              className={`group relative flex items-center gap-space-2 rounded-md px-space-2 py-[10px] text-body no-underline transition-colors duration-200 ${
-                on ? 'bg-secondary/70 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
-              }`}
-            >
-              {on && <motion.span layoutId="nav-active" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-accent shadow-glow-yellow" transition={{ duration: 0.3, ease: EASE }} />}
-              <Icon className={`size-[18px] ${on ? 'text-highlight' : ''}`} aria-hidden />
-              {label}
-            </a>
-            {id === 'aplicacoes' && (
-              <ul className="ml-[26px] mt-1 flex flex-col gap-0.5 border-l border-secondary pl-space-1" aria-label="Aplicações">
-                {APPS.map((app) => {
-                  const AppIcon = app.icon;
-                  const appOn = active === `app-${app.id}`;
-                  return (
-                    <li key={app.id}>
-                      <a
-                        href={appHref(app.id)}
-                        onClick={onNavigate}
-                        aria-current={appOn ? 'page' : undefined}
-                        className={`flex items-center gap-space-1 rounded-md px-space-1 py-2 text-caption no-underline transition-colors duration-200 ${
-                          appOn ? 'bg-secondary/80 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
-                        }`}
-                      >
-                        <AppIcon className={`size-4 shrink-0 ${appOn ? 'text-highlight' : ''}`} aria-hidden />
-                        {app.name}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <a
+      href={href}
+      aria-current={on ? 'page' : undefined}
+      aria-label={open ? undefined : label}
+      title={open ? undefined : label}
+      className={`group relative flex min-h-11 items-center gap-space-2 rounded-md no-underline transition-colors duration-200 ${open ? 'px-space-2' : 'justify-center px-0'} ${
+        small ? 'text-caption' : 'text-body'
+      } ${on ? 'bg-secondary/70 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'}`}
+    >
+      {on && <motion.span layoutId="nav-active" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-accent" transition={{ duration: 0.3, ease: EASE }} />}
+      <Icon className={`${small ? 'size-[18px]' : 'size-5'} shrink-0 ${on ? 'text-highlight' : ''}`} aria-hidden />
+      {open && <span className="truncate">{label}</span>}
+    </a>
   );
 }
 
 export function Sidebar({ view }: { view: View }) {
   const active = useActiveSection(view);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  const [open, toggle] = useRail();
+  const tabActive = TABS.find((t) => t.id === active || t.also?.includes(active) || (t.id === 'aplicacoes' && active.startsWith('app-')))?.id;
 
   return (
     <>
-      {/* Desktop: sidebar fixa */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] flex-col justify-between gap-space-3 overflow-y-auto border-r border-secondary/70 bg-background/85 px-space-2 py-space-3 backdrop-blur-md lg:flex">
-        <div className="flex flex-col gap-space-4">
-          <div className="px-space-1">
-            <Brand />
-          </div>
-          <nav aria-label="Seções do design system">
-            <NavList active={active} />
-          </nav>
+      {/* Computador: barra lateral que recolhe para só ícones */}
+      <aside
+        className="fixed inset-y-0 left-0 z-30 hidden flex-col gap-space-2 overflow-y-auto border-r border-secondary/70 bg-background/90 px-space-1 py-space-2 backdrop-blur-md transition-[width] duration-300 ease-entry lg:flex"
+        style={{ width: 'var(--rail, 248px)' }}
+        aria-label="Navegação"
+      >
+        <div className={`flex items-center gap-space-1 pb-space-2 ${open ? 'justify-between pl-space-1' : 'flex-col'}`}>
+          <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
+            <Mark />
+            {open && <span className="font-display text-body font-black text-text-primary">gove</span>}
+          </a>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={open ? 'Recolher barra lateral' : 'Expandir barra lateral'}
+            title={open ? 'Recolher barra lateral' : 'Expandir barra lateral'}
+            aria-expanded={open}
+            className="flex size-11 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-secondary/50 hover:text-text-primary"
+          >
+            <PanelLeft className="size-5" aria-hidden />
+          </button>
         </div>
-        <div className="flex flex-col gap-space-2 px-space-1">
-          <ThemeToggle />
-          <p className="text-caption text-text-secondary">
-            <span className="block font-display font-bold text-text-primary">Governo Zero Clique</span>
-            Tokens v1.0
-          </p>
+        <nav aria-label="Seções do design system">
+          <ul className="flex flex-col gap-1">
+            {SECTIONS.map(({ id, label, icon }) => (
+              <li key={id}>
+                <NavItem href={`#${id}`} label={label} icon={icon} on={active === id} open={open} />
+                {id === 'aplicacoes' && (
+                  <ul className={`mt-1 flex flex-col gap-0.5 ${open ? 'ml-[22px] border-l border-secondary pl-space-1' : 'my-1 border-y border-secondary py-1'}`} aria-label="Aplicações">
+                    {APPS.map((app) => (
+                      <li key={app.id}>
+                        <NavItem href={appHref(app.id)} label={app.name} icon={app.icon} on={active === `app-${app.id}`} open={open} small />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="mt-auto">
+          <ThemeToggle compact={!open} />
         </div>
       </aside>
 
-      {/* Mobile: barra superior + gaveta */}
+      {/* Celular: barra superior enxuta + barra de abas */}
       <header
-        className="gutter fixed inset-x-0 top-0 z-30 flex h-[64px] items-center justify-between border-b border-secondary/70 bg-background/85 backdrop-blur-md lg:hidden"
+        className="gutter fixed inset-x-0 top-0 z-30 flex h-[56px] items-center justify-between border-b border-secondary/70 bg-background/90 backdrop-blur-md lg:hidden"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <Brand />
-        <div className="flex items-center gap-space-1">
+        <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
+          <Mark />
+          <span className="font-display text-body font-black text-text-primary">gove</span>
+        </a>
         <ThemeToggle compact />
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Abrir navegação"
-          aria-expanded={open}
-          className="flex size-11 items-center justify-center rounded-md border border-secondary text-text-primary"
-        >
-          <Menu className="size-5" />
-        </button>
-        </div>
       </header>
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm lg:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-            />
-            <motion.nav
-              aria-label="Seções do design system"
-              className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-space-4 overflow-y-auto border-r border-secondary bg-background px-space-2 py-space-3 lg:hidden"
-              style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)', paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))' }}
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.3, ease: EASE }}
+      <nav
+        aria-label="Navegação principal"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-secondary/70 bg-background/95 px-space-1 pt-1 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
+      >
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const on = tabActive === id;
+          return (
+            <a
+              key={id}
+              href={`#${id}`}
+              aria-current={on ? 'page' : undefined}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors ${on ? 'text-highlight' : 'text-text-secondary'}`}
             >
-              <div className="flex items-center justify-between px-space-1">
-                <Brand />
-                <button type="button" onClick={() => setOpen(false)} aria-label="Fechar navegação" className="flex size-11 items-center justify-center rounded-md text-text-primary">
-                  <X className="size-5" />
-                </button>
-              </div>
-              <NavList active={active} onNavigate={() => setOpen(false)} />
-            </motion.nav>
-          </>
-        )}
-      </AnimatePresence>
+              <Icon className="size-6" aria-hidden />
+              {label}
+            </a>
+          );
+        })}
+      </nav>
     </>
   );
 }

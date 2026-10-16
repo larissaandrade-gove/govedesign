@@ -32,7 +32,7 @@ export default function App() {
         Pular para o conteúdo
       </a>
       <Sidebar view={view} />
-      <main className="lg:pl-[264px]">
+      <main className="transition-[padding] duration-300 ease-entry lg:pl-[var(--rail,248px)]">
         {view.kind === 'app' ? (
           <AppPage key={view.appId} appId={view.appId} />
         ) : (
@@ -46,7 +46,7 @@ export default function App() {
             <UIKit />
           </>
         )}
-        <Footer />
+        {view.kind !== 'app' && <Footer />}
       </main>
     </div>
   );

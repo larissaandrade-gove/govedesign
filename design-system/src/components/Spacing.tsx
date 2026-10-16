@@ -17,8 +17,8 @@ export function Spacing() {
   const entries = Object.entries(spacing);
   return (
     <section id="espacamento" className="gutter scroll-mt-[72px] border-t border-secondary/60 py-space-12">
-      <SectionHeader id="espacamento" token="tokens / spacing" title="Espaçamento">
-        Tudo em múltiplos de 8px. Cada bloco abaixo tem exatamente o tamanho do token.
+      <SectionHeader id="espacamento" title="Espaçamento">
+        Múltiplos de 8px.
       </SectionHeader>
 
       <motion.div variants={stagger} {...inView} className="flex flex-wrap items-end gap-space-2 rounded-lg border border-secondary bg-surface/60 p-space-3 md:p-space-4">

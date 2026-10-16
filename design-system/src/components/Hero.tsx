@@ -1,11 +1,9 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Layers } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/Button';
 import { CityBackdrop } from './CityBackdrop';
-import { EASE, fadeUp, stagger } from '../lib/motion';
-import { APPS } from '../data/apps';
-import { colors } from '../data/tokens.js';
+import { fadeUp, stagger } from '../lib/motion';
 import { useTheme } from '../lib/theme';
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -36,44 +34,21 @@ export function Hero() {
         variants={stagger}
         initial="hidden"
         animate="visible"
-        className="gutter flex max-w-[1080px] flex-col gap-space-3 pb-space-12 pt-[120px] md:pt-space-12"
+        className="gutter flex max-w-[1080px] flex-col gap-space-3 pb-space-8 pt-[96px] md:pt-space-8"
       >
-        <motion.p variants={fadeUp} className="eyebrow flex items-center gap-space-1">
-          <Layers className="size-4" aria-hidden /> Gove Design System · v1.0
-        </motion.p>
         <motion.h1 variants={fadeUp} className="text-[44px] font-black leading-[1.05] tracking-[-0.02em] sm:text-display">
           Governo Zero Clique,
           <br />
           em <span className="text-highlight">tokens</span> e componentes.
         </motion.h1>
         <motion.p variants={fadeUp} className="max-w-[620px] text-body-large text-text-secondary">
-          A base visual das interfaces da Gove: cores, tipografia, espaçamento e componentes para produtos que sabem,
-          antecipam e agem — para facilitar a vida de quem precisa e de quem serve.
+          A base visual das interfaces da Gove — e as ferramentas do time, prontas para usar.
         </motion.p>
         <motion.div variants={fadeUp} className="flex flex-wrap gap-space-2 pt-space-1">
           <Button variant="action" size="lg" onClick={() => scrollTo('aplicacoes')}>
-            Ver aplicações <ArrowRight className="size-5" aria-hidden />
-          </Button>
-          <Button variant="secondary" size="lg" onClick={() => scrollTo('componentes')}>
-            Explorar componentes
+            Abrir aplicações <ArrowRight className="size-5" aria-hidden />
           </Button>
         </motion.div>
-        <motion.dl
-          variants={fadeUp}
-          transition={{ duration: 0.6, ease: EASE }}
-          className="mt-space-4 grid max-w-[620px] grid-cols-3 gap-space-2 border-t border-secondary pt-space-3"
-        >
-          {[
-            [String(APPS.length), 'aplicações'],
-            [String(Object.keys(colors).length), 'tokens de cor'],
-            ['8px', 'grade de espaçamento'],
-          ].map(([n, label]) => (
-            <div key={label} className="flex flex-col gap-1">
-              <dt className="order-2 text-caption text-text-secondary">{label}</dt>
-              <dd className="order-1 font-display text-h3 font-bold tabular-nums text-text-primary">{n}</dd>
-            </div>
-          ))}
-        </motion.dl>
       </motion.div>
     </section>
   );

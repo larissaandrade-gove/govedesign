@@ -36,10 +36,8 @@ export function ColorPalette() {
   const BG = palette.background;
   return (
     <section id="cores" className="gutter scroll-mt-[72px] py-space-12">
-      <SectionHeader id="cores" token="tokens / color" title="Cores">
-        {Object.keys(colors).length} papéis de cor, todos da paleta oficial. Você está vendo os valores do tema{' '}
-        {theme === 'dark' ? 'escuro' : 'claro'} — use o botão de tema para comparar. O amarelo é raro e importa: uma ação por
-        tela. Clique para copiar o HEX.
+      <SectionHeader id="cores" title="Cores">
+        Valores do tema {theme === 'dark' ? 'escuro' : 'claro'}. Clique para copiar o HEX.
       </SectionHeader>
 
       <StaggerGrid className="grid grid-cols-1 gap-space-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -81,10 +79,6 @@ export function ColorPalette() {
 
       <Reveal className="mt-space-8 flex flex-col gap-space-2">
         <h3 className="text-h3">Paleta institucional oficial</h3>
-        <p className="max-w-[640px] text-body text-text-secondary">
-          As 10 cores oficiais da marca Gove. Os papéis acima usam somente estes valores; aqui elas aparecem na ordem do
-          manual, para peças, apresentações e gráficos.
-        </p>
       </Reveal>
       <StaggerGrid className="mt-space-3 grid grid-cols-2 gap-space-1 min-[480px]:grid-cols-5">
         {brandPalette.map((hex) => (

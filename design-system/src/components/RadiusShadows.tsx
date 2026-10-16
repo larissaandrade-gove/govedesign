@@ -18,9 +18,7 @@ export function RadiusShadows() {
   const shadows = themeShadows[theme] as Record<string, string>;
   return (
     <section id="raio-sombras" className="gutter scroll-mt-[72px] border-t border-secondary/60 py-space-12">
-      <SectionHeader id="raio-sombras" token="tokens / radius · shadow" title="Raio e sombras">
-        Sombras suaves no tema claro, profundas no escuro; o brilho fica reservado a botões e CTAs.
-      </SectionHeader>
+      <SectionHeader id="raio-sombras" title="Raio e sombras" />
 
       <Reveal>
         <h3 className="mb-space-3 text-h3">Border radius</h3>

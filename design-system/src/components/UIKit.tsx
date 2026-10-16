@@ -36,9 +36,7 @@ export function UIKit() {
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-background/90 to-background/70" />
 
       <div className="gutter py-space-12">
-        <SectionHeader id="componentes" token="components" title="Componentes">
-          Exemplos ao vivo dos componentes base. Passe o mouse, use Tab para navegar e clique nos campos para ver o foco.
-        </SectionHeader>
+        <SectionHeader id="componentes" title="Componentes" />
 
         <div className="grid grid-cols-1 gap-space-8">
           <Demo
@@ -61,10 +59,6 @@ export function UIKit() {
                   Indisponível
                 </Button>
               </div>
-              <p className="text-caption text-text-secondary">
-                Primário (roxo) para ações principais · Ação (amarelo) só para a mais importante da tela · Secundário (contorno)
-                para as alternativas.
-              </p>
             </div>
           </Demo>
 

@@ -44,9 +44,8 @@ function Row({ level, family }: { level: Level; family: 'display' | 'sans' }) {
 export function Typography() {
   return (
     <section id="tipografia" className="gutter scroll-mt-[72px] border-t border-secondary/60 py-space-12">
-      <SectionHeader id="tipografia" token="tokens / typography" title="Tipografia">
-        Montserrat nos títulos (Bold e Black), Inter no corpo e na interface (Regular e Medium). Escala de 64px a 14px; um
-        display por página, no hero.
+      <SectionHeader id="tipografia" title="Tipografia">
+        Montserrat nos títulos, Inter no corpo e na interface.
       </SectionHeader>
 
       <div className="grid grid-cols-1 gap-space-4 lg:grid-cols-2">
@@ -75,11 +74,7 @@ export function Typography() {
         <Printer className="mt-1 size-5 shrink-0 text-highlight" aria-hidden />
         <div className="flex flex-col gap-space-1">
           <p className="font-display text-body-large font-bold text-text-primary">Fallback impresso: Helvetica</p>
-          <p className="text-body text-text-secondary">
-            Em material impresso, quando Montserrat ou Inter não estiverem disponíveis, use Helvetica (com Arial como reserva).
-            As pilhas de fonte já seguem essa ordem: <span className="token">Montserrat, Helvetica, Arial</span>. O manual de
-            marca indica Roboto para texto corrido impresso.
-          </p>
+          <p className="token">Montserrat, Helvetica, Arial</p>
         </div>
       </Reveal>
     </section>
