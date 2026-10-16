@@ -89,22 +89,33 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="mun-num">Número do WhatsApp</Label>
-              <Input id="mun-num" inputMode="numeric" value={numero} onChange={(e) => setNumero(digits(e.target.value).slice(0, 9))} placeholder="999998888" aria-invalid={!!numero && !numeroOk} required />
-              <p className="text-xs text-muted-foreground">Fixo (8 dígitos) ou celular (9 dígitos).</p>
+              <Input
+                id="mun-num"
+                inputMode="numeric"
+                value={numero}
+                onChange={(e) => setNumero(digits(e.target.value).slice(0, 9))}
+                placeholder="8 ou 9 dígitos"
+                aria-invalid={!!numero && !numeroOk}
+                aria-describedby={numero && !numeroOk ? 'mun-num-erro' : undefined}
+                required
+              />
+              {numero && !numeroOk && (
+                <p id="mun-num-erro" className="text-xs text-destructive">Fixo (8 dígitos) ou celular (9 dígitos).</p>
+              )}
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="mun-logo">Logo da prefeitura {municipio?.tem_logo && <span className="text-muted-foreground">(já cadastrado — envie outro para substituir)</span>}</Label>
+            <Label htmlFor="mun-logo">Logo da prefeitura {municipio?.tem_logo && <span className="font-normal text-muted-foreground">· já cadastrado</span>}</Label>
             <Input id="mun-logo" type="file" accept=".png,.svg,image/png,image/svg+xml" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
           </div>
-          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
-            <Label htmlFor="mun-bb" className="cursor-pointer">Incluir logo do Banco do Brasil por padrão</Label>
+          <div className="flex min-h-11 items-center justify-between gap-3 rounded-md border border-border px-3">
+            <Label htmlFor="mun-bb" className="flex-1 cursor-pointer py-3">Incluir logo do Banco do Brasil por padrão</Label>
             <Switch id="mun-bb" checked={bb} onCheckedChange={setBb} />
           </div>
           {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={!valid || saving} className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button type="submit" disabled={!valid || saving} className="bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
               {saving ? 'Salvando…' : 'Salvar município'}
             </Button>
           </DialogFooter>
