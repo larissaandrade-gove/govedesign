@@ -10,8 +10,18 @@ export const MODES = {
   },
   B: {
     code: 'B',
-    name: 'Raster (PNG/JPG)',
-    description: 'Checagens por amostragem de pixels com sharp. Itens sem dados vetoriais são marcados para revisão manual.',
+    name: 'Imagem (PNG/JPG)',
+    description: 'Cor da logomarca, cor do texto e contraste por amostragem de pixels nas regiões informadas. Gradientes e fotos não são analisados; itens sem dados vetoriais vão para revisão manual.',
+  },
+  C: {
+    code: 'C',
+    name: 'Documento (PPTX, PDF, DOCX)',
+    description: 'Lê o arquivo-fonte: cor da logomarca e contraste com o fundo, cor do texto, família tipográfica (Montserrat/Inter) e tamanhos mínimos (HIG). Gradientes e imagens/fotos não são analisados.',
+  },
+  D: {
+    code: 'D',
+    name: 'HTML (e-mail / landing page)',
+    description: 'Renderiza a página sem scripts e lê os estilos computados: cor da logomarca e contraste com o fundo, cor do texto, família tipográfica, tamanhos mínimos de texto e alvos de toque (HIG). Gradientes e imagens/fotos não são analisados.',
   },
 };
 
@@ -76,10 +86,12 @@ export function buildReport({ mode, file, pieceType, artboard, checks, tokens, e
     limitations.push(RASTER_LIMITATION);
     if (!extra.regionSource) {
       limitations.push(
-        'Nenhum metadado de regiões foi fornecido: contraste de texto, margens e QR code também ficaram sem verificação automática.',
+        'Nenhum metadado de regiões foi fornecido: cor da logomarca, cor do texto e contraste também ficaram sem verificação automática.',
       );
     }
   }
+  if (extra.limitations) limitations.push(...extra.limitations);
+  if (extra.notices) notices.push(...extra.notices);
   if (mode === 'A' && extra.placeholderImages) {
     notices.push(
       `${extra.placeholderImages} imagem(ns) referenciadas por URL/arquivo não foram baixadas: a geometria foi preservada, mas o preview mostra um espaço vazio no lugar delas.`,
@@ -100,5 +112,6 @@ export function buildReport({ mode, file, pieceType, artboard, checks, tokens, e
     notices,
     checks: sorted,
     ...(extra.palette ? { dominantPalette: extra.palette } : {}),
+    ...(extra.document ? { document: extra.document } : {}),
   };
 }

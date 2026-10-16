@@ -51,13 +51,19 @@ const woff2 = Object.fromEntries(
   WOFF.map((v) => [`files/montserrat-latin-${v}.woff2`, readFileSync(join(FONTS, 'files', `montserrat-latin-${v}.woff2`)).toString('base64')]),
 );
 
+// Logotipo oficial (brand/logos/) para o cabeçalho: a versão é escolhida por
+// contraste com o fundo do tema (pickLogo).
+const { LOGOS: BRAND } = await import(join(ROOT, 'brand', 'logos.js'));
+const brandLogos = Object.fromEntries(BRAND.logotipo.variants.map((v) => [v.file, readFileSync(join(ROOT, 'brand', 'logos', v.file)).toString('base64')]));
+
 mkdirSync(OUT, { recursive: true });
 writeFileSync(
   join(OUT, 'data.js'),
   `// Gerado por scripts/build-data.mjs — não editar.\n` +
     `export const ICONS_DEFLATE_B64 = ${JSON.stringify(packed)};\n` +
     `export const FONTSOURCE_FILES = ${JSON.stringify(fontCss)};\n` +
-    `export const FONTSOURCE_WOFF2_B64 = ${JSON.stringify(woff2)};\n`,
+    `export const FONTSOURCE_WOFF2_B64 = ${JSON.stringify(woff2)};\n` +
+    `export const BRAND_LOGOS_B64 = ${JSON.stringify(brandLogos)};\n`,
 );
 console.log(
   `ícones: ${Object.keys(lucide).length} lucide, ${Object.values(phosphor).reduce((n, l) => n + l.length, 0)} phosphor — ${(packed.length / 1024).toFixed(0)} KiB (base64)`,

@@ -1,11 +1,10 @@
 # Logomarca oficial
 
-TODO(gove): coloque aqui os dois arquivos oficiais da logomarca, com os nomes
-cadastrados em `db/seed.js` (LOGOS):
+Os arquivos oficiais da logomarca agora ficam em `brand/logos/` (símbolo e
+logotipo, nas versões cor, roxo e branco), com a regra de aplicação por
+contraste em `brand/logos.js`. Os tokens `logo` de `db/seed.js` apontam para
+esses arquivos e o revisor os lê de lá (`LOGO_DIR`, sobrescrevível com a
+variável de ambiente `GOVE_LOGO_DIR`).
 
-- `gove-logo-branco-amarelo.png` — versão para fundo escuro
-- `gove-logo-roxo.png` — versão para fundo claro
-
-Depois rode `npm run db:init -- --hash-logos` para gravar o sha256 de cada
-arquivo em `brand_tokens`. Com o hash cadastrado, o Modo A confere o conteúdo
-exato das logos embutidas (data URL), não só o nome do arquivo.
+Para gravar o sha256 de cada arquivo em `brand_tokens`:
+`npm run db:init -- --hash-logos`.

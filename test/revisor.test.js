@@ -13,7 +13,8 @@ import { identifyByPaths } from '../backend/lib/icons.js';
 import { generateQr, qrFabricObjects } from '../backend/lib/qrcode.js';
 import { overallStatus } from '../backend/report/build.js';
 import { auditEntries, zipToBuffer } from '../backend/report/package.js';
-import { runAudit } from '../backend/services/auditService.js';
+import { AuditInputError, runAudit } from '../backend/services/auditService.js';
+import { classifyFamily, cleanFamily, verifyDocModel } from '../backend/audit/docModel.js';
 
 const fixture = (f) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const freshTokens = () => loadBrandTokens(openDatabase(':memory:'));
@@ -46,7 +47,12 @@ test('banco de tokens: seed, edição e histórico', async () => {
   const db = openDatabase(':memory:');
   const t = loadBrandTokens(db);
   assert.equal(t.fonts.length, 4);
-  assert.ok(t.colors.every((c) => c.placeholder));
+  assert.ok(t.colors.filter((c) => !c.role.startsWith('brand-')).every((c) => c.placeholder));
+  // Cores e arquivos oficiais da logomarca (brand/logos.js) não são provisórios
+  assert.ok(t.colors.filter((c) => c.role.startsWith('brand-')).every((c) => !c.placeholder));
+  assert.equal(t.logos.length, 6);
+  assert.ok(t.logos.every((l) => !l.placeholder));
+  assert.ok(['hig', 'typography', 'text_palette'].every((k) => t.settings[k]));
   upsertToken(db, { category: 'color', name: 'amarelo-ouro', value: { hex: '#FFC72C', role: 'accent' } });
   assert.equal(loadBrandTokens(db).colors.find((c) => c.name === 'amarelo-ouro').placeholder, false);
 
@@ -99,12 +105,13 @@ test('Modo A: detecta cada tipo de desvio', async () => {
   assert.ok(failed(/Montserrat SemiBold/), 'peso não aprovado');
   assert.ok(failed(/Montserrat Bold Italic/), 'override em styles');
   assert.ok(failed(/Cor fora da paleta — #FF0000/), 'cor fora da paleta');
-  assert.ok(failed(/Gradiente/), 'gradiente não aprovado');
+  assert.equal(r.checks.filter((c) => c.category === 'gradiente').length, 0, 'gradientes ficam fora da análise');
   assert.ok(failed(/Contraste insuficiente — Subtítulo/), 'contraste');
   assert.ok(failed(/Margem insuficiente — Título/), 'margem');
   assert.ok(failed(/Sobreposição/), 'sobreposição');
   assert.ok(failed(/Logomarca com filtros/), 'logo recolorido');
-  assert.ok(failed(/Versão da logomarca errada/), 'versão errada para o fundo');
+  assert.ok(failed(/Contraste da logomarca insuficiente/), 'logo roxa sobre fundo escuro');
+  assert.match(byTitle(r.checks, /Contraste da logomarca insuficiente/)[0].suggestion, /gove-logo-branco\.webp/);
   assert.ok(failed(/Logomarca deformada/), 'logo distorcido');
   assert.ok(failed(/QR code fora de fundo branco/), 'QR sobre gradiente');
   assert.ok(byTitle(r.checks, /Possível ícone não identificado/).length, 'ícone fora dos sets');
@@ -136,7 +143,7 @@ test('QR code gerado segue a identidade e passa na auditoria', async () => {
 });
 
 // ---------- Modo B ----------
-test('Modo B: tipografia e logomarca ficam para revisão manual', async () => {
+test('Modo B: tipografia fica para revisão manual; logomarca pela região informada', async () => {
   const tokens = freshTokens();
   const regions = JSON.parse(fixture('post-raster.regions.json'));
   const r = await auditRaster({ buffer: fixture('post-raster.png'), regions, tokens });
@@ -144,10 +151,14 @@ test('Modo B: tipografia e logomarca ficam para revisão manual', async () => {
   const logo = r.checks.find((c) => c.category === 'logomarca');
   assert.equal(typo.status, 'manual');
   assert.match(typo.found, /não verificável com confiança neste modo — revisão manual recomendada/i);
-  assert.equal(logo.status, 'manual');
+  assert.equal(logo.status, 'pass'); // cor da logomarca lida pela região informada
   assert.ok(byTitle(r.checks, /Contraste adequado — Título/).length);
-  assert.ok(byTitle(r.checks, /QR code sobre fundo branco sólido/).length);
-  assert.equal(r.palette[0].hex, '#1A153A');
+  assert.equal(byTitle(r.checks, /Cores da logomarca oficiais — Logo/)[0].status, 'pass');
+  assert.equal(byTitle(r.checks, /Contraste da logomarca adequado — Logo/)[0].status, 'pass');
+  assert.equal(byTitle(r.checks, /Cores de texto na paleta/)[0].status, 'pass');
+  // Fora do foco: gradientes, paleta dominante (fotos), QR, margens e ícones
+  assert.deepEqual(r.checks.filter((c) => ['gradiente', 'qrcode', 'margens', 'icones'].includes(c.category)), []);
+  assert.equal(r.palette, undefined);
 });
 
 test('Modo B sem metadados: contraste e QR são pulados e sinalizados', async () => {
@@ -159,18 +170,16 @@ test('Modo B sem metadados: contraste e QR são pulados e sinalizados', async ()
   assert.equal(overallStatus(r.checks).code, 'aprovado_com_ressalvas');
 });
 
-test('Modo B: QR code sobre gradiente é reprovado', async () => {
+test('Modo B: logomarca recolorida e logomarca sem contraste com o fundo', async () => {
   const tokens = freshTokens();
-  const qr = await generateQr(tokens, 'gove', { width: 240 });
-  const qrTransparent = await sharp(qr.data).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  // torna o branco transparente para simular QR aplicado direto sobre o gradiente
-  const { data, info } = qrTransparent;
-  for (let i = 0; i < data.length; i += 4) if (data[i] > 200) data[i + 3] = 0;
-  const qrPng = await sharp(data, { raw: info }).png().toBuffer();
-  const bg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><defs><linearGradient id="g"><stop offset="0" stop-color="#4A00E0"/><stop offset="1" stop-color="#FFC72C"/></linearGradient></defs><rect width="800" height="800" fill="url(#g)"/></svg>`);
-  const buffer = await sharp(bg).composite([{ input: qrPng, left: 400, top: 400 }]).png().toBuffer();
-  const r = await auditRaster({ buffer, tokens, regions: { qrRegions: [{ x: 400, y: 400, width: 240, height: 240 }] } });
-  assert.equal(byTitle(r.checks, /QR code fora de fundo branco sólido/)[0].status, 'fail');
+  const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="#20133D"/><rect x="100" y="100" width="200" height="120" fill="#E61E1E"/><rect x="500" y="100" width="200" height="120" fill="#3E0099"/></svg>`);
+  const buffer = await sharp(svg).png().toBuffer();
+  const regions = { logoRegions: [{ label: 'Logo vermelha', x: 100, y: 100, width: 200, height: 120 }, { label: 'Logo roxa', x: 500, y: 100, width: 200, height: 120 }] };
+  const r = await auditRaster({ buffer, tokens, regions });
+  assert.equal(byTitle(r.checks, /Cor da logomarca fora do padrão — Logo vermelha/)[0].status, 'fail');
+  const c = byTitle(r.checks, /Contraste da logomarca insuficiente — Logo roxa/)[0];
+  assert.equal(c.status, 'fail');
+  assert.match(c.expected, /branco/);
 });
 
 // ---------- Relatório e ZIP ----------
@@ -195,4 +204,84 @@ test('relatório completo + ZIP', async () => {
   const raster = await runAudit({ db, file: { name: 'peca.png', buffer: fixture('post-raster.png'), mimetype: 'image/png' } });
   assert.equal(raster.report.mode.code, 'B');
   assert.match(raster.report.limitations[0], /OCR/);
+});
+
+// ---------- Modos Documento (PPTX, PDF, DOCX) e HTML ----------
+const DOCS = (f) => fixture(`docs/${f}`);
+const docAudit = async (name) => {
+  const db = openDatabase(':memory:');
+  return (await runAudit({ db, file: { name, buffer: DOCS(name) } })).report;
+};
+
+test('famílias tipográficas: nomes reais de fonte', () => {
+  const typography = loadBrandTokens(openDatabase(':memory:')).settings.typography;
+  assert.equal(cleanFamily('ABCDEF+Montserrat-Bold'), 'Montserrat');
+  assert.equal(cleanFamily('"Inter", system-ui'), 'Inter');
+  assert.equal(cleanFamily('Montserrat SemiBold'), 'Montserrat');
+  assert.equal(classifyFamily('InterVariable', typography).level, 'approved');
+  assert.equal(classifyFamily('ArialMT', typography).level, 'fallback');
+  assert.equal(classifyFamily('Helvetica-Bold', typography).level, 'fallback');
+  assert.equal(classifyFamily('Times-Roman', typography).level, 'other');
+});
+
+for (const name of ['apresentacao-aprovada.pptx', 'documento-aprovado.docx', 'folheto-aprovado.pdf']) {
+  test(`Documento aprovado — ${name}`, async () => {
+    const report = await docAudit(name);
+    assert.equal(report.mode.code, 'C');
+    assert.equal(report.status.code, 'aprovado', JSON.stringify(report.checks.filter((c) => c.status !== 'pass').map((c) => c.title)));
+    assert.ok(report.checks.some((c) => c.category === 'logomarca' && /Contraste da logomarca adequado/.test(c.title)));
+    assert.ok(report.checks.some((c) => c.category === 'tamanhos' && c.status === 'pass'));
+    assert.equal(report.document.format, name.split('.').pop().toUpperCase());
+  });
+}
+
+for (const [name, extra] of [
+  ['apresentacao-reprovada.pptx', [/Cor da logomarca fora do padrão — Slide 1/, /Contraste da logomarca insuficiente — Slide 2/, /Fonte fora do design system — Comic Sans/, /Texto abaixo do mínimo — 9 pt/]],
+  ['documento-reprovado.docx', [/Contraste da logomarca insuficiente — Cabeçalho/, /Fonte fora do design system — Times New Roman/, /Texto abaixo do mínimo — 8 pt/]],
+  ['folheto-reprovado.pdf', [/Contraste da logomarca insuficiente — Página 1/, /Fonte fora do design system — Times/, /Texto abaixo do mínimo — 8 pt/]],
+]) {
+  test(`Documento reprovado — ${name}`, async () => {
+    const report = await docAudit(name);
+    assert.equal(report.status.code, 'reprovado');
+    const failed = (re) => report.checks.some((c) => c.status === 'fail' && re.test(c.title));
+    for (const re of [/Texto em preto puro/, /Cor de texto fora da paleta — #FF0000/, ...extra]) assert.ok(failed(re), re.source);
+    assert.ok(report.checks.some((c) => c.status === 'warn' && /Fonte de fallback — (Arial|Helvetica)/.test(c.title)));
+    assert.equal(report.checks.filter((c) => c.category === 'gradiente').length, 0);
+    // Agrupado por fonte: um item por família, não por trecho
+    const fams = report.checks.filter((c) => c.category === 'tipografia').map((c) => c.title);
+    assert.equal(new Set(fams).size, fams.length);
+  });
+}
+
+test('HTML no Node: recusado com mensagem clara (analisado no Design System)', async () => {
+  const db = openDatabase(':memory:');
+  await assert.rejects(
+    runAudit({ db, file: { name: 'email.html', buffer: DOCS('email-aprovado.html') } }),
+    (e) => e instanceof AuditInputError && e.status === 422 && /Design System/.test(e.message),
+  );
+});
+
+test('verificador HTML: corpo < 17 px, texto < 11 px e alvo < 44 px', () => {
+  const tokens = freshTokens();
+  const checks = verifyDocModel(
+    {
+      format: 'HTML',
+      texts: [
+        { text: 'Título', font: 'Montserrat', sizePx: 32, color: '#3D0099', where: 'h1' },
+        { text: 'Corpo', font: 'Inter', sizePx: 14, color: '#2F3539', where: 'p' },
+        { text: 'Miúdo', font: 'Inter', sizePx: 9, color: '#2F3539', where: 'small' },
+      ],
+      logos: [{ colors: ['#3E0099'], where: 'svg.logo', background: '#FFFFFF' }],
+      targets: [
+        { w: 160, h: 48, label: 'Conheça', where: 'a.cta' },
+        { w: 70, h: 18, label: 'Saiba mais', where: 'a' },
+      ],
+    },
+    tokens,
+  );
+  assert.equal(byTitle(checks, /Texto de corpo abaixo de 17 px — 14 px/)[0].status, 'warn');
+  assert.equal(byTitle(checks, /Texto abaixo do mínimo — 9 px/)[0].status, 'fail');
+  assert.equal(byTitle(checks, /Alvo de toque pequeno — “Saiba mais”/)[0].status, 'fail');
+  assert.equal(byTitle(checks, /Alvo de toque pequeno — “Conheça”/).length, 0);
+  assert.equal(byTitle(checks, /Contraste da logomarca adequado/)[0].status, 'pass');
 });

@@ -5,11 +5,12 @@
 import '../shims/globals.js';
 import { config as fabricConfig } from 'fabric';
 import { isEmbedded, saveFile, setStandaloneTheme, syncTheme, currentTheme } from '../../../artifact-runtime/index.ts';
-import { AuditInputError, runAudit } from '../../../backend/services/auditService.js';
+import { ACCEPTED_EXT, AuditInputError, detectMode, runAudit } from '../../../backend/services/auditService.js';
+import { pickLogo } from '../../../brand/logos.js';
 import { auditEntries, zipToBuffer } from '../../../backend/report/package.js';
 import { generateQr } from '../../../backend/lib/qrcode.js';
 import { browserDb, historyCol, listAudits, loadBrandTokens, openDatabase } from '../shims/database.js';
-import { FONTSOURCE_WOFF2_B64 } from '../.generated/data.js';
+import { BRAND_LOGOS_B64, FONTSOURCE_WOFF2_B64 } from '../.generated/data.js';
 
 // O preview do Modo A é renderizado em 1:1 com o artboard, como no Node.
 fabricConfig.configure({ devicePixelRatio: 1 });
@@ -25,9 +26,26 @@ const icon = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use 
 const statusIcon = (st) => icon(st === 'manual' ? 'manual' : st, `st-${st}`);
 
 /* ------------------------------------------------------------------ tema */
-syncTheme(updateThemeToggle);
+// Logomarca oficial no cabeçalho: versão escolhida por contraste com o fundo
+// do tema (brand/logos.js → pickLogo).
+const BG = { light: '#FFFFFF', dark: '#20133D' };
+function updateBrandLogo() {
+  const img = document.getElementById('brand-logo');
+  const pick = pickLogo(BG[currentTheme()] ?? BG.light, 'logotipo');
+  const b64 = BRAND_LOGOS_B64[pick.file];
+  if (!img || !b64) return;
+  img.src = `data:image/webp;base64,${b64}`;
+  img.dataset.variant = pick.variant;
+  img.hidden = false;
+}
 const toggle = $('#theme-toggle');
+syncTheme(() => {
+  updateBrandLogo();
+  updateThemeToggle();
+});
+updateBrandLogo();
 function updateThemeToggle() {
+  if (!toggle) return;
   const dark = currentTheme() === 'dark';
   const label = dark ? 'Tema claro' : 'Tema escuro';
   toggle.setAttribute('aria-pressed', String(dark));
@@ -41,6 +59,7 @@ if (!isEmbedded()) {
   toggle.addEventListener('click', () => {
     setStandaloneTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     updateThemeToggle();
+    updateBrandLogo();
   });
 }
 
@@ -93,29 +112,28 @@ const downloadJson = (a, statusEl) =>
 const form = $('#audit-form');
 let current = null;
 
-// Seletor de modo: só ajusta a interface (tipos aceitos e opções avançadas).
-// O modo da auditoria continua sendo definido pelo arquivo enviado.
-const ACCEPT = {
-  A: { accept: '.json,application/json', hint: '.json (Fabric.js)' },
-  B: { accept: 'image/png,image/jpeg,image/webp', hint: '.png ou .jpg' },
-};
+// Seletor de modo: o modo da auditoria é escolhido pela extensão do arquivo;
+// o seletor acompanha a escolha e mostra só as opções que valem para ela.
+const ACCEPT_ALL = ACCEPTED_EXT.join(',');
+const HINT = { A: '.json (Fabric.js)', B: '.png ou .jpg', C: '.pptx, .pdf ou .docx', D: '.html ou .htm' };
 function setUiMode(m) {
   form.dataset.mode = m;
   const radio = form.querySelector(`input[name="uiMode"][value="${m}"]`);
   if (radio && !radio.checked) radio.checked = true;
-  form.elements.file.accept = ACCEPT[m].accept;
-  if (!form.elements.file.files?.length) $('#file-accept').textContent = ACCEPT[m].hint;
+  if (!form.elements.file.files?.length) $('#file-accept').textContent = HINT[m];
 }
+form.elements.file.accept = ACCEPT_ALL;
 form.addEventListener('change', (e) => {
   if (e.target.name === 'uiMode') setUiMode(e.target.value);
   if (e.target.name === 'file') {
     const f = e.target.files?.[0];
     $('#file-label').textContent = f ? f.name : 'Escolher peça';
-    $('#file-accept').textContent = f ? `${Math.max(1, Math.round(f.size / 1024))} KB` : ACCEPT[form.dataset.mode].hint;
-    if (f) setUiMode(/json$/i.test(f.type) || /\.json$/i.test(f.name) ? 'A' : 'B');
+    $('#file-accept').textContent = f ? `${Math.max(1, Math.round(f.size / 1024))} KB` : HINT[form.dataset.mode];
+    const m = f && detectMode({ name: f.name, mimetype: f.type });
+    if (m) setUiMode(m);
   }
 });
-setUiMode('A');
+setUiMode('B');
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -146,7 +164,8 @@ form.addEventListener('submit', async (e) => {
       db,
       file: { name: file.name, buffer: Buffer.from(await file.arrayBuffer()), mimetype: file.type || undefined },
       regions,
-      pieceType: data.get('pieceType') || undefined,
+      // Tipo de peça só vale para o Fabric (margens por tipo); nos outros modos o campo fica oculto.
+      pieceType: (form.dataset.mode === 'A' && data.get('pieceType')) || undefined,
       artboard: w > 0 && h > 0 ? { width: w, height: h } : undefined,
     });
     session.set(result.id, result);
@@ -156,7 +175,7 @@ form.addEventListener('submit', async (e) => {
     renderHistory();
   } catch (err) {
     if (!(err instanceof AuditInputError)) console.warn('[revisor]', err);
-    status.textContent = err instanceof AuditInputError ? err.message : 'Erro ao processar a peça. Confira se o arquivo é um Fabric.js JSON ou uma imagem PNG/JPG válida.';
+    status.textContent = err instanceof AuditInputError ? err.message : 'Erro ao processar a peça. Confira se o arquivo é uma imagem PNG/JPG, um PPTX, PDF, DOCX, HTML ou Fabric.js JSON válido.';
   } finally {
     btn.disabled = false;
   }
@@ -180,6 +199,7 @@ function renderResult({ report, preview }) {
   $('#r-dl-status').textContent = '';
   const fig = $('#r-figure');
   const img = $('#r-preview');
+  document.querySelector('.result-grid').classList.toggle('no-preview', !preview);
   if (preview) {
     img.src = pngDataUrl(preview);
     fig.hidden = false;

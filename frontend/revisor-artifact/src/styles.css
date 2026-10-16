@@ -100,6 +100,8 @@ a { color: var(--link); }
 
 /* Cabeçalho */
 .appbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); animation: enter var(--duration-entry) var(--ease-entry) both; }
+.brand { display: grid; gap: 4px; justify-items: start; }
+.brand-logo { display: block; height: 30px; width: auto; }
 .local-note { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); margin: 4px 0 0; }
 
 /* Cartões */
@@ -116,7 +118,12 @@ a { color: var(--link); }
 .seg-label { white-space: nowrap; }
 @media (max-width: 899px) { .seg-label { display: none; } }
 .mode-hint { font-size: 14px; color: var(--text-muted); margin: 0 0 var(--space-2); }
-form[data-mode='A'] .mode-hint .for-B, form[data-mode='B'] .mode-hint .for-A, form[data-mode='A'] .disclosure .for-B, form[data-mode='B'] .disclosure .for-A { display: none; }
+/* Só o que vale para o modo atual (A Fabric, B Imagem, C Documento, D HTML) */
+form:not([data-mode='A']) .for-A:not(.for-B),
+form:not([data-mode='B']) .for-B:not(.for-A),
+form:not([data-mode='C']) .for-C,
+form:not([data-mode='D']) .for-D,
+form:not([data-mode='A']):not([data-mode='B']) .for-A.for-B { display: none; }
 
 /* Área de envio */
 .drop { position: relative; display: flex; align-items: center; gap: var(--space-2); min-height: 88px; padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2); border: 2px dashed var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--secondary); cursor: pointer; transition: border-color var(--duration-fast) ease; }
@@ -192,6 +199,7 @@ details[open] > summary > .chev { transform: rotate(180deg); }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
 .toolbar .form-status { margin: 0 0 0 var(--space-1); }
 .result-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--space-3); align-items: start; margin-top: var(--space-2); }
+.result-grid.no-preview { grid-template-columns: minmax(0, 1fr); }
 .preview { margin: 0; }
 .preview img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border); }
 .preview figcaption { font-size: 13px; color: var(--text-muted); margin-top: var(--space-1); }

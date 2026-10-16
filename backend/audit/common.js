@@ -3,6 +3,7 @@
 export const CATEGORY_LABELS = {
   geral: 'Geral',
   tipografia: 'Tipografia',
+  tamanhos: 'Tamanhos mínimos (HIG)',
   cor: 'Paleta de cores',
   gradiente: 'Gradientes',
   contraste: 'Contraste (WCAG)',

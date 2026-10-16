@@ -24,7 +24,8 @@ export const browserDb = Object.freeze({ prepare: () => ({ run: () => ({ changes
 export async function openDatabase() {
   const col = tokensCol();
   await Promise.all([col.ready, historyCol().ready]);
-  if (!col.all().length) await seedTokens(browserDb);
+  // Semeia o que falta (tokens novos do seed) e migra os provisórios.
+  await seedTokens(browserDb);
   return browserDb;
 }
 
@@ -40,6 +41,14 @@ export async function seedTokens(_db, { overwrite = false } = {}) {
     if (prev && !overwrite) return;
     writes.push(col.set({ id, category: r.category, name: r.name, value: r.value, notes: null, placeholder: r.placeholder, order: prev?.order ?? order++, updatedAt: now() }));
   });
+  if (!overwrite) {
+    const logoNames = new Set(rows.filter((r) => r.category === 'logo').map((r) => r.name));
+    for (const d of col.all()) {
+      const seed = rows.find((r) => r.category === d.category && r.name === d.name);
+      if (d.placeholder && seed && !seed.placeholder) writes.push(col.set({ ...d, value: seed.value, placeholder: false, updatedAt: now() }));
+      if (d.category === 'logo' && d.placeholder && !logoNames.has(d.name) ) writes.push(col.remove(d.id));
+    }
+  }
   await Promise.all(writes);
 }
 

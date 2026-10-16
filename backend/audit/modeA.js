@@ -11,7 +11,8 @@ import { LOGO_DIR } from '../../db/database.js';
 import { contrastRatio, deltaE, flatten, nearestPaletteColor, parseColor, round, toHex } from '../lib/color.js';
 import { checkFontVariant, variantLabel } from '../lib/fonts.js';
 import { collectPaths, explicitIconRef, identifyByPaths, iconExists, isApprovedIcon } from '../lib/icons.js';
-import { analyzeQrImage, dataUrlToBuffer, dominantColors, isLight } from '../lib/raster.js';
+import { analyzeQrImage, dataUrlToBuffer, dominantColors } from '../lib/raster.js';
+import { logoContrastCheck } from './docModel.js';
 import { check, marginChecks, r1, resolveMargin, spacingChecks } from './common.js';
 
 const TEXT_TYPES = new Set(['text', 'i-text', 'itext', 'textbox']);
@@ -406,7 +407,9 @@ function colorChecks(doc, tokens, tol) {
     }
   }
 
-  for (const g of gradients) out.push(gradientCheck(g, tokens, tol));
+  // Gradientes ficam fora da análise (foco: logomarca, cor do texto, tipografia
+  // e tamanhos). gradientCheck continua exportável para uso pontual.
+  void gradients;
   return out;
 }
 
@@ -573,7 +576,8 @@ function contrastChecks(nodes, resolveBg, tokens) {
     let unknown = null;
     for (const p of samplePoints(n.absBbox)) {
       const bg = resolveBg(n, p);
-      if (bg.kind === 'image' || bg.kind === 'unknown') {
+      if (bg.kind === 'image') continue; // imagens/fotos ficam fora da análise
+      if (bg.kind === 'unknown') {
         unknown = bg;
         continue;
       }
@@ -591,12 +595,13 @@ function contrastChecks(nodes, resolveBg, tokens) {
     }
 
     if (!worst) {
+      if (!unknown) continue; // texto só sobre imagem: fora da análise
       out.push(
         check({
           category: 'contraste',
           title: `Contraste não verificável — ${n.label}`,
           status: 'manual',
-          found: unknown?.kind === 'image' ? `Texto sobre imagem (${unknown.node?.label})` : 'Fundo transparente/indefinido',
+          found: 'Fundo transparente/indefinido',
           expected: `≥ ${min}:1`,
           suggestion: 'Confira o contraste visualmente ou coloque o texto sobre uma área de cor sólida da paleta.',
           objects: [n.label],
@@ -611,11 +616,11 @@ function contrastChecks(nodes, resolveBg, tokens) {
         category: 'contraste',
         title: `${ok ? 'Contraste adequado' : 'Contraste insuficiente'} — ${n.label}`,
         status: ok ? (unknown ? 'warn' : 'pass') : 'fail',
-        found: `${round(worst.ratio)}:1 (${worst.fg} sobre ${worst.bg}${worst.bgKind === 'gradient' ? ', pior stop do gradiente' : ''})${unknown ? ' — parte do texto está sobre imagem' : ''}`,
+        found: `${round(worst.ratio)}:1 (${worst.fg} sobre ${worst.bg}${worst.bgKind === 'gradient' ? ', pior stop do gradiente' : ''})${unknown ? ' — parte do fundo é indefinida' : ''}`,
         expected: `≥ ${min}:1 (${large ? 'texto grande' : 'texto normal'}, ${r1(size)} px)`,
         suggestion: ok
           ? unknown
-            ? 'Parte do texto está sobre imagem: confira visualmente.'
+            ? 'Parte do fundo do texto é transparente/indefinida: confira visualmente.'
             : null
           : `Use uma cor de texto com mais contraste sobre ${worst.bg} — ${bestTextColor(worst.bg, tokens.colors, min)} — ou mude o fundo.`,
         objects: [n.label],
@@ -784,38 +789,22 @@ async function logoChecks(nodes, resolveBg, tokens, tol) {
       }
     }
 
-    // 3. Versão correta para o fundo
+    // 3. Contraste de cada cor da logomarca com o fundo (brand/logos.js:
+    //    ≥ 4,5:1; diz qual versão usar). Fundo de imagem/gradiente: fora da análise.
     const bg = resolveBg(n, new Point(n.absBbox.left + n.absBbox.width / 2, n.absBbox.top + n.absBbox.height / 2));
-    if (bg.kind === 'solid') {
-      const bgIsLight = isLight(bg.color);
-      const wanted = bgIsLight ? 'light' : 'dark';
-      const ok = logo.background === wanted;
-      const alt = tokens.logos.find((l) => l.background === wanted);
-      out.push(
-        check({
-          category: 'logomarca',
-          title: `${ok ? 'Versão da logomarca adequada ao fundo' : 'Versão da logomarca errada para o fundo'} — ${label}`,
-          status: ok ? 'pass' : 'fail',
-          found: `Versão "${logo.name}" sobre fundo ${bgIsLight ? 'claro' : 'escuro'} (${toHex(bg.color)})`,
-          expected: `Fundo ${bgIsLight ? 'claro' : 'escuro'} → ${alt?.file ?? 'versão correspondente'}`,
-          suggestion: ok ? null : `Troque por ${alt?.file ?? 'a versão para fundo ' + (bgIsLight ? 'claro' : 'escuro')}.`,
-          objects: [label],
-          bbox: n.bbox,
-        }),
-      );
-    } else {
-      out.push(
-        check({
-          category: 'logomarca',
-          title: `Fundo da logomarca não é sólido — ${label}`,
-          status: 'warn',
-          found: bg.kind === 'gradient' ? 'Logomarca sobre gradiente' : bg.kind === 'image' ? `Logomarca sobre imagem (${bg.node?.label})` : 'Fundo indefinido',
-          expected: 'Fundo sólido compatível com a versão da logomarca',
-          suggestion: 'Confira a legibilidade da logomarca visualmente; prefira área sólida.',
-          objects: [label],
-          bbox: n.bbox,
-        }),
-      );
+    if (bg.kind === 'solid' || bg.kind === 'unknown') {
+      const c = logoContrastCheck(
+          {
+            colors: logo.colors ?? [],
+            where: label,
+            background: bg.kind === 'solid' ? toHex(bg.color) : null,
+            backgroundNote: bg.kind === 'unknown' ? 'fundo transparente/indefinido' : `versão “${logo.name}”`,
+            box: { w: n.absBbox.width, h: n.absBbox.height },
+          },
+          label,
+        );
+      c.bbox = n.bbox;
+      out.push(c);
     }
 
     // 4. Distorção / espelhamento

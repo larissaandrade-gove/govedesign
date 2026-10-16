@@ -1,7 +1,7 @@
 // Cria/atualiza o banco de tokens.
 //   npm run db:init                  → cria tabelas e insere tokens que faltam
 //   npm run db:init -- --reseed      → sobrescreve os tokens com os valores de seed.js
-//   npm run db:init -- --hash-logos  → calcula o sha256 dos arquivos em db/assets/logos
+//   npm run db:init -- --hash-logos  → calcula o sha256 dos arquivos em brand/logos
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

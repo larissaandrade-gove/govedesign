@@ -21,18 +21,18 @@
       <form id="audit-form">
         <div class="modes">
           <div class="mode">
-            <h3>Modo A · Vetorial</h3>
-            <p>Fabric.js JSON (<code>canvas.toJSON()</code>). Checagens exatas de fonte, cor, gradiente, margens, logomarca, ícones e QR code.</p>
+            <h3>Imagem · Documento · Fabric</h3>
+            <p>PNG/JPG, PowerPoint, PDF, Word ou Fabric.js JSON: cor e contraste da logomarca, cor do texto, fonte (Montserrat/Inter) e tamanhos mínimos (HIG). Gradientes e fotos não são analisados.</p>
           </div>
           <div class="mode">
-            <h3>Modo B · Raster</h3>
-            <p>PNG ou JPG final. Paleta e contraste por pixel; tipografia, logomarca e ícones ficam para revisão manual.</p>
+            <h3>HTML</h3>
+            <p>E-mails e landing pages são analisados no Revisor dentro do Design System, que renderiza a página no navegador.</p>
           </div>
         </div>
 
         <label class="field">
-          <span>Peça (.json, .png ou .jpg)</span>
-          <input type="file" name="file" accept=".json,application/json,image/png,image/jpeg,image/webp" required>
+          <span>Peça (.png, .jpg, .pptx, .pdf, .docx, .html ou .json)</span>
+          <input type="file" name="file" accept=".jpg,.jpeg,.png,.webp,.pptx,.pdf,.docx,.html,.htm,.json" required>
         </label>
 
         <div class="row">

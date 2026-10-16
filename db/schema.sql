@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS audit_history (
   created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   file_name      TEXT    NOT NULL,
   file_sha256    TEXT,
-  mode           TEXT    NOT NULL CHECK (mode IN ('A','B')),
+  -- A = Fabric JSON, B = imagem, C = documento (PPTX/PDF/DOCX), D = HTML
+  mode           TEXT    NOT NULL CHECK (mode IN ('A','B','C','D')),
   piece_type     TEXT,
   status         TEXT    NOT NULL CHECK (status IN ('aprovado','aprovado_com_ressalvas','reprovado')),
   failed_items   TEXT    NOT NULL DEFAULT '[]' CHECK (json_valid(failed_items)),

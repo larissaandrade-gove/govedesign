@@ -6,6 +6,8 @@ import { extname, join } from 'node:path';
 import { loadBrandTokens, recordAudit } from '../../db/database.js';
 import { auditVector } from '../audit/modeA.js';
 import { auditRaster } from '../audit/modeB.js';
+import { DocInputError } from '../audit/docModel.js';
+import { auditDocument, docFormatOf } from '../audit/modeDoc.js';
 import { buildReport } from '../report/build.js';
 import { renderReportHtml } from '../report/html.js';
 import { auditEntries } from '../report/package.js';
@@ -13,6 +15,21 @@ import { annotatePreview } from '../report/preview.js';
 
 const RASTER_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 const RASTER_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp']);
+const DOC_TYPES = {
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/pdf': '.pdf',
+  'text/html': '.html',
+};
+/** Extensões aceitas (para o campo de envio). */
+export const ACCEPTED_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.pptx', '.pdf', '.docx', '.html', '.htm', '.json'];
+
+/** Extensão efetiva do arquivo (pelo nome, ou pelo tipo MIME). */
+export function docExt({ name = '', mimetype = '' }) {
+  const ext = extname(name).toLowerCase();
+  if (docFormatOf(ext)) return ext;
+  return DOC_TYPES[mimetype] ?? null;
+}
 
 export class AuditInputError extends Error {
   constructor(message, status = 400) {
@@ -25,7 +42,8 @@ export function detectMode({ name = '', mimetype = '' }) {
   const ext = extname(name).toLowerCase();
   if (ext === '.json' || mimetype === 'application/json') return 'A';
   if (RASTER_EXT.has(ext) || RASTER_TYPES.has(mimetype)) return 'B';
-  return null;
+  const d = docExt({ name, mimetype });
+  return d ? docFormatOf(d).mode : null;
 }
 
 const safeName = (n) => String(n).replace(/[^\w.\-À-ÿ ]+/g, '_').slice(0, 120) || 'peca';
@@ -42,7 +60,7 @@ const safeName = (n) => String(n).replace(/[^\w.\-À-ÿ ]+/g, '_').slice(0, 120)
 export async function runAudit({ db, file, regions, pieceType, artboard, storageDir }) {
   const mode = detectMode(file);
   if (!mode) {
-    throw new AuditInputError('Formato não suportado. Envie Fabric.js JSON (Modo A) ou PNG/JPG (Modo B).', 415);
+    throw new AuditInputError('Formato não suportado. Envie PNG/JPG, PowerPoint (.pptx), PDF, Word (.docx), HTML ou Fabric.js JSON.', 415);
   }
   const tokens = loadBrandTokens(db);
   const sha256 = createHash('sha256').update(file.buffer).digest('hex');
@@ -59,8 +77,15 @@ export async function runAudit({ db, file, regions, pieceType, artboard, storage
       throw new AuditInputError('JSON sem a lista "objects": exporte a peça com canvas.toJSON() do Fabric.js.');
     }
     result = await auditVector({ json, pieceType: pieceType || json.gove?.pieceType, artboard, tokens });
-  } else {
+  } else if (mode === 'B') {
     result = await auditRaster({ buffer: file.buffer, regions, pieceType, tokens });
+  } else {
+    try {
+      result = await auditDocument({ ext: docExt(file), buffer: file.buffer, tokens });
+    } catch (err) {
+      if (err instanceof DocInputError) throw new AuditInputError(err.message, err.status);
+      throw err;
+    }
   }
 
   const report = buildReport({
@@ -70,7 +95,7 @@ export async function runAudit({ db, file, regions, pieceType, artboard, storage
     artboard: result.artboard,
     checks: result.checks,
     tokens,
-    extra: { regionSource: result.regionSource, palette: result.palette, placeholderImages: result.placeholderImages },
+    extra: { regionSource: result.regionSource, palette: result.palette, placeholderImages: result.placeholderImages, ...(result.extra ?? {}) },
   });
 
   let preview = null;

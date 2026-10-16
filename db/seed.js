@@ -1,3 +1,5 @@
+import { LOGOS as BRAND_LOGOS } from '../brand/logos.js';
+
 // Valores iniciais de `brand_tokens`.
 //
 // Os valores marcados com `placeholder: true` são PROVISÓRIOS: foram tirados do
@@ -21,8 +23,9 @@ export const COLORS = [
   { name: 'off-white', hex: '#EAEAEA', role: 'text-body', placeholder: true },
   { name: 'cinza-azulado', hex: '#5C6B73', role: 'text-muted', placeholder: true },
   { name: 'roxo-claro', hex: '#9D8CFF', role: 'link', placeholder: true },
-  { name: 'roxo-logo', hex: '#3E0099', role: 'brand-purple', placeholder: true },
-  { name: 'amarelo-logo', hex: '#FEC526', role: 'brand-yellow', placeholder: true },
+  // Cores reais da logomarca oficial (brand/logos.js).
+  { name: 'roxo-logo', hex: '#3E0099', role: 'brand-purple' },
+  { name: 'amarelo-logo', hex: '#FEC526', role: 'brand-yellow' },
 ];
 
 // TODO(gove): cadastrar os gradientes aprovados (stops + ângulo em graus,
@@ -61,27 +64,20 @@ export const ICONS = [
   { name: 'phosphor:arrow-right:regular', set: 'phosphor', icon: 'arrow-right', weight: 'regular', placeholder: true },
 ];
 
-// TODO(gove): arquivos oficiais da logomarca (duas versões/cores). Coloque os
-// arquivos em db/assets/logos/ com exatamente estes nomes e preencha `sha256`
-// (rode `npm run db:init -- --hash-logos` para calcular automaticamente).
-// `background` indica sobre qual fundo a versão deve ser usada e `colors` as
-// cores que a versão deve ter.
-export const LOGOS = [
-  {
-    name: 'versao-fundo-escuro',
-    file: 'gove-logo-branco-amarelo.png',
-    background: 'dark',
-    colors: ['#FFFFFF', '#FEC526'],
-    placeholder: true,
-  },
-  {
-    name: 'versao-fundo-claro',
-    file: 'gove-logo-roxo.png',
-    background: 'light',
-    colors: ['#3E0099', '#FEC526'],
-    placeholder: true,
-  },
-];
+// Logomarcas oficiais (brand/logos/, regra de aplicação em brand/logos.js):
+// símbolo (espaços 1:1) e logotipo (faixas horizontais), cada um em cor, roxo
+// e branco. `colors` são as cores reais de cada versão; `background` indica o
+// fundo típico (a escolha exata é por contraste ≥ 4,5:1 — ver pickLogo).
+// Para gravar o sha256: `npm run db:init -- --hash-logos`.
+export const LOGOS = BRAND_LOGOS.simbolo.variants
+  .map((v) => ({ ...v, kind: 'simbolo' }))
+  .concat(BRAND_LOGOS.logotipo.variants.map((v) => ({ ...v, kind: 'logotipo' })))
+  .map((v) => ({
+    name: `${v.kind}-${v.id}`,
+    file: v.file,
+    background: v.id === 'branco' ? 'dark' : 'light',
+    colors: v.colors,
+  }));
 
 // TODO(gove): confirmar as margens mínimas por tipo de peça.
 // minMarginRatio = fração do menor lado do artboard; a margem mínima usada é o
@@ -132,6 +128,47 @@ export const SETTINGS = [
     name: 'icon_policy',
     // "list" = só os ícones cadastrados; "set" = qualquer ícone Lucide/Phosphor
     value: { mode: 'list' },
+  },
+  {
+    // Tamanhos mínimos do redesign baseado nas Human Interface Guidelines da
+    // Apple (HIG): 11 pt é o menor estilo de texto do HIG (Caption 2); 17 pt é
+    // o tamanho padrão de corpo (Body); 44 × 44 pt é o alvo de toque mínimo.
+    // No HTML, 1 pt do HIG ≈ 1 px CSS. Usado pelos modos Documento e HTML.
+    name: 'hig',
+    value: { minTextPt: 11, minTextPx: 11, bodyTextPx: 17, minTouchTargetPx: 44 },
+  },
+  {
+    // Tipografia vigente do design system: Montserrat (títulos) e Inter
+    // (corpo/UI). Helvetica/Arial são tolerados como fallback de impresso (⚠️);
+    // qualquer outra família é ❌. Usado pelos modos Documento e HTML.
+    name: 'typography',
+    value: {
+      approved: [
+        { family: 'Montserrat', role: 'títulos' },
+        { family: 'Inter', role: 'corpo e interface' },
+      ],
+      fallback: ['Helvetica', 'Arial'],
+    },
+  },
+  {
+    // Paleta oficial para cor de texto (design system Gove). Preto puro nunca.
+    name: 'text_palette',
+    value: {
+      colors: [
+        { name: 'amarelo', hex: '#FFC72C' },
+        { name: 'roxo', hex: '#3D0099' },
+        { name: 'roxo-escuro', hex: '#351F65' },
+        { name: 'cinza-claro', hex: '#F4F4F4' },
+        { name: 'grafite', hex: '#2F3539' },
+        { name: 'lilás', hex: '#A278DA' },
+        { name: 'cinza', hex: '#5B6770' },
+        { name: 'noite', hex: '#20133D' },
+        { name: 'turquesa', hex: '#5AC2CD' },
+        { name: 'azul', hex: '#16499F' },
+        { name: 'branco', hex: '#FFFFFF' },
+      ],
+      forbidden: ['#000000'],
+    },
   },
   {
     name: 'raster',

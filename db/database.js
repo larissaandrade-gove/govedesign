@@ -7,13 +7,28 @@ import { seedRows } from './seed.js';
 
 const DB_DIR = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_DB_PATH = process.env.GOVE_REVISOR_DB || join(DB_DIR, 'revisor.sqlite');
-export const LOGO_DIR = process.env.GOVE_LOGO_DIR || join(DB_DIR, 'assets', 'logos');
+// Arquivos oficiais da logomarca: brand/logos/ (ver brand/logos.js).
+export const LOGO_DIR = process.env.GOVE_LOGO_DIR || join(DB_DIR, '..', 'brand', 'logos');
 
 export function openDatabase(path = DEFAULT_DB_PATH, { seed = true } = {}) {
   const db = new Database(path);
-  db.exec(readFileSync(join(DB_DIR, 'schema.sql'), 'utf8'));
+  const schema = readFileSync(join(DB_DIR, 'schema.sql'), 'utf8');
+  db.exec(schema);
+  migrateHistoryModes(db, schema);
   if (seed) seedTokens(db);
   return db;
+}
+
+/** Bancos antigos aceitavam só os modos A/B: recria audit_history com o CHECK novo. */
+function migrateHistoryModes(db, schema) {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'audit_history'").get();
+  if (!row || row.sql.includes("'C'")) return;
+  const create = /CREATE TABLE IF NOT EXISTS audit_history \([\s\S]*?\n\);/.exec(schema)[0].replace('IF NOT EXISTS audit_history', 'audit_history_v2');
+  db.transaction(() => {
+    db.exec(create);
+    db.exec('INSERT INTO audit_history_v2 SELECT * FROM audit_history; DROP TABLE audit_history; ALTER TABLE audit_history_v2 RENAME TO audit_history;');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_audit_history_created ON audit_history (created_at DESC);');
+  })();
 }
 
 /** Insere os tokens iniciais sem sobrescrever o que já foi editado. */
@@ -26,6 +41,27 @@ export function seedTokens(db, { overwrite = false } = {}) {
     for (const r of rows) stmt.run(r.category, r.name, JSON.stringify(r.value), r.placeholder ? 1 : 0);
   });
   tx(seedRows());
+  if (!overwrite) migratePlaceholders(db);
+}
+
+/**
+ * Tokens que eram provisórios e agora têm valor oficial no seed são
+ * atualizados; logos provisórias que saíram do seed são removidas. Valores
+ * editados (não provisórios) nunca são tocados.
+ */
+function migratePlaceholders(db) {
+  const rows = seedRows();
+  const upd = db.prepare(
+    `UPDATE brand_tokens SET value = ?, is_placeholder = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+     WHERE category = ? AND name = ? AND is_placeholder = 1`,
+  );
+  const logoNames = rows.filter((r) => r.category === 'logo').map((r) => r.name);
+  db.transaction(() => {
+    for (const r of rows.filter((x) => !x.placeholder)) upd.run(JSON.stringify(r.value), r.category, r.name);
+    db.prepare(
+      `DELETE FROM brand_tokens WHERE category = 'logo' AND is_placeholder = 1 AND name NOT IN (${logoNames.map(() => '?').join(',') || "''"})`,
+    ).run(...logoNames);
+  })();
 }
 
 function rowToToken(row) {
