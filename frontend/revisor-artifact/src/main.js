@@ -17,15 +17,23 @@ fabricConfig.configure({ devicePixelRatio: 1 });
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const OVERALL = { aprovado: 'ok', aprovado_com_ressalvas: 'warn', reprovado: 'fail' };
-const STATUS_LABEL = { aprovado: '✅ Aprovado', aprovado_com_ressalvas: '⚠️ Com ressalvas', reprovado: '❌ Reprovado' };
+const STATUS_LABEL = { aprovado: 'Aprovado', aprovado_com_ressalvas: 'Com ressalvas', reprovado: 'Reprovado' };
+const OVERALL_ICON = { ok: 'pass', warn: 'warn', fail: 'fail' };
+const CHECK_LABEL = { pass: 'Conforme', warn: 'Atenção', manual: 'Revisão manual', fail: 'Não conforme' };
+// Ícone de traço (símbolos definidos no index.html). Decorativo: o texto vem ao lado.
+const icon = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const statusIcon = (st) => icon(st === 'manual' ? 'manual' : st, `st-${st}`);
 
 /* ------------------------------------------------------------------ tema */
 syncTheme(updateThemeToggle);
 const toggle = $('#theme-toggle');
 function updateThemeToggle() {
   const dark = currentTheme() === 'dark';
+  const label = dark ? 'Tema claro' : 'Tema escuro';
   toggle.setAttribute('aria-pressed', String(dark));
-  toggle.textContent = dark ? 'Tema claro' : 'Tema escuro';
+  toggle.setAttribute('aria-label', label);
+  toggle.title = label;
+  toggle.innerHTML = icon(dark ? 'sun' : 'moon');
 }
 if (!isEmbedded()) {
   toggle.hidden = false;
@@ -85,6 +93,30 @@ const downloadJson = (a, statusEl) =>
 const form = $('#audit-form');
 let current = null;
 
+// Seletor de modo: só ajusta a interface (tipos aceitos e opções avançadas).
+// O modo da auditoria continua sendo definido pelo arquivo enviado.
+const ACCEPT = {
+  A: { accept: '.json,application/json', hint: '.json (Fabric.js)' },
+  B: { accept: 'image/png,image/jpeg,image/webp', hint: '.png ou .jpg' },
+};
+function setUiMode(m) {
+  form.dataset.mode = m;
+  const radio = form.querySelector(`input[name="uiMode"][value="${m}"]`);
+  if (radio && !radio.checked) radio.checked = true;
+  form.elements.file.accept = ACCEPT[m].accept;
+  if (!form.elements.file.files?.length) $('#file-accept').textContent = ACCEPT[m].hint;
+}
+form.addEventListener('change', (e) => {
+  if (e.target.name === 'uiMode') setUiMode(e.target.value);
+  if (e.target.name === 'file') {
+    const f = e.target.files?.[0];
+    $('#file-label').textContent = f ? f.name : 'Escolher peça';
+    $('#file-accept').textContent = f ? `${Math.max(1, Math.round(f.size / 1024))} KB` : ACCEPT[form.dataset.mode].hint;
+    if (f) setUiMode(/json$/i.test(f.type) || /\.json$/i.test(f.name) ? 'A' : 'B');
+  }
+});
+setUiMode('A');
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = form.querySelector('button[type="submit"]');
@@ -92,11 +124,11 @@ form.addEventListener('submit', async (e) => {
   const data = new FormData(form);
   const file = data.get('file');
   if (!file?.size) {
-    status.textContent = 'Envie a peça no campo "Peça".';
+    status.textContent = 'Escolha a peça antes de auditar.';
     return;
   }
   btn.disabled = true;
-  status.textContent = 'Revisando a peça…';
+  status.textContent = 'Auditando a peça…';
   try {
     const db = await ready;
     let regions;
@@ -135,18 +167,16 @@ function renderResult({ report, preview }) {
   $('#r-mode').textContent = `Modo ${report.mode.code} · ${report.mode.name}${report.pieceType ? ` · ${report.pieceType}` : ''}`;
   $('#r-file').textContent = report.file.name;
   const pill = $('#r-status');
-  pill.className = `pill ${OVERALL[report.status.code]}`;
-  pill.textContent = `${report.status.icon} ${report.status.label}`;
+  const tone = OVERALL[report.status.code];
+  pill.className = `pill ${tone}`;
+  pill.innerHTML = `${icon(OVERALL_ICON[tone])}<span>${esc(report.status.label)}</span>`;
   $('#r-callouts').innerHTML = [
-    ...report.limitations.map((l) => `<div class="callout"><p>${esc(l)}</p></div>`),
-    ...report.notices.map((n) => `<div class="callout info"><p>${esc(n)}</p></div>`),
+    ...report.limitations.map((l) => `<div class="callout">${icon('warn', 'st-warn')}<p>${esc(l)}</p></div>`),
+    ...report.notices.map((n) => `<div class="callout info">${icon('info')}<p>${esc(n)}</p></div>`),
   ].join('');
   const s = report.summary;
-  $('#r-tiles').innerHTML = `
-    <div class="tile ok"><b>${s.pass}</b><span>✅ Conformes</span></div>
-    <div class="tile warn"><b>${s.warn}</b><span>⚠️ Atenção</span></div>
-    <div class="tile warn"><b>${s.manual}</b><span>⚠️ Revisão manual</span></div>
-    <div class="tile fail"><b>${s.fail}</b><span>❌ Não conformes</span></div>`;
+  const tile = (st, n, label) => `<div class="tile ${st}">${statusIcon(st)}<b>${n}</b><span>${label}</span></div>`;
+  $('#r-tiles').innerHTML = [tile('pass', s.pass, 'Conformes'), tile('warn', s.warn, 'Atenção'), tile('manual', s.manual, 'Revisão manual'), tile('fail', s.fail, 'Não conformes')].join('');
   $('#r-dl-status').textContent = '';
   const fig = $('#r-figure');
   const img = $('#r-preview');
@@ -157,17 +187,27 @@ function renderResult({ report, preview }) {
     img.removeAttribute('src');
     fig.hidden = true;
   }
-  $('#r-checks').innerHTML = report.checks
-    .filter((c) => c.status !== 'skip')
-    .map(
-      (c) => `<li class="check ${c.status}">
-        <strong>${c.number}. ${c.icon} ${esc(c.title)}</strong>
-        ${c.found != null ? `<p>Encontrado: ${esc(c.found)}</p>` : ''}
-        ${c.expected != null ? `<p>Esperado: ${esc(c.expected)}</p>` : ''}
-        ${c.suggestion ? `<p class="fix">Como corrigir: ${esc(c.suggestion)}</p>` : ''}
-      </li>`,
-    )
-    .join('');
+  const item = (c) => {
+    const body = [
+      c.found != null ? `<p><span class="k">Encontrado</span> ${esc(c.found)}</p>` : '',
+      c.expected != null ? `<p><span class="k">Esperado</span> ${esc(c.expected)}</p>` : '',
+      c.suggestion ? `<p class="fix"><span class="k">Como corrigir</span> ${esc(c.suggestion)}</p>` : '',
+    ].join('');
+    const head = `${statusIcon(c.status)}<span class="sr-only">${CHECK_LABEL[c.status] ?? c.status}:</span><span class="num">${c.number}</span><span class="t">${esc(c.title)}</span>`;
+    return `<li class="check ${c.status}">${
+      body ? `<details><summary>${head}${icon('chevron', 'chev')}</summary><div class="check-body">${body}</div></details>` : `<div class="check-row">${head}</div>`
+    }</li>`;
+  };
+  const shown = report.checks.filter((c) => c.status !== 'skip');
+  const issues = shown.filter((c) => c.status !== 'pass');
+  const passed = shown.filter((c) => c.status === 'pass');
+  $('#r-checks').innerHTML = issues.map(item).join('');
+  $('#r-checks').hidden = !issues.length;
+  $('#r-passed').innerHTML = passed.map(item).join('');
+  $('#r-passed-label').textContent = `Conformes (${passed.length})`;
+  const wrap = $('#r-passed-wrap');
+  wrap.hidden = !passed.length;
+  wrap.open = !issues.length;
   $('#result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 }
 
@@ -179,7 +219,9 @@ $('#r-json').addEventListener('click', () => current && downloadJson(current, $(
 function renderHistory() {
   const rows = listAudits(browserDb, { limit: 20 });
   const mode = historyCol().mode();
-  $('#store-mode').textContent = mode === 'db' ? 'Compartilhado no Design System' : mode === 'local' ? 'Salvo só neste navegador' : '';
+  $('#store-mode').textContent = mode === 'db' ? 'Compartilhado' : mode === 'local' ? 'Só neste navegador' : '';
+  $('#store-mode').title = mode === 'db' ? 'Compartilhado no Design System' : mode === 'local' ? 'Salvo só neste navegador' : '';
+  $('#hist-count').textContent = rows.length ? String(rows.length) : '';
   $('#history').innerHTML = rows.length
     ? rows
         .map((r) => {
@@ -188,9 +230,9 @@ function renderHistory() {
           <td>${esc(new Date(r.createdAt).toLocaleString('pt-BR'))}</td>
           <td class="file">${esc(r.fileName)}</td>
           <td>${esc(r.mode)}</td>
-          <td>${STATUS_LABEL[r.status] ?? esc(r.status)}</td>
+          <td><span class="st ${OVERALL[r.status] ?? ''}">${OVERALL[r.status] ? icon(OVERALL_ICON[OVERALL[r.status]]) : ''}${STATUS_LABEL[r.status] ?? esc(r.status)}</span></td>
           <td>${Number(r.failedCount ?? r.failedItems?.length ?? 0)}</td>
-          <td>${here ? `<button type="button" class="link" data-dl="html" data-id="${esc(r.id)}">Relatório</button> · <button type="button" class="link" data-dl="zip" data-id="${esc(r.id)}">ZIP</button>` : '<span class="muted" title="Os arquivos ficam disponíveis só na página em que a revisão foi feita">—</span>'}</td>
+          <td class="dl">${here ? `<span class="dl-btns"><button type="button" class="icon-btn" data-dl="html" data-id="${esc(r.id)}" aria-label="Baixar relatório HTML de ${esc(r.fileName)}" title="Baixar relatório HTML">${icon('html')}</button><button type="button" class="icon-btn" data-dl="zip" data-id="${esc(r.id)}" aria-label="Baixar ZIP de ${esc(r.fileName)}" title="Baixar ZIP">${icon('zip')}</button></span>` : '<span class="muted" title="Os arquivos ficam disponíveis só na página em que a revisão foi feita">—</span>'}</td>
         </tr>`;
         })
         .join('')
@@ -217,7 +259,7 @@ $('#qr-form').addEventListener('submit', async (e) => {
     const db = await ready;
     const qr = await generateQr(loadBrandTokens(db), String(fd.get('text') ?? ''), { width: Number(fd.get('width')) });
     const url = pngDataUrl(qr.data);
-    out.innerHTML = `<img src="${url}" alt="QR code gerado"><div><button type="button" class="btn-primary" id="qr-dl">Baixar PNG</button>${qr.adjustments.length ? `<p>${esc(qr.adjustments.join(' | '))}</p>` : ''}<p class="form-status" id="qr-status" role="status" aria-live="polite"></p></div>`;
+    out.innerHTML = `<img src="${url}" alt="QR code gerado"><div><button type="button" class="icon-btn labeled" id="qr-dl" aria-label="Baixar PNG do QR code" title="Baixar PNG">${icon('download')}<span class="btn-label">PNG</span></button>${qr.adjustments.length ? `<p>${esc(qr.adjustments.join(' | '))}</p>` : ''}<p class="form-status" id="qr-status" role="status" aria-live="polite"></p></div>`;
     $('#qr-dl').addEventListener('click', () => deliver('qrcode-gove.png', new Blob([qr.data], { type: 'image/png' }), $('#qr-status')));
   } catch (err) {
     out.textContent = err.message;
