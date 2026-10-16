@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Palette, RefreshCw, Type } from "lucide-react";
+import { Download, Palette, RefreshCw, ShieldCheck, TriangleAlert, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { validateCreative, type ComplianceReport } from "@/lib/creative/brand";
 import { buildAltText } from "@/lib/creative/alt";
 import { renderCreative, type CreativeSpec } from "@/lib/creative/renderer";
-
 
 type Props = {
   spec: CreativeSpec;
@@ -66,59 +65,78 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
     toast.success("Texto alternativo copiado para as redes");
   };
 
+  const failing =
+    report && !report.pass
+      ? report.checks
+          .filter((c) => !c.pass)
+          .map((c) => c.label)
+          .join(" · ")
+      : "";
+  const iconBtn = "size-11 shrink-0";
 
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <div className="relative bg-muted">
         <canvas ref={canvasRef} className="block h-auto w-full" />
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-border px-3 pt-2 text-[11px]">
-        <span className="font-medium text-muted-foreground">{spec.layout}</span>
-        {report?.pass && (
-          <span className="inline-flex items-center gap-1 font-semibold text-primary">
-            <Check className="size-3" aria-hidden="true" />
-            Conforme com o manual de marca
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2 p-3">
-        <Button size="sm" onClick={download} className="min-h-11 flex-1">
+      <div className="flex items-center gap-1 p-2">
+        <span className="flex min-w-0 flex-1 items-center pl-1">
+          {report?.pass ? (
+            <span
+              className="inline-flex items-center text-primary"
+              title="Conforme com o manual de marca"
+            >
+              <ShieldCheck className="size-5" aria-hidden="true" />
+              <span className="sr-only">Conforme com o manual de marca</span>
+            </span>
+          ) : report ? (
+            <span className="inline-flex items-center text-amber-700" title={failing}>
+              <TriangleAlert className="size-5" aria-hidden="true" />
+              <span className="sr-only">Fora do manual: {failing}</span>
+            </span>
+          ) : null}
+        </span>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={download}
+          className={iconBtn}
+          aria-label={`Baixar PNG do criativo ${index + 1}`}
+          title="Baixar PNG"
+        >
           <Download aria-hidden="true" />
-          PNG
         </Button>
         <Button
-          size="sm"
-          variant="secondary"
+          size="icon"
+          variant="ghost"
           onClick={copyAlt}
-          className="min-h-11 flex-1"
-          title="Copiar texto alternativo (alt) da imagem"
+          className={iconBtn}
+          aria-label={`Copiar texto alternativo do criativo ${index + 1}`}
+          title="Copiar texto alternativo (alt)"
         >
           <Type aria-hidden="true" />
-          Texto alt
         </Button>
-
         <Button
-          size="sm"
-          variant="outline"
+          size="icon"
+          variant="ghost"
           onClick={() => onRecolor(index)}
-          className="min-h-11"
+          className={iconBtn}
           aria-label={`Aleatorizar cores do card ${index + 1}`}
           title="Aleatorizar apenas as cores"
         >
           <Palette aria-hidden="true" />
         </Button>
         <Button
-          size="sm"
-          variant="outline"
+          size="icon"
+          variant="ghost"
           onClick={() => onReload(index)}
-          className="min-h-11"
+          className={iconBtn}
           aria-label={`Recarregar combinação do card ${index + 1}`}
           title="Sortear novo criativo"
         >
           <RefreshCw aria-hidden="true" />
         </Button>
       </div>
-
     </article>
   );
 }

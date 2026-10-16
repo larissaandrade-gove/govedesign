@@ -30,7 +30,10 @@ const clipboard: Patch = {
 };
 
 const PEXELS_NOTE = (cls: string) =>
-  `<p className="${cls} text-[11px] text-muted-foreground">A busca de imagens online (Pexels) não está disponível nesta versão, que roda sem conexão com serviços externos. Envie imagens do seu dispositivo — elas ficam só neste navegador.</p>`;
+  `<p className="${cls} text-xs text-muted-foreground">Busca online (Pexels) indisponível nesta versão, que roda sem serviços externos. Envie imagens do dispositivo — elas ficam só neste navegador.</p>`;
+
+/** Campo de busca Pexels (ícone de lupa + Input) nas duas telas. */
+const PEXELS_FIELD = /<div className="relative">\s*<Search[\s\S]*?aria-label="Buscar imagens no Pexels"\s*\/>\s*<\/div>/;
 
 const FILES: FilePatch[] = [
   {
@@ -39,12 +42,12 @@ const FILES: FilePatch[] = [
     patches: [
       {
         label: "botão Sair (sem login no artefato)",
-        find: /<Button variant="outline" size="sm" className="min-h-11" onClick=\{handleSignOut\}>\s*Sair\s*<\/Button>/,
-        replace: "",
+        find: /<Button\s+variant="ghost"\s+size="icon"\s+className="size-11 shrink-0"\s+onClick=\{handleSignOut\}[\s\S]*?<\/Button>/,
+        replace: "null",
       },
       {
         label: "busca Pexels → aviso de upload",
-        find: /<Label htmlFor="pexels-query">[\s\S]*?aria-label="Buscar imagens no Pexels"\s*\/>/,
+        find: PEXELS_FIELD,
         replace: PEXELS_NOTE(""),
       },
       {
@@ -53,8 +56,8 @@ const FILES: FilePatch[] = [
         replace: "const downloadAll = () => __downloadCanvasesZip(gridRef.current);",
       },
       {
-        label: "rótulo do botão baixar todos",
-        find: "criativos (PNG)",
+        label: "dica do botão baixar todos",
+        find: "criativos em PNG",
         replace: "criativos (.zip de PNGs)",
       },
       {
@@ -70,17 +73,12 @@ const FILES: FilePatch[] = [
     patches: [
       {
         label: "busca Pexels → aviso de upload",
-        find: /<Input\s+value=\{query\}[\s\S]*?aria-label="Buscar imagens no Pexels"\s*\/>/,
+        find: PEXELS_FIELD,
         replace: PEXELS_NOTE(""),
       },
       asyncToBlob,
       anchorDownload(),
       clipboard,
-      {
-        label: "fundo da página no modo escuro",
-        find: `"min-h-screen bg-[#F4F4F4] text-[#2F3539]"`,
-        replace: `"min-h-screen bg-[#F4F4F4] text-[#2F3539] dark:bg-background dark:text-foreground"`,
-      },
     ],
   },
   {

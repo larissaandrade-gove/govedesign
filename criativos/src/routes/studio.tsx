@@ -1,19 +1,35 @@
-import { createFileRoute, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Download, ShieldCheck, Sparkles, Trash2, Upload, X } from "lucide-react";
+import {
+  Check,
+  Download,
+  ImagePlus,
+  Layers,
+  LayoutTemplate,
+  Moon,
+  Palette,
+  Search,
+  ShieldCheck,
+  Sun,
+  Trash2,
+  TriangleAlert,
+  Type,
+  Upload,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { PALETTE, validateCreative, type ComplianceReport } from "@/lib/creative/brand";
-import { LOGO_OPTIONS, loadLogoLibrary } from "@/lib/creative/logos";
+import { loadLogoLibrary } from "@/lib/creative/logos";
 import { ICONS } from "@/lib/creative/icons";
 import { buildAltText } from "@/lib/creative/alt";
 import { getGateStatus } from "@/lib/gate.functions";
 import { ExpertFields } from "@/components/ExpertFields";
+import { AppHeader, FormatChip, Section } from "@/components/AppChrome";
 import { searchPexels, type PexelsPhoto } from "@/lib/pexels.functions";
 import {
   BG_PRESETS,
@@ -34,7 +50,6 @@ import {
   type CreativeScheme,
   type CreativeSpec,
 } from "@/lib/creative/renderer";
-
 
 export const Route = createFileRoute("/studio")({
   ssr: false,
@@ -63,9 +78,7 @@ export const Route = createFileRoute("/studio")({
   component: Studio,
 });
 
-type Bg =
-  | { kind: "preset"; key: string }
-  | { kind: "upload"; img: HTMLImageElement; name: string };
+type Bg = { kind: "preset"; key: string } | { kind: "upload"; img: HTMLImageElement; name: string };
 
 /** Miniatura esquemática de cada diagramação (apenas ilustrativa). */
 function LayoutThumb({ layout }: { layout: CreativeLayout }) {
@@ -146,6 +159,24 @@ function LayoutThumb({ layout }: { layout: CreativeLayout }) {
           {bar(`mt-1 h-1.5 w-1/2 ${gold}`)}
         </span>
       )}
+      {isExpertLayout(layout) && (
+        <>
+          <span className="flex items-center gap-1">
+            <span className="size-4 shrink-0 rounded-full bg-white/85" />
+            <span className="flex-1 space-y-0.5">
+              {bar(`h-0.5 w-3/4 ${ink}`)}
+              {bar(`h-0.5 w-1/2 ${soft}`)}
+            </span>
+          </span>
+          <span
+            className={`space-y-0.5 p-1 ${layout === "expert-band" ? "-mx-1.5 bg-[#20133D]" : "rounded-[3px] bg-[#20133D]"}`}
+          >
+            {bar(`h-1 w-3/4 ${ink}`)}
+            {bar(`h-0.5 w-1/2 ${soft}`)}
+          </span>
+          {bar(`h-1.5 w-1/2 ${gold}`)}
+        </>
+      )}
       {layout === "proof-badge" && (
         <>
           <span className="mx-auto h-3 w-2/3 rounded-full bg-[#FFC72C]" />
@@ -160,10 +191,14 @@ function LayoutThumb({ layout }: { layout: CreativeLayout }) {
   );
 }
 
-const EXPORTS: { key: CreativeFormat; label: string }[] = FORMATS.map((f) => ({
-  key: f.key,
-  label: f.label,
-}));
+const EXPORTS: { key: CreativeFormat; label: string; w: number; h: number }[] = FORMATS.map(
+  (f) => ({
+    key: f.key,
+    label: f.label,
+    w: f.w,
+    h: f.h,
+  }),
+);
 
 function Studio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -178,14 +213,14 @@ function Studio() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-
-
   const [exportFormat, setExportFormat] = useState<CreativeFormat>("square-11");
   const [layout, setLayout] = useState<CreativeLayout>("mockup-center-top");
   const [scheme, setScheme] = useState<CreativeScheme>("institucional");
   const [bg, setBg] = useState<Bg>({ kind: "preset", key: "vivid-deep" });
   const [tone, setTone] = useState<"light" | "dark">("dark");
   const [remix, setRemix] = useState(false);
+  // Divulgação progressiva: textos e diagramação abertos; fundo e cores recolhidos.
+  const [open, setOpen] = useState({ texts: true, layout: true, background: false, colors: false });
 
   const [headline, setHeadline] = useState("O governo que age antes de você pedir");
   const [subhead, setSubhead] = useState(
@@ -345,8 +380,6 @@ function Studio() {
     }
   };
 
-
-
   const download = () => {
     if (expertBlocked) {
       toast.error("Preencha nome e sobrenome, cargo e foto do especialista.");
@@ -376,28 +409,24 @@ function Studio() {
   };
 
   const size = formatSize(exportFormat);
+  const failing =
+    report && !report.pass
+      ? report.checks
+          .filter((c) => !c.pass)
+          .map((c) => c.label)
+          .join(" · ")
+      : "";
+  const toggleSection = (k: keyof typeof open) => setOpen((p) => ({ ...p, [k]: !p[k] }));
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] text-[#2F3539]">
+    <div className="min-h-screen bg-background text-foreground">
       <Toaster />
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <Sparkles className="size-5 shrink-0 text-primary" aria-hidden="true" />
-            <h1 className="truncate text-base font-semibold sm:text-lg">
-              Studio ao vivo — Criativos GOVE
-            </h1>
-          </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to="/">Gerador em lote</Link>
-          </Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto grid max-w-7xl gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:grid-cols-[1fr_380px]">
         {/* Canvas em destaque */}
-        <section className="order-1 min-w-0">
-          <div className="rounded-xl border border-border bg-background p-3 sm:p-4 lg:sticky lg:top-6">
+        <section aria-label="Prévia" className="order-1 min-w-0">
+          <div className="space-y-3 rounded-xl border border-border bg-card p-3 sm:p-4 lg:sticky lg:top-20">
             <div className="mx-auto max-w-[520px]">
               <canvas
                 ref={canvasRef}
@@ -405,79 +434,240 @@ function Studio() {
                 aria-label="Prévia do criativo"
               />
             </div>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-full text-xs text-muted-foreground sm:w-auto">Exportar em</span>
-                {EXPORTS.map((f) => (
-                  <Button
-                    key={f.key}
-                    size="sm"
-                    variant={exportFormat === f.key ? "default" : "outline"}
-                    className="text-xs"
-                    onClick={() => setExportFormat(f.key)}
-                  >
-                    {f.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                <Button variant="outline" size="sm" onClick={copyAlt}>
-                  Copiar texto alt
-                </Button>
-                <Button size="sm" onClick={download} disabled={!report?.pass || expertBlocked}>
-                  <Download className="mr-2 size-4" aria-hidden="true" />
-                  Baixar PNG
-                </Button>
-              </div>
+            <div
+              role="group"
+              aria-label="Formato de exportação"
+              className="flex flex-wrap justify-center gap-2"
+            >
+              {EXPORTS.map((f) => (
+                <FormatChip
+                  key={f.key}
+                  format={f.key}
+                  label={f.label}
+                  w={f.w}
+                  h={f.h}
+                  active={exportFormat === f.key}
+                  onSelect={() => setExportFormat(f.key)}
+                />
+              ))}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {size.w}×{size.h}px · 72 dpi
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 text-xs tabular-nums text-muted-foreground">
+                {size.w}×{size.h}px · 72 dpi
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-11 shrink-0"
+                onClick={copyAlt}
+                aria-label="Copiar texto alternativo"
+                title="Copiar texto alternativo (alt)"
+              >
+                <Type aria-hidden="true" />
+              </Button>
+              <Button
+                size="lg"
+                className="min-h-11 px-5"
+                onClick={download}
+                disabled={!report?.pass || expertBlocked}
+              >
+                <Download aria-hidden="true" />
+                Baixar PNG
+              </Button>
+            </div>
 
             {report && (
               <p
-                className={`mt-3 flex items-center gap-2 text-xs ${report.pass ? "text-emerald-700" : "text-amber-700"}`}
+                role="status"
+                className={`flex items-center gap-2 text-xs ${report.pass ? "text-emerald-700" : "text-amber-700"}`}
               >
-                <ShieldCheck className="size-4" aria-hidden="true" />
-                {report.pass
-                  ? "✅ Conforme com o manual de marca"
-                  : report.checks
-                      .filter((c) => !c.pass)
-                      .map((c) => c.label)
-                      .join(" · ")}
+                {report.pass ? (
+                  <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+                ) : (
+                  <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                {report.pass ? "Conforme com o manual de marca" : failing}
               </p>
             )}
           </div>
         </section>
 
         {/* Controles */}
-        <aside className="order-2 space-y-4">
-          <div className="rounded-xl border border-border bg-background p-4">
-            <Label className="text-sm font-medium">Biblioteca de fundos</Label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {BG_PRESETS.map((p) => (
+        <aside aria-label="Ajustes" className="order-2 space-y-3">
+          <Section
+            icon={Type}
+            title="Textos"
+            open={open.texts}
+            onToggle={() => toggleSection("texts")}
+          >
+            <div className="relative">
+              <Input
+                value={headline}
+                maxLength={60}
+                onChange={(e) => setHeadline(e.target.value)}
+                placeholder="Headline"
+                aria-label="Headline (máx. 60 caracteres)"
+                className="h-11 pr-14"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground">
+                {headline.length}/60
+              </span>
+            </div>
+            <div className="relative">
+              <Input
+                value={subhead}
+                maxLength={90}
+                onChange={(e) => setSubhead(e.target.value)}
+                placeholder="Subhead"
+                aria-label="Subhead (máx. 90 caracteres)"
+                className="h-11 pr-14"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[11px] tabular-nums text-muted-foreground">
+                {subhead.length}/90
+              </span>
+            </div>
+            <Input
+              value={cta}
+              onChange={(e) => setCta(e.target.value)}
+              placeholder="CTA"
+              aria-label="CTA"
+              className="h-11"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                value={badge}
+                onChange={(e) => setBadge(e.target.value)}
+                placeholder="Selo"
+                aria-label="Selo"
+                className="h-11"
+              />
+              <Input
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Token regional"
+                aria-label="Token regional"
+                className="h-11"
+              />
+            </div>
+            <Input
+              value={urgency}
+              onChange={(e) => setUrgency(e.target.value)}
+              placeholder="Gatilho de urgência"
+              aria-label="Gatilho de urgência"
+              className="h-11"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="studio-cta-icon" className="text-xs">
+                  Ícone do CTA
+                </Label>
+                <select
+                  id="studio-cta-icon"
+                  value={icon}
+                  onChange={(e) => setIcon(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-md border border-input bg-card px-2 text-sm text-foreground"
+                >
+                  {ICONS.map((i) => (
+                    <option key={i.key} value={i.key}>
+                      {i.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="studio-urgency-icon" className="text-xs">
+                  Ícone de urgência
+                </Label>
+                <select
+                  id="studio-urgency-icon"
+                  value={themeIcon}
+                  onChange={(e) => setThemeIcon(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-md border border-input bg-card px-2 text-sm text-foreground"
+                >
+                  {ICONS.map((i) => (
+                    <option key={i.key} value={i.key}>
+                      {i.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </Section>
+
+          <ExpertFields value={expert} onChange={onExpertChange} />
+
+          <Section
+            icon={LayoutTemplate}
+            title="Diagramação"
+            summary={
+              (expert.enabled ? EXPERT_LAYOUTS : STUDIO_LAYOUTS).find((l) => l.key === layout)
+                ?.label
+            }
+            open={open.layout}
+            onToggle={() => toggleSection("layout")}
+          >
+            <div role="radiogroup" aria-label="Diagramação" className="grid grid-cols-4 gap-2">
+              {(expert.enabled ? EXPERT_LAYOUTS : STUDIO_LAYOUTS).map((l) => (
                 <button
-                  key={p.key}
+                  key={l.key}
                   type="button"
-                  title={p.label}
-                  aria-label={p.label}
-                  onClick={() => setBg({ kind: "preset", key: p.key })}
-                  className={`h-14 rounded-md border-2 ${
-                    bg.kind === "preset" && bg.key === p.key ? "border-primary" : "border-border"
+                  role="radio"
+                  aria-checked={layout === l.key}
+                  title={`${l.label} — ${l.hint}`}
+                  onClick={() => setLayout(l.key)}
+                  className={`rounded-lg border-2 p-1 ${
+                    layout === l.key ? "border-primary ring-2 ring-primary/30" : "border-border"
                   }`}
-                  style={{
-                    background:
-                      p.kind === "solid"
-                        ? p.colors[0]
-                        : p.kind === "radial"
-                          ? `radial-gradient(circle at 50% 35%, ${p.colors[0]}, ${p.colors[1]})`
-                          : `linear-gradient(${p.kind === "diagonal" ? "135deg" : "180deg"}, ${p.colors[0]}, ${p.colors[1]})`,
-                  }}
-                />
+                >
+                  <LayoutThumb layout={l.key} />
+                  <span className="sr-only">{l.label}</span>
+                </button>
               ))}
             </div>
+          </Section>
 
+          <Section
+            icon={ImagePlus}
+            title="Fundo"
+            summary={
+              bg.kind === "upload"
+                ? "Imagem"
+                : BG_PRESETS.find((p) => bg.kind === "preset" && p.key === bg.key)?.label
+            }
+            open={open.background}
+            onToggle={() => toggleSection("background")}
+          >
             <div
+              role="radiogroup"
+              aria-label="Biblioteca de fundos"
+              className="grid grid-cols-4 gap-2"
+            >
+              {BG_PRESETS.map((p) => {
+                const active = bg.kind === "preset" && bg.key === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    title={p.label}
+                    aria-label={p.label}
+                    onClick={() => setBg({ kind: "preset", key: p.key })}
+                    className={`h-11 rounded-lg border-2 ${active ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                    style={{
+                      background:
+                        p.kind === "solid"
+                          ? p.colors[0]
+                          : p.kind === "radial"
+                            ? `radial-gradient(circle at 50% 35%, ${p.colors[0]}, ${p.colors[1]})`
+                            : `linear-gradient(${p.kind === "diagonal" ? "135deg" : "180deg"}, ${p.colors[0]}, ${p.colors[1]})`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            <label
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -488,48 +678,52 @@ function Studio() {
                 setDragging(false);
                 void handleFiles(e.dataTransfer.files);
               }}
-              className={`mt-3 rounded-lg border-2 border-dashed p-4 text-center text-xs ${
-                dragging ? "border-primary bg-primary/5" : "border-border"
+              title="Arraste uma imagem ou um criativo pronto para remixar"
+              className={`flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-2 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring ${
+                dragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
               }`}
             >
-              <Upload className="mx-auto mb-2 size-5 text-muted-foreground" aria-hidden="true" />
-              Arraste uma imagem (ou um criativo pronto para remixar) ou
-              <label className="ml-1 cursor-pointer font-medium text-primary underline">
-                escolha um arquivo
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => void handleFiles(e.target.files)}
-                />
-              </label>
-            </div>
-
-            <div className="mt-3">
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar imagens (ex: prefeitura, tecnologia, cidade)"
-                className="text-xs"
-                aria-label="Buscar imagens no Pexels"
+              <Upload className="size-5 shrink-0" aria-hidden="true" />
+              Enviar ou arrastar imagem
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => void handleFiles(e.target.files)}
               />
-              {searching && <p className="mt-2 text-[11px] text-muted-foreground">Buscando…</p>}
-              {searchError && <p className="mt-2 text-[11px] text-amber-700">{searchError}</p>}
+            </label>
+
+            <div className="space-y-2">
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar no Pexels (ex: prefeitura, cidade)"
+                  className="h-11 pl-9"
+                  aria-label="Buscar imagens no Pexels"
+                />
+              </div>
+              {searching && <p className="text-xs text-muted-foreground">Buscando…</p>}
+              {searchError && <p className="text-xs text-amber-700">{searchError}</p>}
               {!searching && !searchError && photos?.length === 0 && (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Nenhuma imagem encontrada para esse termo. Tente outro termo.
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma imagem encontrada. Tente outro termo.
                 </p>
               )}
               {photos && photos.length > 0 && (
                 <>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {photos.map((p) => (
                       <button
                         key={p.id}
                         type="button"
                         title={p.alt || `Foto de ${p.photographer}`}
                         onClick={() => void usePexelsPhoto(p)}
-                        className="overflow-hidden rounded-md border-2 border-border hover:border-primary"
+                        className="overflow-hidden rounded-lg border-2 border-border hover:border-primary"
                       >
                         <img
                           src={p.medium}
@@ -540,7 +734,7 @@ function Studio() {
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Fotos via{" "}
                     <a
                       href="https://www.pexels.com"
@@ -555,196 +749,133 @@ function Studio() {
               )}
             </div>
 
-
-
             {pending && (
-              <div className="mt-3 rounded-lg border border-border p-3">
-                <p className="mb-2 text-xs font-medium">Confirmar este fundo?</p>
+              <div className="space-y-2 rounded-lg border border-border p-2">
                 <img
                   src={pending.img.src}
                   alt="Prévia da imagem enviada"
-                  className="mb-2 h-28 w-full rounded object-cover"
+                  className="h-28 w-full rounded object-cover"
                 />
                 <div className="flex gap-2">
                   <Button
-                    size="sm"
-                    className="flex-1 text-xs"
+                    className="min-h-11 flex-1"
                     onClick={() => {
                       setBg({ kind: "upload", img: pending.img, name: pending.name });
                       setPending(null);
                     }}
                   >
-                    <Check className="mr-1 size-3" aria-hidden="true" />
+                    <Check aria-hidden="true" />
                     Usar como fundo
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="text-xs"
+                    size="icon"
+                    className="size-11 shrink-0"
+                    aria-label="Cancelar"
+                    title="Cancelar"
                     onClick={() => setPending(null)}
                   >
-                    <X className="mr-1 size-3" aria-hidden="true" />
-                    Cancelar
+                    <X aria-hidden="true" />
                   </Button>
                 </div>
               </div>
             )}
 
             {bg.kind === "upload" && (
-              <div className="mt-3 space-y-3">
-                <div className="flex items-center gap-3 rounded-lg border border-border p-2">
-                  <img src={bg.img.src} alt="" className="size-12 rounded object-cover" />
-                  <span className="line-clamp-1 flex-1 text-xs">{bg.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Remover imagem"
-                    onClick={() => setBg({ kind: "preset", key: "vivid-deep" })}
-                  >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  {(["dark", "light"] as const).map((t) => (
-                    <Button
+              <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                <img src={bg.img.src} alt="" className="size-10 shrink-0 rounded object-cover" />
+                <span className="line-clamp-1 min-w-0 flex-1 px-1 text-xs" title={bg.name}>
+                  {bg.name}
+                </span>
+                {(["dark", "light"] as const).map((t) => {
+                  const label = t === "dark" ? "Fundo escuro" : "Fundo claro";
+                  const Icon = t === "dark" ? Moon : Sun;
+                  return (
+                    <button
                       key={t}
-                      size="sm"
-                      variant={tone === t ? "default" : "outline"}
-                      className="flex-1 text-xs"
+                      type="button"
+                      aria-pressed={tone === t}
+                      aria-label={label}
+                      title={label}
                       onClick={() => setTone(t)}
+                      className={`inline-flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                        tone === t
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-card hover:text-foreground"
+                      }`}
                     >
-                      {t === "dark" ? "Fundo escuro" : "Fundo claro"}
-                    </Button>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between rounded-lg border border-border p-2">
-                  <div>
-                    <p className="text-xs font-medium">Modo remix</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Preserva mais da arte original sob o card sólido.
-                    </p>
-                  </div>
-                  <Switch checked={remix} onCheckedChange={setRemix} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border bg-background p-4">
-            <ExpertFields value={expert} onChange={onExpertChange} />
-            <Label className="mt-4 block text-sm font-medium">
-              {expert.enabled ? "Diagramação exclusiva de especialista" : "Diagramação (8 estilos fixos)"}
-            </Label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {(expert.enabled ? EXPERT_LAYOUTS : STUDIO_LAYOUTS).map((l) => (
+                      <Icon className="size-4" aria-hidden="true" />
+                    </button>
+                  );
+                })}
                 <button
-                  key={l.key}
                   type="button"
-                  title={l.hint}
-                  onClick={() => setLayout(l.key)}
-                  className={`rounded-lg border-2 p-1.5 text-left ${
-                    layout === l.key ? "border-primary" : "border-border"
+                  aria-pressed={remix}
+                  aria-label="Modo remix"
+                  title="Modo remix: preserva mais da arte original sob o card sólido"
+                  onClick={() => setRemix((v) => !v)}
+                  className={`inline-flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    remix
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-card hover:text-foreground"
                   }`}
                 >
-                  <LayoutThumb layout={l.key} />
-                  <span className="mt-1 block text-[11px] font-medium">{l.label}</span>
+                  <Layers className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Remover imagem"
+                  title="Remover imagem"
+                  onClick={() => setBg({ kind: "preset", key: "vivid-deep" })}
+                  className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-card hover:text-foreground"
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          </Section>
+
+          <Section
+            icon={Palette}
+            title="Cores"
+            open={open.colors}
+            onToggle={() => toggleSection("colors")}
+          >
+            <div role="radiogroup" aria-label="Esquema cromático" className="space-y-1">
+              {SCHEMES.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={scheme === s.key}
+                  onClick={() => setScheme(s.key)}
+                  className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm transition-colors ${
+                    scheme === s.key
+                      ? "bg-primary/10 font-semibold text-primary"
+                      : "text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <span className="flex-1">{s.label}</span>
+                  {scheme === s.key && <Check className="size-4 shrink-0" aria-hidden="true" />}
                 </button>
               ))}
             </div>
-
-            <Label className="mt-4 block text-sm font-medium">Esquema cromático</Label>
-            <div className="mt-2 space-y-2">
-              {SCHEMES.map((s) => (
-                <Button
-                  key={s.key}
-                  variant={scheme === s.key ? "default" : "outline"}
-                  size="sm"
-                  className="w-full justify-start text-xs"
-                  onClick={() => setScheme(s.key)}
-                >
-                  {s.label}
-                </Button>
-              ))}
-            </div>
-
-            <Label className="mt-4 block text-sm font-medium">Roxo do card/painel</Label>
-            <div className="mt-2 flex gap-2">
+            <div role="radiogroup" aria-label="Roxo do card/painel" className="flex gap-2">
               {[PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].map((c) => (
                 <button
                   key={c}
                   type="button"
+                  role="radio"
+                  aria-checked={cardColor === c}
                   aria-label={`Card ${c}`}
+                  title={`Roxo do card ${c}`}
                   onClick={() => setCardColor(c)}
-                  className={`h-9 flex-1 rounded-md border-2 ${cardColor === c ? "border-primary" : "border-border"}`}
+                  className={`h-11 flex-1 rounded-lg border-2 ${cardColor === c ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
                   style={{ background: c }}
                 />
               ))}
             </div>
-          </div>
-
-          <div className="space-y-3 rounded-xl border border-border bg-background p-4">
-            <Label className="text-sm font-medium">Textos</Label>
-            <Input
-              value={headline}
-              maxLength={60}
-              onChange={(e) => setHeadline(e.target.value)}
-              placeholder="Headline"
-            />
-            <Input
-              value={subhead}
-              maxLength={90}
-              onChange={(e) => setSubhead(e.target.value)}
-              placeholder="Subhead"
-            />
-            <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="CTA" />
-            <div className="grid grid-cols-2 gap-2">
-              <Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Selo" />
-              <Input
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Token regional"
-              />
-            </div>
-            <Input
-              value={urgency}
-              onChange={(e) => setUrgency(e.target.value)}
-              placeholder="Gatilho de urgência"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Ícone do CTA</Label>
-                <select
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-xs"
-                >
-                  {ICONS.map((i) => (
-                    <option key={i.key} value={i.key}>
-                      {i.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label className="text-xs">Ícone de urgência</Label>
-                <select
-                  value={themeIcon}
-                  onChange={(e) => setThemeIcon(e.target.value)}
-                  className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-xs"
-                >
-                  {ICONS.map((i) => (
-                    <option key={i.key} value={i.key}>
-                      {i.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Wordmarks disponíveis: {LOGO_OPTIONS.length} — a variante é escolhida automaticamente
-              pelo contraste do fundo.
-            </p>
-          </div>
+          </Section>
         </aside>
       </main>
     </div>

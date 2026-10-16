@@ -1,7 +1,25 @@
-import { createFileRoute, redirect, useRouter, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Sparkles, Upload, ShieldCheck, X, Download, ChevronDown } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  Download,
+  Film,
+  ImageIcon,
+  ImagePlus,
+  LayoutTemplate,
+  LogOut,
+  Moon,
+  Palette,
+  RectangleVertical,
+  Search,
+  Shapes,
+  Sparkles,
+  Sun,
+  Type,
+  UserRound,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,6 +31,7 @@ import { toast } from "sonner";
 import { CreativeCard } from "@/components/CreativeCard";
 import { VideoCard } from "@/components/VideoCard";
 import { ExpertFields } from "@/components/ExpertFields";
+import { AppHeader, FormatChip, Section, SettingRow } from "@/components/AppChrome";
 import { BG_COLORS, MAX_HEADLINE, MAX_SUBHEAD, PALETTE } from "@/lib/creative/brand";
 import { LOGO_OPTIONS, loadLogoLibrary } from "@/lib/creative/logos";
 import { ICONS } from "@/lib/creative/icons";
@@ -36,8 +55,6 @@ import {
   expertReady,
   type ExpertMaterial,
 } from "@/lib/creative/renderer";
-
-
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -113,7 +130,6 @@ type TextIdx = {
 /** Spec de render + rastreio de qual linha de cada variável foi usada. */
 type Spec = CreativeSpec & { textIdx: TextIdx };
 
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -125,44 +141,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function CollapsibleSection({
-  title,
-  subtitle,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-border p-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-2 text-left"
-        aria-expanded={open}
-      >
-        <div>
-          <p className="text-sm font-medium">{title}</p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-        </div>
-        <ChevronDown
-          className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-          aria-hidden="true"
-        />
-      </button>
-      {open && <div className="mt-3 space-y-3">{children}</div>}
-    </div>
-  );
-}
-
-
 function Index() {
-
   const router = useRouter();
   const doSignOut = useServerFn(signOut);
   const handleSignOut = useCallback(async () => {
@@ -191,17 +170,17 @@ function Index() {
   const [enabledLogos, setEnabledLogos] = useState<string[]>(LOGO_OPTIONS.map((o) => o.id));
   const [enabledLayouts, setEnabledLayouts] = useState<CreativeLayout[]>(LAYOUTS.map((l) => l.key));
   const [enabledSchemes, setEnabledSchemes] = useState<CreativeScheme[]>(SCHEMES.map((s) => s.key));
+  // Divulgação progressiva: textos abertos; ajustes finos recolhidos.
   const [openSections, setOpenSections] = useState({
-    backgrounds: true,
-    presets: true,
-    schemes: true,
-    logos: true,
-    layouts: true,
-    icons: true,
+    backgrounds: false,
+    schemes: false,
+    logos: false,
+    layouts: false,
+    icons: false,
     textVariables: true,
   });
-
-
+  const toggleSection = (k: keyof typeof openSections) =>
+    setOpenSections((p) => ({ ...p, [k]: !p[k] }));
 
   const [selectedIcons, setSelectedIcons] = useState<string[]>([
     "clock",
@@ -222,18 +201,20 @@ function Index() {
         ...s,
         expert: expert.enabled ? expert : null,
         layout: expert.enabled
-          ? expertKeys.includes(s.layout) ? s.layout : (expertKeys[i % expertKeys.length] ?? "expert-card")
-          : expertKeys.includes(s.layout) ? (LAYOUTS[i % LAYOUTS.length]?.key ?? "card-bottom") : s.layout,
+          ? expertKeys.includes(s.layout)
+            ? s.layout
+            : (expertKeys[i % expertKeys.length] ?? "expert-card")
+          : expertKeys.includes(s.layout)
+            ? (LAYOUTS[i % LAYOUTS.length]?.key ?? "card-bottom")
+            : s.layout,
       })),
     );
   }, [expert, expertKeys]);
-
 
   // Troca de formato re-renderiza as peças já geradas mantendo textos e cores.
   useEffect(() => {
     setSpecs((prev) => (prev.length ? prev.map((s) => ({ ...s, format })) : prev));
   }, [format]);
-
 
   useEffect(() => {
     let active = true;
@@ -338,7 +319,6 @@ function Index() {
     });
   }, [useImage, backgrounds, enabledSchemes, enabledPresets]);
 
-
   // Wordmarks habilitados / biblioteca carregada.
   useEffect(() => {
     setSpecs((prev) => (prev.length ? prev.map((s) => ({ ...s, ...pickLogoSet() })) : prev));
@@ -351,7 +331,10 @@ function Index() {
         ? prev.map((s) =>
             s.themeIcon && selectedIcons.includes(s.themeIcon)
               ? s
-              : { ...s, themeIcon: selectedIcons.length ? (pick(selectedIcons) ?? "clock") : "clock" },
+              : {
+                  ...s,
+                  themeIcon: selectedIcons.length ? (pick(selectedIcons) ?? "clock") : "clock",
+                },
           )
         : prev,
     );
@@ -380,8 +363,6 @@ function Index() {
     );
   }, [pools, useUrgency]);
 
-
-
   const buildSpec = useCallback(
     (layout?: CreativeLayout): Spec => {
       const textIdx: TextIdx = {
@@ -397,7 +378,9 @@ function Index() {
       };
       const cta = at(pools.ctas, textIdx.cta) ?? "Agende uma demonstração";
       const chosenLayout =
-        layout ?? pick(enabledLayouts.length ? enabledLayouts : LAYOUTS.map((l) => l.key)) ?? "card-bottom";
+        layout ??
+        pick(enabledLayouts.length ? enabledLayouts : LAYOUTS.map((l) => l.key)) ??
+        "card-bottom";
       const iconKey = /baix|download|material|pdf/i.test(cta)
         ? "download"
         : /fale|converse|contato/i.test(cta)
@@ -433,7 +416,6 @@ function Index() {
         ...pickLogoSet(),
         expert: expert.enabled ? expert : null,
       };
-
     },
     [
       pools,
@@ -541,8 +523,6 @@ function Index() {
     toast.success(`${canvases.length} criativos baixados.`);
   };
 
-
-
   // Debounce de 500ms na busca Pexels.
   useEffect(() => {
     const term = query.trim();
@@ -583,10 +563,7 @@ function Index() {
     try {
       const img = await loadImageFromUrl(photo.large2x);
       const tone: "light" | "dark" = imageBrightness(img, "all") >= 128 ? "light" : "dark";
-      setBackgrounds((prev) => [
-        ...prev,
-        { img, name: photo.alt || `Pexels #${photo.id}`, tone },
-      ]);
+      setBackgrounds((prev) => [...prev, { img, name: photo.alt || `Pexels #${photo.id}`, tone }]);
       toast.success("Imagem adicionada aos fundos.");
     } catch {
       toast.error("Não foi possível carregar essa imagem.");
@@ -605,7 +582,9 @@ function Index() {
         }),
       );
       setBackgrounds((prev) => [...prev, ...loaded]);
-      toast.success(`${loaded.length} imagem(ns) adicionada(s) — confira a classificação de fundo.`);
+      toast.success(
+        `${loaded.length} imagem(ns) adicionada(s) — confira a classificação de fundo.`,
+      );
     } catch {
       toast.error("Não foi possível ler uma das imagens.");
     }
@@ -624,205 +603,308 @@ function Index() {
       return toggleIn(prev, id, on);
     });
 
+  const iconThemes = useMemo(() => Array.from(new Set(ICONS.map((i) => i.theme))), []);
 
-  const iconThemes = useMemo(
-    () => Array.from(new Set(ICONS.map((i) => i.theme))),
-    [],
-  );
+  const size = formatSize(format);
+  const presetBackground = (p: (typeof BG_PRESETS)[number]) =>
+    p.kind === "solid"
+      ? p.colors[0]
+      : p.kind === "radial"
+        ? `radial-gradient(circle at 50% 35%, ${p.colors[0]}, ${p.colors[1]})`
+        : `linear-gradient(${p.kind === "diagonal" ? "135deg" : "180deg"}, ${p.colors[0]}, ${p.colors[1]})`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Toaster />
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
-              <ShieldCheck className="size-3.5" aria-hidden="true" />
-              Governo Zero Clique
-            </span>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Gerador de criativos de mídia paga — GOVE
-            </h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Peças em {formatSize(format).w}x{formatSize(format).h} px (72 dpi) para captação de
-              leads B2G, com diagramações alternadas, gatilhos de urgência e travas de marca
-              aplicadas automaticamente.
-            </p>
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-            <Button asChild variant="default" size="lg" className="min-w-0 flex-1 gap-2 lg:flex-none">
-              <Link to="/studio">
-                <Sparkles className="size-4" aria-hidden="true" />
-                Abrir Studio ao vivo
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="min-h-11" onClick={handleSignOut}>
-              Sair
-            </Button>
-          </div>
+      <AppHeader
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0"
+            onClick={handleSignOut}
+            aria-label="Sair"
+            title="Sair"
+          >
+            <LogOut aria-hidden="true" />
+          </Button>
+        }
+      />
 
-        </div>
-
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <section className="grid gap-4 sm:gap-6 lg:grid-cols-[400px_1fr]">
-          <div className="min-w-0 space-y-5 rounded-xl border border-border bg-card p-4 sm:p-5">
-
-            <div className="space-y-2 rounded-lg border border-border p-3">
-              <p className="text-sm font-medium">Tipo de saída</p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { key: "image", label: "Imagem", hint: "PNG estático" },
-                  { key: "video", label: "Vídeo", hint: "MP4 15s, 3 formatos" },
-                ] as const).map((m) => (
+          <div className="min-w-0 space-y-3">
+            <div
+              role="group"
+              aria-label="Tipo de saída"
+              className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+            >
+              {(
+                [
+                  { key: "image", label: "Imagem", hint: "PNG estático", icon: ImageIcon },
+                  { key: "video", label: "Vídeo", hint: "MP4 15s, 3 formatos", icon: Film },
+                ] as const
+              ).map((m) => {
+                const Icon = m.icon;
+                return (
                   <button
                     key={m.key}
                     type="button"
                     aria-pressed={mode === m.key}
+                    title={m.hint}
                     onClick={() => setMode(m.key)}
-                    className={`rounded-md border p-2 text-left text-xs transition-colors ${
+                    className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       mode === m.key
-                        ? "border-primary bg-primary/10 font-semibold text-primary"
-                        : "border-border text-muted-foreground hover:bg-muted"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <span className="block text-sm">{m.label}</span>
-                    {m.hint}
+                    <Icon className="size-5" aria-hidden="true" />
+                    {m.label}
                   </button>
+                );
+              })}
+            </div>
+
+            {mode !== "video" && (
+              <div role="group" aria-label="Formato da arte" className="flex flex-wrap gap-2">
+                {FORMATS.map((f) => (
+                  <FormatChip
+                    key={f.key}
+                    format={f.key}
+                    label={f.label}
+                    w={f.w}
+                    h={f.h}
+                    active={format === f.key}
+                    onSelect={() => setFormat(f.key)}
+                  />
                 ))}
               </div>
-            </div>
+            )}
 
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Base visual
-            </h2>
+            <ExpertFields value={expert} onChange={setExpert} />
 
+            <Section
+              icon={Type}
+              title="Textos"
+              open={openSections.textVariables}
+              onToggle={() => toggleSection("textVariables")}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="headlines" className="flex items-baseline justify-between gap-2">
+                  Headlines{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    máx. 60 caracteres
+                  </span>
+                </Label>
+                <Textarea
+                  id="headlines"
+                  rows={4}
+                  value={headlines}
+                  onChange={(e) => setHeadlines(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="subheads" className="flex items-baseline justify-between gap-2">
+                  Subheads{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    máx. 90 caracteres
+                  </span>
+                </Label>
+                <Textarea
+                  id="subheads"
+                  rows={4}
+                  value={subheads}
+                  onChange={(e) => setSubheads(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ctas" className="flex items-baseline justify-between gap-2">
+                  CTAs{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    sempre com verbo de ação
+                  </span>
+                </Label>
+                <Textarea
+                  id="ctas"
+                  rows={4}
+                  value={ctas}
+                  onChange={(e) => setCtas(e.target.value)}
+                />
+              </div>
+              <SettingRow htmlFor="use-urgency" label="Gatilhos de urgência">
+                <Switch id="use-urgency" checked={useUrgency} onCheckedChange={setUseUrgency} />
+              </SettingRow>
+              {useUrgency && (
+                <Textarea
+                  id="urgencies"
+                  rows={4}
+                  aria-label="Frases de urgência"
+                  value={urgencies}
+                  onChange={(e) => setUrgencies(e.target.value)}
+                />
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="badges">Selos</Label>
+                <Textarea
+                  id="badges"
+                  rows={3}
+                  value={badges}
+                  onChange={(e) => setBadges(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tokens" className="flex items-baseline justify-between gap-2">
+                  Tokens regionais{" "}
+                  <span className="text-xs font-normal text-muted-foreground">opcional</span>
+                </Label>
+                <Textarea
+                  id="tokens"
+                  rows={3}
+                  value={tokens}
+                  onChange={(e) => setTokens(e.target.value)}
+                />
+              </div>
+            </Section>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-              <Label htmlFor="use-image" className="text-sm">
-                Usar imagens de fundo
-              </Label>
-              <Switch id="use-image" checked={useImage} onCheckedChange={setUseImage} />
-            </div>
+            <Section
+              icon={ImagePlus}
+              title="Fundo"
+              summary={
+                useImage
+                  ? `${backgrounds.length} foto${backgrounds.length === 1 ? "" : "s"}`
+                  : `${enabledPresets.length}/${BG_PRESETS.length}`
+              }
+              open={openSections.backgrounds}
+              onToggle={() => toggleSection("backgrounds")}
+            >
+              <SettingRow htmlFor="use-image" label="Usar fotos de fundo">
+                <Switch id="use-image" checked={useImage} onCheckedChange={setUseImage} />
+              </SettingRow>
 
-            {useImage && (
-              <CollapsibleSection
-                title="Imagens de fundo"
-                subtitle="Várias imagens — crop automático 4:5, alternadas entre as peças."
-                open={openSections.backgrounds}
-                onToggle={() => setOpenSections((p) => ({ ...p, backgrounds: !p.backgrounds }))}
-              >
-
-                <div className="space-y-2">
-                  <Label htmlFor="bg-file">Adicionar imagens</Label>
-                  <Input
-                    id="bg-file"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleBackgrounds}
-                  />
+              {useImage ? (
+                <>
+                  <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
+                    <ImagePlus className="size-5" aria-hidden="true" />
+                    Adicionar imagens
+                    <input
+                      id="bg-file"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={handleBackgrounds}
+                    />
+                  </label>
                   {backgrounds.length > 0 && (
-                    <ul className="space-y-2 pt-1">
+                    <ul className="space-y-1">
                       {backgrounds.map((b, i) => (
                         <li
                           key={`${b.name}-${i}`}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border p-2 text-xs"
+                          className="flex items-center gap-1 rounded-lg bg-muted pl-2 text-xs"
                         >
-                          <span className="max-w-28 truncate">{b.name}</span>
-                          <div className="flex items-center gap-1">
-                            {(["light", "dark"] as const).map((t) => (
+                          <img
+                            src={b.img.src}
+                            alt=""
+                            className="size-8 shrink-0 rounded object-cover"
+                          />
+                          <span className="min-w-0 flex-1 truncate px-1" title={b.name}>
+                            {b.name}
+                          </span>
+                          {(["light", "dark"] as const).map((t) => {
+                            const label = t === "light" ? "Fundo claro" : "Fundo escuro";
+                            const Icon = t === "light" ? Sun : Moon;
+                            return (
                               <button
                                 key={t}
                                 type="button"
                                 aria-pressed={b.tone === t}
+                                aria-label={`${label}: ${b.name}`}
+                                title={label}
                                 onClick={() => setBackgroundTone(i, t)}
-                                className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
+                                className={`inline-flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors ${
                                   b.tone === t
-                                    ? "border-primary bg-primary text-primary-foreground"
-                                    : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-card hover:text-foreground"
                                 }`}
                               >
-                                {t === "light" ? "Fundo claro" : "Fundo escuro"}
+                                <Icon className="size-4" aria-hidden="true" />
                               </button>
-                            ))}
-                            <button
-                              type="button"
-                              aria-label={`Remover ${b.name}`}
-                              onClick={() => setBackgrounds((p) => p.filter((_, idx) => idx !== i))}
-                              className="p-1 text-muted-foreground"
-                            >
-                              <X className="size-3" aria-hidden="true" />
-                            </button>
-                          </div>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            aria-label={`Remover ${b.name}`}
+                            title="Remover"
+                            onClick={() => setBackgrounds((p) => p.filter((_, idx) => idx !== i))}
+                            className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-card hover:text-foreground"
+                          >
+                            <X className="size-4" aria-hidden="true" />
+                          </button>
                         </li>
                       ))}
                     </ul>
                   )}
-                </div>
 
-                <div className="mt-3 space-y-2">
-                  <Label htmlFor="pexels-query">Buscar imagens (Pexels)</Label>
-                  <Input
-                    id="pexels-query"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Buscar imagens (ex: prefeitura, tecnologia, cidade)"
-                    aria-label="Buscar imagens no Pexels"
-                  />
-                  {searching && <p className="text-[11px] text-muted-foreground">Buscando…</p>}
-                  {searchError && <p className="text-[11px] text-amber-700">{searchError}</p>}
-                  {!searching && !searchError && photos?.length === 0 && (
-                    <p className="text-[11px] text-muted-foreground">
-                      Nenhuma imagem encontrada para esse termo. Tente outro termo.
-                    </p>
-                  )}
-                  {photos && photos.length > 0 && (
-                    <>
-                      <div className="grid grid-cols-3 gap-2">
-                        {photos.map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            title={p.alt || `Foto de ${p.photographer}`}
-                            onClick={() => void addPexelsPhoto(p)}
-                            className="overflow-hidden rounded-md border-2 border-border hover:border-primary"
-                          >
-                            <img
-                              src={p.medium}
-                              alt={p.alt || `Foto de ${p.photographer}`}
-                              className="h-14 w-full object-cover"
-                              loading="lazy"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Fotos via{" "}
-                        <a
-                          href="https://www.pexels.com"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
-                        >
-                          Pexels
-                        </a>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="pexels-query"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Buscar no Pexels (ex: prefeitura, cidade)"
+                        className="h-11 pl-9"
+                        aria-label="Buscar imagens no Pexels"
+                      />
+                    </div>
+                    {searching && <p className="text-xs text-muted-foreground">Buscando…</p>}
+                    {searchError && <p className="text-xs text-amber-700">{searchError}</p>}
+                    {!searching && !searchError && photos?.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Nenhuma imagem encontrada. Tente outro termo.
                       </p>
-                    </>
-                  )}
-                </div>
-              </CollapsibleSection>
-            )}
-
-            {!useImage && (
-              <CollapsibleSection
-                title="Fundos padrão"
-                subtitle="Sólidos e degradês institucionais alternados entre as peças."
-                open={openSections.presets}
-                onToggle={() => setOpenSections((p) => ({ ...p, presets: !p.presets }))}
-              >
-                <div className="grid grid-cols-3 gap-2">
+                    )}
+                    {photos && photos.length > 0 && (
+                      <>
+                        <div className="grid grid-cols-3 gap-2">
+                          {photos.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              title={p.alt || `Foto de ${p.photographer}`}
+                              onClick={() => void addPexelsPhoto(p)}
+                              className="overflow-hidden rounded-lg border-2 border-border hover:border-primary"
+                            >
+                              <img
+                                src={p.medium}
+                                alt={p.alt || `Foto de ${p.photographer}`}
+                                className="h-14 w-full object-cover"
+                                loading="lazy"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Fotos via{" "}
+                          <a
+                            href="https://www.pexels.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline"
+                          >
+                            Pexels
+                          </a>
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div role="group" aria-label="Fundos padrão" className="grid grid-cols-3 gap-2">
                   {BG_PRESETS.map((p) => {
                     const on = enabledPresets.includes(p.key);
                     return (
@@ -841,139 +923,112 @@ function Index() {
                               : [...prev, p.key],
                           )
                         }
-                        className={`h-14 rounded-md border-2 transition-opacity ${
-                          on ? "border-primary" : "border-border opacity-40"
+                        className={`h-12 rounded-lg border-2 transition-opacity ${
+                          on ? "border-primary ring-2 ring-primary/30" : "border-border opacity-40"
                         }`}
-                        style={{
-                          background:
-                            p.kind === "solid"
-                              ? p.colors[0]
-                              : p.kind === "radial"
-                                ? `radial-gradient(circle at 50% 35%, ${p.colors[0]}, ${p.colors[1]})`
-                                : `linear-gradient(${p.kind === "diagonal" ? "135deg" : "180deg"}, ${p.colors[0]}, ${p.colors[1]})`,
-                        }}
+                        style={{ background: presetBackground(p) }}
                       />
                     );
                   })}
                 </div>
-              </CollapsibleSection>
-            )}
+              )}
+            </Section>
 
-
-            <div
-              className={`space-y-2 rounded-lg border border-border p-3 ${mode === "video" ? "hidden" : ""}`}
-            >
-              <p className="text-sm font-medium">Formato da arte</p>
-              <p className="text-xs text-muted-foreground">
-                Exportação em PNG a 72 dpi (1 px = 1 pt).
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {FORMATS.map((f) => (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => setFormat(f.key)}
-                    aria-pressed={format === f.key}
-                    className={`rounded-md border p-2 text-left text-xs transition-colors ${
-                      format === f.key
-                        ? "border-primary bg-primary/10 font-semibold text-primary"
-                        : "border-border text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <CollapsibleSection
-              title="Esquemas de cor"
-              subtitle="O minimalista usa branco ou roxo como cor de respiro, com o CTA na cor oposta (sem dourado)."
+            <Section
+              icon={Palette}
+              title="Cores"
+              summary={`${enabledSchemes.length}/${SCHEMES.length}`}
               open={openSections.schemes}
-              onToggle={() => setOpenSections((p) => ({ ...p, schemes: !p.schemes }))}
+              onToggle={() => toggleSection("schemes")}
             >
-
               {SCHEMES.map((s) => (
-                <div key={s.key} className="flex items-center justify-between gap-3">
-                  <Label htmlFor={`scheme-${s.key}`} className="text-xs font-normal">
-                    {s.label}
-                  </Label>
+                <SettingRow key={s.key} htmlFor={`scheme-${s.key}`} label={s.label}>
                   <Switch
                     id={`scheme-${s.key}`}
                     checked={enabledSchemes.includes(s.key)}
                     onCheckedChange={(v) => setEnabledSchemes((p) => toggleIn(p, s.key, v))}
                   />
-                </div>
+                </SettingRow>
               ))}
-            </CollapsibleSection>
+            </Section>
 
-
-            <CollapsibleSection
-              title="Logos wordmark GOVE"
-              subtitle="Ao menos um wordmark deve permanecer ativo. Versões com sorriso dourado nunca são aplicadas sobre fundo ou placa dourada."
+            <Section
+              icon={BadgeCheck}
+              title="Wordmarks"
+              summary={`${enabledLogos.length}/${LOGO_OPTIONS.length}`}
               open={openSections.logos}
-              onToggle={() => setOpenSections((p) => ({ ...p, logos: !p.logos }))}
+              onToggle={() => toggleSection("logos")}
             >
+              <p className="text-xs text-muted-foreground">
+                Mínimo de 1 ativo. Sorriso dourado nunca sobre fundo ou placa dourada.
+              </p>
+              {LOGO_OPTIONS.map((o) => {
+                const forLight = o.variant === "light";
+                const ToneIcon = forLight ? Sun : Moon;
+                const toneLabel = forLight ? "para fundos claros" : "para fundos escuros";
+                return (
+                  <SettingRow
+                    key={o.id}
+                    htmlFor={`logo-${o.id}`}
+                    label={
+                      <span className="inline-flex items-center gap-2">
+                        <ToneIcon
+                          className="size-4 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <span title={toneLabel}>
+                          {o.label}
+                          <span className="sr-only"> ({toneLabel})</span>
+                        </span>
+                      </span>
+                    }
+                  >
+                    <Switch
+                      id={`logo-${o.id}`}
+                      checked={enabledLogos.includes(o.id)}
+                      onCheckedChange={(v) => toggleLogo(o.id, v)}
+                    />
+                  </SettingRow>
+                );
+              })}
+            </Section>
 
-              {LOGO_OPTIONS.map((o) => (
-                <div key={o.id} className="flex items-center justify-between gap-3">
-                  <Label htmlFor={`logo-${o.id}`} className="text-xs font-normal">
-                    {o.label}
-                    <span className="ml-1 text-muted-foreground">
-                      ({o.variant === "light" ? "fundos claros" : "fundos escuros"})
-                    </span>
-                  </Label>
-                  <Switch
-                    id={`logo-${o.id}`}
-                    checked={enabledLogos.includes(o.id)}
-                    onCheckedChange={(v) => toggleLogo(o.id, v)}
-                  />
-                </div>
-              ))}
-            </CollapsibleSection>
-
-
-
-            <CollapsibleSection
+            <Section
+              icon={LayoutTemplate}
               title="Diagramações"
-              subtitle="As 8 peças são distribuídas entre as disposições selecionadas."
+              summary={
+                expert.enabled ? "Especialista" : `${enabledLayouts.length}/${LAYOUTS.length}`
+              }
               open={openSections.layouts}
-              onToggle={() => setOpenSections((p) => ({ ...p, layouts: !p.layouts }))}
+              onToggle={() => toggleSection("layouts")}
             >
-
-              <ExpertFields value={expert} onChange={setExpert} />
               {expert.enabled && (
-                <p className="text-xs text-muted-foreground">
-                  Material colaborativo ativo: as peças usam os layouts exclusivos de especialista.
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <UserRound className="size-4 shrink-0" aria-hidden="true" />
+                  Material colaborativo ativo: layouts exclusivos de especialista.
                 </p>
               )}
               {(expert.enabled ? [] : LAYOUTS).map((l) => (
-                <div key={l.key} className="flex items-center justify-between gap-3">
-                  <Label htmlFor={`layout-${l.key}`} className="text-xs font-normal">
-                    {l.label}
-                  </Label>
+                <SettingRow key={l.key} htmlFor={`layout-${l.key}`} label={l.label}>
                   <Switch
                     id={`layout-${l.key}`}
                     checked={enabledLayouts.includes(l.key)}
                     onCheckedChange={(v) => setEnabledLayouts((p) => toggleIn(p, l.key, v))}
                   />
-                </div>
+                </SettingRow>
               ))}
-            </CollapsibleSection>
+            </Section>
 
-
-            <CollapsibleSection
-              title="Repositório de ícones"
-              subtitle="Selecione os ícones temáticos que podem aparecer nos gatilhos de urgência."
+            <Section
+              icon={Shapes}
+              title="Ícones de urgência"
+              summary={`${selectedIcons.length}`}
               open={openSections.icons}
-              onToggle={() => setOpenSections((p) => ({ ...p, icons: !p.icons }))}
+              onToggle={() => toggleSection("icons")}
             >
-
               {iconThemes.map((theme) => (
-                <div key={theme} className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {theme}
-                  </p>
+                <div key={theme} role="group" aria-label={theme} className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground capitalize">{theme}</p>
                   <div className="flex flex-wrap gap-2">
                     {ICONS.filter((i) => i.theme === theme).map((i) => {
                       const active = selectedIcons.includes(i.key);
@@ -989,7 +1044,7 @@ function Index() {
                           className={`inline-flex size-11 items-center justify-center rounded-lg border transition-colors ${
                             active
                               ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                              : "border-border bg-card text-muted-foreground hover:bg-muted"
                           }`}
                         >
                           <svg
@@ -1013,78 +1068,12 @@ function Index() {
                   </div>
                 </div>
               ))}
-            </CollapsibleSection>
-
-
-
-            <CollapsibleSection
-              title="Variáveis de texto"
-              subtitle="Headlines, subheads, CTAs, selos e tokens."
-              open={openSections.textVariables}
-              onToggle={() => setOpenSections((p) => ({ ...p, textVariables: !p.textVariables }))}
-            >
-              <div className="space-y-2">
-                <Label htmlFor="headlines">Headlines (máx. 60 caracteres)</Label>
-                <Textarea
-                  id="headlines"
-                  rows={4}
-                  value={headlines}
-                  onChange={(e) => setHeadlines(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="subheads">Subheads (máx. 90 caracteres)</Label>
-                <Textarea
-                  id="subheads"
-                  rows={4}
-                  value={subheads}
-                  onChange={(e) => setSubheads(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ctas">CTAs (sempre com verbo de ação)</Label>
-                <Textarea id="ctas" rows={4} value={ctas} onChange={(e) => setCtas(e.target.value)} />
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                <Label htmlFor="use-urgency" className="text-sm">
-                  Gatilhos de urgência
-                </Label>
-                <Switch id="use-urgency" checked={useUrgency} onCheckedChange={setUseUrgency} />
-              </div>
-              {useUrgency && (
-                <div className="space-y-2">
-                  <Label htmlFor="urgencies">Frases de urgência (chip dourado com ícone)</Label>
-                  <Textarea
-                    id="urgencies"
-                    rows={4}
-                    value={urgencies}
-                    onChange={(e) => setUrgencies(e.target.value)}
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="badges">Selos institucionais</Label>
-                <Textarea
-                  id="badges"
-                  rows={3}
-                  value={badges}
-                  onChange={(e) => setBadges(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tokens">Tokens regionais (opcional)</Label>
-                <Textarea
-                  id="tokens"
-                  rows={3}
-                  value={tokens}
-                  onChange={(e) => setTokens(e.target.value)}
-                />
-              </div>
-            </CollapsibleSection>
+            </Section>
 
             <Button
+              size="lg"
               onClick={generate}
-              className="sticky bottom-3 z-10 min-h-12 w-full shadow-lg lg:static lg:shadow-none"
+              className="sticky bottom-3 z-10 min-h-12 w-full text-base shadow-lg"
             >
               <Sparkles aria-hidden="true" />
               {mode === "video" ? "Gerar 4 vídeos" : "Gerar 8 versões"}
@@ -1093,23 +1082,54 @@ function Index() {
 
           <div className="min-w-0">
             {specs.length === 0 ? (
-              <div className="flex h-full min-h-60 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card p-6 text-center sm:min-h-80 sm:p-10">
-
-                <Upload className="size-6 text-muted-foreground" aria-hidden="true" />
+              <div className="flex min-h-60 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card p-6 text-center sm:min-h-80 lg:sticky lg:top-20">
+                {mode === "video" ? (
+                  <Film className="size-8 text-muted-foreground" aria-hidden="true" />
+                ) : (
+                  <RectangleVertical className="size-8 text-muted-foreground" aria-hidden="true" />
+                )}
                 <p className="text-sm text-muted-foreground">
                   {mode === "video"
-                    ? "Configure os textos ao lado e gere as peças em vídeo (15s, Ken Burns, MP4 em 3 formatos)."
-                    : "Configure os textos ao lado e gere as 8 variações no formato selecionado."}
+                    ? "Os 4 vídeos (15s, 3 formatos) aparecem aqui."
+                    : `As 8 versões em ${size.w}×${size.h}px aparecem aqui.`}
                 </p>
               </div>
             ) : mode === "video" ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {specs.map((spec, i) => (
-                  <VideoCard key={i} spec={spec} index={i} onReload={reloadOne} onRecolor={recolorOne} />
-                ))}
+              <div className="space-y-3">
+                <p className="flex min-h-11 items-center text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{specs.length} vídeos</span>
+                  &nbsp;· 15s · sem áudio
+                </p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {specs.map((spec, i) => (
+                    <VideoCard
+                      key={i}
+                      spec={spec}
+                      index={i}
+                      onReload={reloadOne}
+                      onRecolor={recolorOne}
+                    />
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{specs.length} criativos</span>{" "}
+                    · {size.w}×{size.h}px
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={downloadAll}
+                    disabled={expertBlocked}
+                    className="min-h-11"
+                    title={`Baixar os ${specs.length} criativos em PNG`}
+                  >
+                    <Download aria-hidden="true" />
+                    Baixar todos
+                  </Button>
+                </div>
                 <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {specs.map((spec, i) => (
                     <CreativeCard
@@ -1121,14 +1141,8 @@ function Index() {
                     />
                   ))}
                 </div>
-                <Button onClick={downloadAll} disabled={expertBlocked} className="min-h-11 w-full">
-                  <Download aria-hidden="true" />
-                  Baixar todos os {specs.length} criativos (PNG)
-                </Button>
               </div>
             )}
-
-
           </div>
         </section>
       </main>

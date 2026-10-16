@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Palette, RefreshCw } from "lucide-react";
+import { Download, Film, Palette, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { FormatChip } from "@/components/AppChrome";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { validateCreative, type ComplianceReport } from "@/lib/creative/brand";
@@ -17,6 +18,18 @@ type Props = {
   index: number;
   onReload: (index: number) => void;
   onRecolor: (index: number) => void;
+};
+
+const FORMAT_RATIO: Record<string, string> = {
+  "feed-45": "4:5",
+  "story-916": "9:16",
+  "square-11": "1:1",
+};
+
+const FORMAT_SIZE: Record<string, [number, number]> = {
+  "feed-45": [1080, 1350],
+  "story-916": [1080, 1920],
+  "square-11": [1080, 1080],
 };
 
 const FORMAT_LABEL: Record<string, string> = {
@@ -128,77 +141,91 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
     }
   };
 
+  const failing =
+    report && !report.pass
+      ? report.checks
+          .filter((c) => !c.pass)
+          .map((c) => c.label)
+          .join(" · ")
+      : "";
+
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <div className="relative bg-muted">
         <canvas ref={canvasRef} className="block h-auto w-full" />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 pt-2 text-[11px]">
-        <span className="font-medium text-muted-foreground">
-          {spec.layout} · 15s · sem áudio
-        </span>
-        {report?.pass && (
-          <span className="inline-flex items-center gap-1 font-semibold text-primary">
-            <Check className="size-3" aria-hidden="true" />
-            Conforme com o manual de marca
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-1 px-3 pt-2">
-        {VIDEO_FORMATS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={preview === f}
-            onClick={() => setPreview(f)}
-            className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
-              preview === f
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background text-muted-foreground hover:bg-secondary"
-            }`}
+      <div className="flex items-center gap-2 px-2 pt-2">
+        <div
+          role="group"
+          aria-label={`Formato da prévia do vídeo ${index + 1}`}
+          className="flex flex-1 flex-wrap gap-1"
+        >
+          {VIDEO_FORMATS.map((f) => (
+            <FormatChip
+              key={f}
+              format={f}
+              label={FORMAT_RATIO[f] ?? f}
+              title={FORMAT_LABEL[f]}
+              w={FORMAT_SIZE[f]?.[0] ?? 1080}
+              h={FORMAT_SIZE[f]?.[1] ?? 1080}
+              active={preview === f}
+              onSelect={() => setPreview(f)}
+            />
+          ))}
+        </div>
+        {report?.pass ? (
+          <span
+            className="inline-flex shrink-0 items-center pr-1 text-primary"
+            title="Conforme com o manual de marca"
           >
-            {FORMAT_LABEL[f]}
-          </button>
-        ))}
+            <ShieldCheck className="size-5" aria-hidden="true" />
+            <span className="sr-only">Conforme com o manual de marca</span>
+          </span>
+        ) : report ? (
+          <span className="inline-flex shrink-0 items-center pr-1 text-amber-700" title={failing}>
+            <TriangleAlert className="size-5" aria-hidden="true" />
+            <span className="sr-only">Fora do manual: {failing}</span>
+          </span>
+        ) : null}
       </div>
-      <div className="flex flex-wrap gap-2 p-3">
+      <div className="flex items-center gap-1 p-2">
         <Button
-          size="sm"
+          variant="secondary"
           onClick={() => downloadFormat(preview)}
           disabled={!!busy}
-          className="min-h-11 flex-1"
+          className="min-h-11 min-w-0 flex-1"
         >
           <Download aria-hidden="true" />
           MP4 {FORMAT_LABEL[preview]}
         </Button>
         <Button
-          size="sm"
-          variant="secondary"
+          size="icon"
+          variant="ghost"
           onClick={downloadAllFormats}
           disabled={!!busy}
-          className="min-h-11 flex-1"
+          className="size-11 shrink-0"
+          aria-label={`Baixar os 3 formatos do vídeo ${index + 1}`}
           title="Gera os 3 formatos em MP4"
         >
           <Film aria-hidden="true" />
-          3 formatos
         </Button>
         <Button
-          size="sm"
-          variant="outline"
+          size="icon"
+          variant="ghost"
           onClick={() => onRecolor(index)}
           disabled={!!busy}
-          className="min-h-11"
+          className="size-11 shrink-0"
           aria-label={`Aleatorizar cores do vídeo ${index + 1}`}
           title="Aleatorizar apenas as cores"
         >
           <Palette aria-hidden="true" />
         </Button>
         <Button
-          size="sm"
-          variant="outline"
+          size="icon"
+          variant="ghost"
           onClick={() => onReload(index)}
           disabled={!!busy}
-          className="min-h-11"
+          className="size-11 shrink-0"
           aria-label={`Recarregar combinação do vídeo ${index + 1}`}
           title="Sortear nova combinação de texto"
         >
