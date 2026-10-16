@@ -62,7 +62,13 @@ export const BANNED_CTA_WORDS = ["compre", "garanta o seu", "aproveite agora", "
 
 export function hexToRgb(hex: string) {
   const h = hex.replace("#", "");
-  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const v =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   return {
     r: parseInt(v.slice(0, 2), 16),
     g: parseInt(v.slice(2, 4), 16),
@@ -99,6 +105,9 @@ export function validateCreative(spec: {
   ctaText: string;
   headline: string;
   subhead: string;
+  /** Resultado da regra de contraste da logomarca (renderer). */
+  logo?:
+    { ok: boolean; minContrast: number; drawn: boolean; plate: string | null } | null | undefined;
 }): ComplianceReport {
   const norm = (c: string) => c.toUpperCase();
   const paletteOk = spec.usedColors.every((c) => ALLOWED_COLORS.map(norm).includes(norm(c)));
@@ -112,7 +121,13 @@ export function validateCreative(spec: {
   const lengthOk = spec.headline.length <= MAX_HEADLINE && spec.subhead.length <= MAX_SUBHEAD;
 
   const checks = [
-    { id: "logo", label: "Logo = wordmark completo GOVE", pass: spec.logoIsWordmark },
+    {
+      id: "logo",
+      label: spec.logo?.drawn
+        ? `Logomarca oficial com contraste ${spec.logo.minContrast.toFixed(1).replace(".", ",")}:1${spec.logo.plate ? " (sobre placa)" : ""} — mínimo 4,5:1`
+        : "Logomarca oficial carregada",
+      pass: spec.logoIsWordmark && !!spec.logo?.drawn && spec.logo.ok,
+    },
     { id: "palette", label: "Cores dentro da paleta institucional", pass: paletteOk },
     { id: "pair", label: "Par texto/fundo aprovado", pass: pairOk },
     { id: "cta", label: "CTA com verbo de ação (sem linguagem de e-commerce)", pass: verbOk },

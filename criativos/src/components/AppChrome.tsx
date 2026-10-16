@@ -5,16 +5,17 @@
  */
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, LayoutGrid, Wand2, type LucideIcon } from "lucide-react";
+import { ChevronDown, LayoutGrid, Send, Wand2, type LucideIcon } from "lucide-react";
 
 import type { CreativeFormat } from "@/lib/creative/renderer";
 
 /** Rótulo visível a partir de 900px; abaixo disso fica só para leitores de tela. */
 export const RESPONSIVE_LABEL = "sr-only min-[900px]:not-sr-only";
 
-const NAV: { to: "/" | "/studio"; label: string; icon: LucideIcon }[] = [
+const NAV: { to: "/" | "/studio" | "/follow-ups"; label: string; icon: LucideIcon }[] = [
   { to: "/", label: "Gerador em lote", icon: LayoutGrid },
   { to: "/studio", label: "Studio", icon: Wand2 },
+  { to: "/follow-ups", label: "Follow-ups", icon: Send },
 ];
 
 export function AppHeader({ actions }: { actions?: ReactNode }) {

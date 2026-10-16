@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as FollowUpsRouteImport } from './routes/follow-ups'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FollowUpsRoute = FollowUpsRouteImport.update({
+  id: '/follow-ups',
+  path: '/follow-ups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/studio': typeof StudioRoute
+  '/follow-ups': typeof FollowUpsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/studio': typeof StudioRoute
+  '/follow-ups': typeof FollowUpsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/studio': typeof StudioRoute
+  '/follow-ups': typeof FollowUpsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/studio'
+  fullPaths: '/' | '/login' | '/studio' | '/follow-ups'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/studio'
-  id: '__root__' | '/' | '/login' | '/studio'
+  to: '/' | '/login' | '/studio' | '/follow-ups'
+  id: '__root__' | '/' | '/login' | '/studio' | '/follow-ups' | '/follow-ups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   StudioRoute: typeof StudioRoute
+  FollowUpsRoute: typeof FollowUpsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/follow-ups': {
+      id: '/follow-ups'
+      path: '/follow-ups'
+      fullPath: '/follow-ups'
+      preLoaderRoute: typeof FollowUpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   StudioRoute: StudioRoute,
+  FollowUpsRoute: FollowUpsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

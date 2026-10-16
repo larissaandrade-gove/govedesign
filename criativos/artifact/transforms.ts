@@ -82,6 +82,11 @@ const FILES: FilePatch[] = [
     ],
   },
   {
+    file: "src/routes/follow-ups.tsx",
+    imports: BRIDGE,
+    patches: [asyncToBlob, anchorDownload()],
+  },
+  {
     file: "src/components/CreativeCard.tsx",
     imports: BRIDGE,
     patches: [asyncToBlob, anchorDownload(), clipboard],
@@ -123,31 +128,6 @@ const FILES: FilePatch[] = [
         find: /export async function webmToMp4[\s\S]*?\n\}\n/,
         replace:
           "export async function webmToMp4(video: Blob, _name: string): Promise<Blob> {\n  // Sem ffmpeg no artefato: entrega o que o navegador gravou (MP4 nativo ou WebM).\n  return video;\n}\n",
-      },
-    ],
-  },
-  {
-    file: "src/lib/creative/logos.ts",
-    imports: `import { embeddedLogo as __embeddedLogo } from "@artifact/logos";\n`,
-    patches: [
-      {
-        label: "logos embutidos",
-        find: /export async function loadLogoLibrary\(\)[\s\S]*$/,
-        replace: `export async function loadLogoLibrary(): Promise<Record<string, HTMLImageElement>> {
-  const entries = await Promise.all(
-    LOGO_OPTIONS.map(async (o) => {
-      const src = __embeddedLogo(o.url);
-      if (!src) return null;
-      try {
-        return [o.id, await loadImageFromUrl(src)] as const;
-      } catch {
-        return null;
-      }
-    }),
-  );
-  return Object.fromEntries(entries.filter((e): e is readonly [string, HTMLImageElement] => e !== null));
-}
-`,
       },
     ],
   },

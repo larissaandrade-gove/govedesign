@@ -1,0 +1,533 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  CalendarCheck,
+  Check,
+  Circle,
+  Download,
+  ImagePlus,
+  ListChecks,
+  ListOrdered,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+  Type,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import { AppHeader, FormatChip, Section } from "@/components/AppChrome";
+import { LogoVariantPicker } from "@/components/LogoVariantPicker";
+import { getGateStatus } from "@/lib/gate.functions";
+import {
+  ALL_LOGO_VARIANTS,
+  LOGO_VARIANTS,
+  explainVariants,
+  loadLogoLibrary,
+  type LogoLibrary,
+  type LogoVariantId,
+} from "@/lib/creative/logos";
+import { loadImageFromFile } from "@/lib/creative/renderer";
+import {
+  FOLLOWUP_BGS,
+  FOLLOWUP_FORMATS,
+  FOLLOWUP_MAX,
+  followupSize,
+  loadFollowupFonts,
+  renderFollowup,
+  type EventConfirmation,
+  type FollowupFormat,
+  type FollowupMarker,
+  type FollowupModel,
+  type FollowupResult,
+  type FollowupSpec,
+  type ProductUpdate,
+} from "@/lib/creative/followup";
+
+export const Route = createFileRoute("/follow-ups")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { unlocked } = await getGateStatus();
+    if (!unlocked) throw redirect({ to: "/login" });
+  },
+  head: () => ({
+    meta: [
+      { title: "Follow-ups | Criativos GOVE" },
+      {
+        name: "description",
+        content:
+          "Peças de follow-up GOVE em 4:3 e 1:1: atualização de produto e confirmação de evento, com travas de marca e logomarca oficial.",
+      },
+    ],
+  }),
+  component: Followups,
+});
+
+const MODELS: { key: FollowupModel; label: string; icon: LucideIcon }[] = [
+  { key: "product", label: "Atualização de produto", icon: ListChecks },
+  { key: "event", label: "Confirmação de evento", icon: CalendarCheck },
+];
+
+const MARKERS: { key: FollowupMarker; label: string; icon: LucideIcon }[] = [
+  { key: "check", label: "Check", icon: Check },
+  { key: "zap", label: "Raio", icon: Zap },
+  { key: "arrow", label: "Seta", icon: ArrowRight },
+  { key: "number", label: "Números", icon: ListOrdered },
+  { key: "dot", label: "Marcador simples", icon: Circle },
+];
+
+const DEFAULT_PRODUCT: ProductUpdate = {
+  title: "Novidades da plataforma Gove",
+  items: [
+    "Painel de demandas com filtros por secretaria",
+    "Relatórios mensais exportados em PDF",
+    "Avisos por WhatsApp para o cidadão",
+    "Acesso com conta gov.br",
+  ],
+  marker: "check",
+  version: "v3.2 · outubro 2026",
+  cta: "Conheça as novidades",
+};
+
+const DEFAULT_EVENT: EventConfirmation = {
+  kicker: "Presença confirmada",
+  name: "Ana Souza",
+  event: "Encontro de Gestores Públicos — Governo Zero Clique",
+  date: "2026-11-12",
+  time: "19:00",
+  photo: null,
+};
+
+function Followups() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [model, setModel] = useState<FollowupModel>("product");
+  const [format, setFormat] = useState<FollowupFormat>("4x3");
+  const [bgPreset, setBgPreset] = useState("deep");
+  const [product, setProduct] = useState<ProductUpdate>(DEFAULT_PRODUCT);
+  const [event, setEvent] = useState<EventConfirmation>(DEFAULT_EVENT);
+  const [library, setLibrary] = useState<LogoLibrary | null>(null);
+  const [logoVariants, setLogoVariants] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
+  const [result, setResult] = useState<FollowupResult | null>(null);
+  const [fontsReady, setFontsReady] = useState(false);
+  const [open, setOpen] = useState({ content: true, background: true, logo: false });
+  const toggleSection = (k: keyof typeof open) => setOpen((p) => ({ ...p, [k]: !p[k] }));
+
+  useEffect(() => {
+    let alive = true;
+    loadLogoLibrary()
+      .then((lib) => alive && setLibrary(lib))
+      .catch(() => alive && toast.error("Não foi possível carregar a logomarca."));
+    loadFollowupFonts().finally(() => alive && setFontsReady(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const spec: FollowupSpec = useMemo(
+    () => ({ model, format, bgPreset, product, event, logos: library, logoVariants }),
+    [model, format, bgPreset, product, event, library, logoVariants],
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    setResult(renderFollowup(canvas, spec));
+  }, [spec, fontsReady]);
+
+  const logoStatuses = useMemo(() => explainVariants(result?.logo?.bgLums ?? null), [result]);
+  const size = followupSize(format);
+  const failing = result?.checks.filter((c) => !c.pass) ?? [];
+  const blocking = failing.filter((c) => c.id !== "fit");
+
+  const download = () => {
+    if (blocking.length) {
+      toast.error(blocking.map((c) => c.label).join(" · "));
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gove-followup-${model === "product" ? "produto" : "evento"}-${canvas.width}x${canvas.height}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PNG exportado.");
+    }, "image/png");
+  };
+
+  const setItem = (i: number, v: string) =>
+    setProduct((p) => ({ ...p, items: p.items.map((it, k) => (k === i ? v : it)) }));
+
+  const onPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const photo = await loadImageFromFile(file);
+      setEvent((e) => ({ ...e, photo }));
+    } catch {
+      toast.error("Não foi possível carregar a foto.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Toaster />
+      <AppHeader />
+
+      <main className="mx-auto grid max-w-7xl gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:grid-cols-[1fr_380px]">
+        <section aria-label="Prévia" className="order-1 min-w-0">
+          <div className="space-y-3 rounded-xl border border-border bg-card p-3 sm:p-4 lg:sticky lg:top-20">
+            <div className="mx-auto max-w-[640px]">
+              <canvas
+                ref={canvasRef}
+                className="w-full rounded-lg border border-border"
+                aria-label="Prévia do follow-up"
+              />
+            </div>
+            <div role="group" aria-label="Formato" className="flex flex-wrap justify-center gap-2">
+              {FOLLOWUP_FORMATS.map((f) => (
+                <FormatChip
+                  key={f.key}
+                  format={f.key}
+                  label={f.label}
+                  w={f.w}
+                  h={f.h}
+                  active={format === f.key}
+                  onSelect={() => setFormat(f.key)}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 text-xs tabular-nums text-muted-foreground">
+                {size.w}×{size.h}px · 72 dpi
+              </p>
+              <Button
+                size="lg"
+                className="min-h-11 px-5"
+                onClick={download}
+                disabled={!result || blocking.length > 0}
+              >
+                <Download aria-hidden="true" />
+                Baixar PNG
+              </Button>
+            </div>
+            {result && (
+              <p
+                role="status"
+                className={`flex items-center gap-2 text-xs ${failing.length ? "text-amber-700" : "text-emerald-700"}`}
+              >
+                {failing.length ? (
+                  <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+                ) : (
+                  <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                {failing.length
+                  ? failing.map((c) => c.label).join(" · ")
+                  : "Conforme com o manual de marca"}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <aside aria-label="Ajustes" className="order-2 space-y-3">
+          <div
+            role="group"
+            aria-label="Modelo"
+            className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+          >
+            {MODELS.map((m) => {
+              const Icon = m.icon;
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  aria-pressed={model === m.key}
+                  onClick={() => setModel(m.key)}
+                  className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-center text-sm leading-tight font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
+                    model === m.key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-5 shrink-0" aria-hidden="true" />
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <Section
+            icon={Type}
+            title="Conteúdo"
+            open={open.content}
+            onToggle={() => toggleSection("content")}
+          >
+            {model === "product" ? (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="fu-title" className="flex items-baseline justify-between gap-2">
+                    Título
+                    <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                      {product.title.length}/{FOLLOWUP_MAX.title}
+                    </span>
+                  </Label>
+                  <Input
+                    id="fu-title"
+                    className="h-11"
+                    maxLength={FOLLOWUP_MAX.title}
+                    value={product.title}
+                    onChange={(e) => setProduct((p) => ({ ...p, title: e.target.value }))}
+                  />
+                </div>
+                <fieldset className="space-y-2">
+                  <legend className="flex w-full items-baseline justify-between text-sm font-medium">
+                    Novidades
+                    <span className="text-xs font-normal text-muted-foreground">
+                      até {FOLLOWUP_MAX.items} itens
+                    </span>
+                  </legend>
+                  {product.items.map((it, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <Input
+                        className="h-11"
+                        aria-label={`Item ${i + 1}`}
+                        maxLength={FOLLOWUP_MAX.item}
+                        value={it}
+                        onChange={(e) => setItem(i, e.target.value)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-11 shrink-0"
+                        aria-label={`Remover item ${i + 1}`}
+                        title="Remover item"
+                        disabled={product.items.length <= 1}
+                        onClick={() =>
+                          setProduct((p) => ({ ...p, items: p.items.filter((_, k) => k !== i) }))
+                        }
+                      >
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ))}
+                  {product.items.length < FOLLOWUP_MAX.items && (
+                    <Button
+                      variant="outline"
+                      className="min-h-11 w-full"
+                      onClick={() => setProduct((p) => ({ ...p, items: [...p.items, ""] }))}
+                    >
+                      <Plus aria-hidden="true" />
+                      Adicionar item
+                    </Button>
+                  )}
+                </fieldset>
+                <div
+                  role="radiogroup"
+                  aria-label="Marcador dos itens"
+                  className="flex flex-wrap gap-2"
+                >
+                  {MARKERS.map((m) => {
+                    const Icon = m.icon;
+                    return (
+                      <button
+                        key={m.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={product.marker === m.key}
+                        aria-label={m.label}
+                        title={m.label}
+                        onClick={() => setProduct((p) => ({ ...p, marker: m.key }))}
+                        className={`inline-flex size-11 items-center justify-center rounded-lg border transition-colors ${
+                          product.marker === m.key
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Icon className="size-5" aria-hidden="true" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    className="h-11"
+                    aria-label="Versão ou data (opcional)"
+                    placeholder="Versão/data (opcional)"
+                    maxLength={FOLLOWUP_MAX.version}
+                    value={product.version}
+                    onChange={(e) => setProduct((p) => ({ ...p, version: e.target.value }))}
+                  />
+                  <Input
+                    className="h-11"
+                    aria-label="CTA (opcional)"
+                    placeholder="CTA (opcional)"
+                    maxLength={FOLLOWUP_MAX.cta}
+                    value={product.cta}
+                    onChange={(e) => setProduct((p) => ({ ...p, cta: e.target.value }))}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
+                    <ImagePlus className="size-5" aria-hidden="true" />
+                    {event.photo ? "Trocar foto" : "Foto do colaborador"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      aria-label="Foto do colaborador"
+                      className="sr-only"
+                      onChange={(e) => void onPhoto(e.target.files?.[0])}
+                    />
+                  </label>
+                  {event.photo && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 shrink-0"
+                      aria-label="Remover foto"
+                      title="Remover foto"
+                      onClick={() => setEvent((e) => ({ ...e, photo: null }))}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="fu-name">Nome do colaborador</Label>
+                  <Input
+                    id="fu-name"
+                    className="h-11"
+                    maxLength={FOLLOWUP_MAX.name}
+                    value={event.name}
+                    onChange={(e) => setEvent((v) => ({ ...v, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="fu-event">Evento</Label>
+                  <Input
+                    id="fu-event"
+                    className="h-11"
+                    maxLength={FOLLOWUP_MAX.event}
+                    value={event.event}
+                    onChange={(e) => setEvent((v) => ({ ...v, event: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="fu-date">Data</Label>
+                    <Input
+                      id="fu-date"
+                      type="date"
+                      className="h-11"
+                      value={event.date}
+                      onChange={(e) => setEvent((v) => ({ ...v, date: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="fu-time" className="flex items-baseline gap-1">
+                      Hora{" "}
+                      <span className="text-xs font-normal text-muted-foreground">opcional</span>
+                    </Label>
+                    <Input
+                      id="fu-time"
+                      type="time"
+                      className="h-11 w-32"
+                      value={event.time}
+                      onChange={(e) => setEvent((v) => ({ ...v, time: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="fu-kicker">Chamada</Label>
+                  <Input
+                    id="fu-kicker"
+                    className="h-11"
+                    maxLength={FOLLOWUP_MAX.kicker}
+                    value={event.kicker}
+                    onChange={(e) => setEvent((v) => ({ ...v, kicker: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+          </Section>
+
+          <Section
+            icon={ImagePlus}
+            title="Fundo"
+            summary={FOLLOWUP_BGS.find((p) => p.key === bgPreset)?.label}
+            open={open.background}
+            onToggle={() => toggleSection("background")}
+          >
+            <div role="radiogroup" aria-label="Fundo" className="grid grid-cols-3 gap-2">
+              {FOLLOWUP_BGS.map((p) => {
+                const active = bgPreset === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={p.label}
+                    title={p.label}
+                    onClick={() => setBgPreset(p.key)}
+                    className={`h-11 rounded-lg border-2 ${active ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                    style={{
+                      background:
+                        p.kind === "solid"
+                          ? p.colors[0]
+                          : p.kind === "radial"
+                            ? `radial-gradient(circle at 50% 35%, ${p.colors[0]}, ${p.colors[1]})`
+                            : `linear-gradient(${p.kind === "diagonal" ? "135deg" : "180deg"}, ${p.colors[0]}, ${p.colors[1]})`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section
+            icon={BadgeCheck}
+            title="Logomarca"
+            summary={LOGO_VARIANTS.find((v) => v.id === result?.logo?.variant)?.label}
+            open={open.logo}
+            onToggle={() => toggleSection("logo")}
+          >
+            <LogoVariantPicker
+              idPrefix="followup"
+              enabled={logoVariants}
+              statuses={logoStatuses}
+              chosen={result?.logo?.drawn ? result.logo.variant : undefined}
+              onToggle={(id, on) =>
+                setLogoVariants((prev) => {
+                  const next = on
+                    ? Array.from(new Set([...prev, id]))
+                    : prev.filter((v) => v !== id);
+                  const usable = next.filter(
+                    (v) => logoStatuses.find((s) => s.id === v)?.status !== "blocked",
+                  );
+                  if (!usable.length) {
+                    toast.error("Mantenha ao menos uma versão da logomarca com contraste.");
+                    return prev;
+                  }
+                  return next;
+                })
+              }
+            />
+          </Section>
+        </aside>
+      </main>
+    </div>
+  );
+}

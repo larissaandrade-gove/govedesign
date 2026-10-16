@@ -72,7 +72,6 @@ export default defineConfig({
       { find: /^@\/lib\/gate\.functions$/, replacement: path.resolve(here, "shims/gate.ts") },
       { find: /^@\/lib\/pexels\.functions$/, replacement: path.resolve(here, "shims/pexels.ts") },
       { find: /^@artifact\/bridge$/, replacement: path.resolve(here, "bridge.ts") },
-      { find: /^@artifact\/logos$/, replacement: path.resolve(here, "logos.ts") },
       { find: /^@gove\/runtime$/, replacement: path.resolve(repoRoot, "artifact-runtime/index.ts") },
       { find: /^@\//, replacement: path.resolve(appRoot, "src") + "/" },
     ],

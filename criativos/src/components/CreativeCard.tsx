@@ -33,6 +33,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           ctaText: spec.cta,
           headline: spec.headline,
           subhead: spec.subhead,
+          logo: result.logo,
         }),
       );
     };

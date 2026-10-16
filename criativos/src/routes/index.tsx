@@ -33,7 +33,15 @@ import { VideoCard } from "@/components/VideoCard";
 import { ExpertFields } from "@/components/ExpertFields";
 import { AppHeader, FormatChip, Section, SettingRow } from "@/components/AppChrome";
 import { BG_COLORS, MAX_HEADLINE, MAX_SUBHEAD, PALETTE } from "@/lib/creative/brand";
-import { LOGO_OPTIONS, loadLogoLibrary } from "@/lib/creative/logos";
+import {
+  ALL_LOGO_VARIANTS,
+  explainVariants,
+  loadLogoLibrary,
+  luminance,
+  type LogoLibrary,
+  type LogoVariantId,
+} from "@/lib/creative/logos";
+import { LogoVariantPicker } from "@/components/LogoVariantPicker";
 import { ICONS } from "@/lib/creative/icons";
 import { getGateStatus, signOut } from "@/lib/gate.functions";
 import { searchPexels, type PexelsPhoto } from "@/lib/pexels.functions";
@@ -160,14 +168,14 @@ function Index() {
   const [backgrounds, setBackgrounds] = useState<
     { img: HTMLImageElement; name: string; tone: "light" | "dark" }[]
   >([]);
-  const [library, setLibrary] = useState<Record<string, HTMLImageElement>>({});
+  const [library, setLibrary] = useState<LogoLibrary | null>(null);
   const [enabledPresets, setEnabledPresets] = useState<string[]>(BG_PRESETS.map((p) => p.key));
   // Busca de imagens Pexels (terceira origem de fundo, igual ao Studio).
   const [query, setQuery] = useState("");
   const [photos, setPhotos] = useState<PexelsPhoto[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [enabledLogos, setEnabledLogos] = useState<string[]>(LOGO_OPTIONS.map((o) => o.id));
+  const [enabledLogos, setEnabledLogos] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
   const [enabledLayouts, setEnabledLayouts] = useState<CreativeLayout[]>(LAYOUTS.map((l) => l.key));
   const [enabledSchemes, setEnabledSchemes] = useState<CreativeScheme[]>(SCHEMES.map((s) => s.key));
   // Divulgação progressiva: textos abertos; ajustes finos recolhidos.
@@ -243,32 +251,25 @@ function Index() {
     [headlines, subheads, ctas, badges, tokens, urgencies],
   );
 
-  const pickLogoOption = useCallback(
-    (variant: "light" | "dark") => {
-      const opts = LOGO_OPTIONS.filter(
-        (o) => o.variant === variant && enabledLogos.includes(o.id) && library[o.id],
-      );
-      return pick(opts) ?? null;
-    },
-    [enabledLogos, library],
+  /** Logomarcas oficiais + versões habilitadas; o renderer escolhe pelo contraste do fundo real. */
+  const pickLogoSet = useCallback(
+    () => ({ logos: library, logoVariants: enabledLogos }),
+    [library, enabledLogos],
   );
 
-  /** Sorteia logos + placa respeitando a trava: wordmark dourado nunca sobre dourado. */
-  const pickLogoSet = useCallback(() => {
-    const purpleOpt = pickLogoOption("light");
-    const whiteOpt = pickLogoOption("dark");
-    const purpleImg = purpleOpt ? (library[purpleOpt.id] ?? null) : null;
-    const whiteImg = whiteOpt ? (library[whiteOpt.id] ?? null) : null;
-    // Placa clara só faz sentido quando existe wordmark roxo disponível.
-    const plate = Boolean(purpleImg) && Math.random() < 0.45;
-    const goldPlate = plate && !(purpleOpt?.hasGold ?? true) && Math.random() < 0.3;
-    return {
-      logoPurple: purpleImg,
-      logoWhite: whiteImg,
-      logoPlate: plate,
-      logoPlateColor: goldPlate ? PALETTE.gold : PALETTE.white,
-    };
-  }, [pickLogoOption, library]);
+  /** Fundos atuais (HEX) para avaliar as versões da logo; null = fotos (avaliado por peça). */
+  const logoStatuses = useMemo(() => {
+    if (useImage) return explainVariants(null);
+    const bgs = new Set<string>();
+    const presets = BG_PRESETS.filter((p) => enabledPresets.includes(p.key));
+    for (const sc of enabledSchemes) {
+      if (sc === "minimal-light") bgs.add(PALETTE.white);
+      else if (sc === "minimal-dark")
+        [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].forEach((c) => bgs.add(c));
+      else presets.forEach((p) => p.colors.forEach((c) => bgs.add(c)));
+    }
+    return explainVariants([...bgs].map(luminance));
+  }, [useImage, enabledPresets, enabledSchemes]);
 
   /* ---------- Sincronização ao vivo: ajustes do painel se aplicam às peças já geradas ---------- */
 
@@ -450,7 +451,7 @@ function Index() {
       return;
     }
     if (!enabledLogos.length) {
-      toast.error("É obrigatório manter ao menos um wordmark selecionado.");
+      toast.error("Mantenha ao menos uma versão da logomarca com contraste.");
       return;
     }
     // Distribui as diagramações para garantir variedade entre as 8 peças.
@@ -594,10 +595,13 @@ function Index() {
   const setBackgroundTone = (i: number, tone: "light" | "dark") =>
     setBackgrounds((prev) => prev.map((b, idx) => (idx === i ? { ...b, tone } : b)));
 
-  const toggleLogo = (id: string, on: boolean) =>
+  const toggleLogo = (id: LogoVariantId, on: boolean) =>
     setEnabledLogos((prev) => {
-      if (!on && prev.length === 1 && prev.includes(id)) {
-        toast.error("É obrigatório manter ao menos um wordmark selecionado.");
+      const usable = prev.filter(
+        (v) => v !== id && logoStatuses.find((s) => s.id === v)?.status !== "blocked",
+      );
+      if (!on && !usable.length) {
+        toast.error("Mantenha ao menos uma versão da logomarca com contraste.");
         return prev;
       }
       return toggleIn(prev, id, on);
@@ -954,43 +958,21 @@ function Index() {
 
             <Section
               icon={BadgeCheck}
-              title="Wordmarks"
-              summary={`${enabledLogos.length}/${LOGO_OPTIONS.length}`}
+              title="Logomarca"
+              summary={`${
+                enabledLogos.filter(
+                  (v) => logoStatuses.find((s) => s.id === v)?.status !== "blocked",
+                ).length
+              }/${ALL_LOGO_VARIANTS.length}`}
               open={openSections.logos}
               onToggle={() => toggleSection("logos")}
             >
-              <p className="text-xs text-muted-foreground">
-                Mínimo de 1 ativo. Sorriso dourado nunca sobre fundo ou placa dourada.
-              </p>
-              {LOGO_OPTIONS.map((o) => {
-                const forLight = o.variant === "light";
-                const ToneIcon = forLight ? Sun : Moon;
-                const toneLabel = forLight ? "para fundos claros" : "para fundos escuros";
-                return (
-                  <SettingRow
-                    key={o.id}
-                    htmlFor={`logo-${o.id}`}
-                    label={
-                      <span className="inline-flex items-center gap-2">
-                        <ToneIcon
-                          className="size-4 shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                        <span title={toneLabel}>
-                          {o.label}
-                          <span className="sr-only"> ({toneLabel})</span>
-                        </span>
-                      </span>
-                    }
-                  >
-                    <Switch
-                      id={`logo-${o.id}`}
-                      checked={enabledLogos.includes(o.id)}
-                      onCheckedChange={(v) => toggleLogo(o.id, v)}
-                    />
-                  </SettingRow>
-                );
-              })}
+              <LogoVariantPicker
+                idPrefix="lote"
+                enabled={enabledLogos}
+                statuses={logoStatuses}
+                onToggle={toggleLogo}
+              />
             </Section>
 
             <Section

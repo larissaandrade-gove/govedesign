@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BadgeCheck,
   Check,
   Download,
   ImagePlus,
@@ -24,7 +25,16 @@ import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { PALETTE, validateCreative, type ComplianceReport } from "@/lib/creative/brand";
-import { loadLogoLibrary } from "@/lib/creative/logos";
+import {
+  ALL_LOGO_VARIANTS,
+  LOGO_VARIANTS,
+  explainVariants,
+  loadLogoLibrary,
+  type LogoLibrary,
+  type LogoRender,
+  type LogoVariantId,
+} from "@/lib/creative/logos";
+import { LogoVariantPicker } from "@/components/LogoVariantPicker";
 import { ICONS } from "@/lib/creative/icons";
 import { buildAltText } from "@/lib/creative/alt";
 import { getGateStatus } from "@/lib/gate.functions";
@@ -202,7 +212,9 @@ const EXPORTS: { key: CreativeFormat; label: string; w: number; h: number }[] = 
 
 function Studio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [library, setLibrary] = useState<Record<string, HTMLImageElement>>({});
+  const [library, setLibrary] = useState<LogoLibrary | null>(null);
+  const [logoVariants, setLogoVariants] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
+  const [logoResult, setLogoResult] = useState<LogoRender | null>(null);
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [dragging, setDragging] = useState(false);
   const [pending, setPending] = useState<{ img: HTMLImageElement; name: string } | null>(null);
@@ -220,7 +232,13 @@ function Studio() {
   const [tone, setTone] = useState<"light" | "dark">("dark");
   const [remix, setRemix] = useState(false);
   // Divulgação progressiva: textos e diagramação abertos; fundo e cores recolhidos.
-  const [open, setOpen] = useState({ texts: true, layout: true, background: false, colors: false });
+  const [open, setOpen] = useState({
+    texts: true,
+    layout: true,
+    background: false,
+    logo: false,
+    colors: false,
+  });
 
   const [headline, setHeadline] = useState("O governo que age antes de você pedir");
   const [subhead, setSubhead] = useState(
@@ -275,8 +293,8 @@ function Studio() {
       background: bg.kind === "upload" ? bg.img : null,
       bgTone: bg.kind === "upload" ? tone : undefined,
       remix: bg.kind === "upload" ? remix : undefined,
-      logoPurple: library["purple-gold"] ?? library["purple"] ?? null,
-      logoWhite: library["white-gold"] ?? library["white"] ?? null,
+      logos: library,
+      logoVariants,
       expert: expert.enabled ? expert : null,
     };
   }, [
@@ -296,6 +314,7 @@ function Studio() {
     tone,
     remix,
     library,
+    logoVariants,
     expert,
   ]);
 
@@ -305,6 +324,7 @@ function Studio() {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const result = renderCreative(canvas, spec);
+      setLogoResult(result.logo);
       setReport(
         validateCreative({
           logoIsWordmark: true,
@@ -314,6 +334,7 @@ function Studio() {
           ctaText: spec.cta,
           headline: spec.headline,
           subhead: spec.subhead,
+          logo: result.logo,
         }),
       );
     };
@@ -416,6 +437,7 @@ function Studio() {
           .map((c) => c.label)
           .join(" · ")
       : "";
+  const logoStatuses = useMemo(() => explainVariants(logoResult?.bgLums ?? null), [logoResult]);
   const toggleSection = (k: keyof typeof open) => setOpen((p) => ({ ...p, [k]: !p[k] }));
 
   return (
@@ -832,6 +854,41 @@ function Studio() {
                   <Trash2 className="size-4" aria-hidden="true" />
                 </button>
               </div>
+            )}
+          </Section>
+
+          <Section
+            icon={BadgeCheck}
+            title="Logomarca"
+            summary={LOGO_VARIANTS.find((v) => v.id === logoResult?.variant)?.label}
+            open={open.logo}
+            onToggle={() => toggleSection("logo")}
+          >
+            <LogoVariantPicker
+              idPrefix="studio"
+              enabled={logoVariants}
+              statuses={logoStatuses}
+              chosen={logoResult?.drawn ? logoResult.variant : undefined}
+              onToggle={(id, on) =>
+                setLogoVariants((prev) => {
+                  const next = on
+                    ? Array.from(new Set([...prev, id]))
+                    : prev.filter((v) => v !== id);
+                  const usable = next.filter(
+                    (v) => logoStatuses.find((s) => s.id === v)?.status !== "blocked",
+                  );
+                  if (!usable.length) {
+                    toast.error("Mantenha ao menos uma versão da logomarca com contraste.");
+                    return prev;
+                  }
+                  return next;
+                })
+              }
+            />
+            {logoResult?.plate && (
+              <p className="text-xs text-amber-700">
+                Nenhuma versão passa sobre este fundo: a logo vai sobre uma placa sólida.
+              </p>
             )}
           </Section>
 

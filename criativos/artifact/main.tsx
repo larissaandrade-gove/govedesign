@@ -18,6 +18,7 @@ import { syncTheme } from "@gove/runtime";
 
 import { Route as IndexRouteImport } from "@/routes/index";
 import { Route as StudioRouteImport } from "@/routes/studio";
+import { Route as FollowUpsRouteImport } from "@/routes/follow-ups";
 import "./artifact.css";
 
 syncTheme();
@@ -45,7 +46,9 @@ function ErrorView({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold text-foreground">Algo deu errado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Tente novamente. Se persistir, recarregue a página.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Tente novamente. Se persistir, recarregue a página.
+        </p>
         <button
           type="button"
           onClick={() => {
@@ -78,16 +81,30 @@ const StudioRoute = StudioRouteImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
-const routeTree = rootRoute.addChildren([IndexRoute, StudioRoute]);
+const FollowUpsRoute = FollowUpsRouteImport.update({
+  id: "/follow-ups",
+  path: "/follow-ups",
+  getParentRoute: () => rootRoute,
+} as any);
+
+const routeTree = rootRoute.addChildren([IndexRoute, StudioRoute, FollowUpsRoute]);
+
+/** Abre direto numa tela pelo hash (ex.: apps/criativos.html#follow-ups). */
+const HASH_ROUTES: Record<string, string> = { "follow-ups": "/follow-ups", studio: "/studio" };
+function initialPath() {
+  const key = window.location.hash.replace(/^#\/?/, "").toLowerCase();
+  return HASH_ROUTES[key] ?? "/";
+}
 
 const router = createRouter({
   routeTree,
-  history: createMemoryHistory({ initialEntries: ["/"] }),
+  history: createMemoryHistory({ initialEntries: [initialPath()] }),
   defaultPreloadStaleTime: 0,
 });
 
 // Volta ao topo ao trocar de tela (não há scroll restoration por URL).
 router.subscribe("onResolved", () => window.scrollTo(0, 0));
+window.addEventListener("hashchange", () => void router.navigate({ to: initialPath() }));
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

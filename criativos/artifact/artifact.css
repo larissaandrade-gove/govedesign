@@ -4,7 +4,7 @@
  * classe `.dark` (aplicada pelo syncTheme() do runtime). As peças geradas no
  * canvas mantêm a renderização de marca e não seguem o tema.
  */
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap");
 @import "../src/styles.css";
 @source "./";
 

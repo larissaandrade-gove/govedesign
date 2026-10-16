@@ -1,10 +1,12 @@
-import {
-  PALETTE,
-  brightnessOfHex,
-  contrastTextColor,
-  withAlpha,
-} from "./brand";
+import { PALETTE, brightnessOfHex, contrastTextColor, withAlpha } from "./brand";
 import { drawIconPath } from "./icons";
+import {
+  drawBrandLogo,
+  logoBox,
+  type LogoLibrary,
+  type LogoRender,
+  type LogoVariantId,
+} from "./logos";
 
 export type CreativeLayout =
   | "card-bottom"
@@ -29,8 +31,16 @@ export type CreativeLayout =
   | "expert-band";
 
 export const EXPERT_LAYOUTS: { key: CreativeLayout; label: string; hint: string }[] = [
-  { key: "expert-card", label: "Especialista + card", hint: "Foto circular, nome e cargo + card de texto" },
-  { key: "expert-band", label: "Especialista + faixa", hint: "Foto circular, nome e cargo + faixa sólida" },
+  {
+    key: "expert-card",
+    label: "Especialista + card",
+    hint: "Foto circular, nome e cargo + card de texto",
+  },
+  {
+    key: "expert-band",
+    label: "Especialista + faixa",
+    hint: "Foto circular, nome e cargo + faixa sólida",
+  },
 ];
 
 export type ExpertMaterial = {
@@ -87,13 +97,7 @@ const LAYOUT_BASE: Partial<Record<CreativeLayout, CreativeLayout>> = {
   "expert-band": "band-bottom",
 };
 
-
-export type CreativeFormat =
-  | "feed-45"
-  | "square-11"
-  | "square-1200"
-  | "story-916"
-  | "linkedin-191";
+export type CreativeFormat = "feed-45" | "square-11" | "square-1200" | "story-916" | "linkedin-191";
 
 /** Todos exportados em 72 dpi (1 px = 1 pt na base de 1080). */
 export const FORMATS: { key: CreativeFormat; label: string; w: number; h: number }[] = [
@@ -113,21 +117,50 @@ export type BgPreset = {
 };
 
 export const BG_PRESETS: BgPreset[] = [
-  { key: "deep", label: "Roxo profundo", colors: [PALETTE.purple3, PALETTE.purple3], kind: "solid" },
+  {
+    key: "deep",
+    label: "Roxo profundo",
+    colors: [PALETTE.purple3, PALETTE.purple3],
+    kind: "solid",
+  },
   { key: "mid", label: "Roxo médio", colors: [PALETTE.purple2, PALETTE.purple2], kind: "solid" },
   { key: "vivid", label: "Roxo vivo", colors: [PALETTE.purple1, PALETTE.purple1], kind: "solid" },
-  { key: "vivid-deep", label: "Degradê vivo → profundo", colors: [PALETTE.purple1, PALETTE.purple3], kind: "diagonal" },
-  { key: "deep-mid", label: "Degradê profundo → médio", colors: [PALETTE.purple3, PALETTE.purple2], kind: "linear" },
+  {
+    key: "vivid-deep",
+    label: "Degradê vivo → profundo",
+    colors: [PALETTE.purple1, PALETTE.purple3],
+    kind: "diagonal",
+  },
+  {
+    key: "deep-mid",
+    label: "Degradê profundo → médio",
+    colors: [PALETTE.purple3, PALETTE.purple2],
+    kind: "linear",
+  },
   { key: "glow", label: "Halo roxo", colors: [PALETTE.purple1, PALETTE.purple3], kind: "radial" },
-  { key: "light-top", label: "Degradê branco → cinza (vertical)", colors: [PALETTE.white, PALETTE.supportLight], kind: "linear" },
-  { key: "light-diag", label: "Degradê branco → cinza (diagonal)", colors: [PALETTE.white, PALETTE.supportLight], kind: "diagonal" },
-  { key: "light-halo", label: "Halo branco", colors: [PALETTE.white, PALETTE.supportLight], kind: "radial" },
+  {
+    key: "light-top",
+    label: "Degradê branco → cinza (vertical)",
+    colors: [PALETTE.white, PALETTE.supportLight],
+    kind: "linear",
+  },
+  {
+    key: "light-diag",
+    label: "Degradê branco → cinza (diagonal)",
+    colors: [PALETTE.white, PALETTE.supportLight],
+    kind: "diagonal",
+  },
+  {
+    key: "light-halo",
+    label: "Halo branco",
+    colors: [PALETTE.white, PALETTE.supportLight],
+    kind: "radial",
+  },
 ];
 
 export function formatSize(key: CreativeFormat | undefined) {
   return FORMATS.find((f) => f.key === key) ?? FORMATS[0]!;
 }
-
 
 export type CreativeSpec = {
   /** Proporção da peça; padrão feed 4:5. */
@@ -145,11 +178,10 @@ export type CreativeSpec = {
   icon: string;
   themeIcon?: string | undefined;
   background: HTMLImageElement | null;
-  logoPurple: HTMLImageElement | null;
-  logoWhite: HTMLImageElement | null;
-  /** Em fundos escuros, exibe o wordmark roxo sobre uma placa clara. */
-  logoPlate?: boolean | undefined;
-  logoPlateColor?: string | undefined;
+  /** Logomarcas oficiais carregadas (símbolo e logotipo, 3 versões cada). */
+  logos: LogoLibrary | null;
+  /** Versões habilitadas; a escolha final segue o contraste do fundo real. */
+  logoVariants?: LogoVariantId[] | undefined;
   /** Classificação manual da foto de fundo (facilita a decisão de contraste). */
   bgTone?: "light" | "dark" | undefined;
   /** Fundo da biblioteca (usado quando não há foto). */
@@ -174,7 +206,6 @@ export type CreativeSpec = {
   expert?: ExpertMaterial | null | undefined;
 };
 
-
 export type CreativeScheme = "institucional" | "minimal-light" | "minimal-dark";
 
 export const SCHEMES: { key: CreativeScheme; label: string }[] = [
@@ -182,7 +213,6 @@ export const SCHEMES: { key: CreativeScheme; label: string }[] = [
   { key: "minimal-light", label: "Minimalista claro (respiro branco, CTA roxo)" },
   { key: "minimal-dark", label: "Minimalista roxo (respiro roxo, CTA branco)" },
 ];
-
 
 const FONT = "Archivo, 'Helvetica Neue', Arial, sans-serif";
 const BASE_M = 72; // margem de segurança
@@ -203,7 +233,6 @@ export const TYPE_SCALE = {
   label: 28, // 21pt — selo, chip de urgência e token regional
   logoFallback: 52,
 } as const;
-
 
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -310,12 +339,13 @@ function drawCover(
   ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
 }
 
-
 export type RenderResult = {
   textColor: string;
   textBackgroundColor: string;
   usedColors: string[];
   brightness: number;
+  /** Versão de logo aplicada e o contraste de pior caso com o fundo amostrado. */
+  logo: LogoRender | null;
 };
 
 export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): RenderResult {
@@ -352,12 +382,16 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   const minimalBg =
     scheme === "minimal-light"
       ? PALETTE.white
-      : [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].find(
+      : ([PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].find(
           (p) => p.toUpperCase() === spec.bgColor.toUpperCase(),
-        ) ?? PALETTE.purple1;
+        ) ?? PALETTE.purple1);
   // Minimalista: o CTA usa a cor oposta ao respiro.
   const accentColor =
-    scheme === "minimal-light" ? PALETTE.purple1 : scheme === "minimal-dark" ? PALETTE.white : PALETTE.gold;
+    scheme === "minimal-light"
+      ? PALETTE.purple1
+      : scheme === "minimal-dark"
+        ? PALETTE.white
+        : PALETTE.gold;
   const accentTextColor = scheme === "minimal-light" ? PALETTE.white : PALETTE.purple3;
 
   // 0. Fundo
@@ -457,7 +491,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     }
   }
 
-
   const toneBrightness = spec.bgTone === "dark" ? 50 : spec.bgTone === "light" ? 210 : null;
   const activePreset = spec.bgPreset ? BG_PRESETS.find((p) => p.key === spec.bgPreset) : undefined;
   const presetBrightness = activePreset
@@ -486,11 +519,9 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
         : PALETTE.purple3
     : isPhoto
       ? (candidate ?? PALETTE.purple3)
-      : (candidate && candidate.toUpperCase() !== spec.bgColor.toUpperCase()
-          ? candidate
-          : (purples.find((p) => p.toUpperCase() !== spec.bgColor.toUpperCase()) ?? PALETTE.purple3));
-
-
+      : candidate && candidate.toUpperCase() !== spec.bgColor.toUpperCase()
+        ? candidate
+        : (purples.find((p) => p.toUpperCase() !== spec.bgColor.toUpperCase()) ?? PALETTE.purple3);
 
   // 2. Medidas do bloco de texto
   const centered = layout === "centered";
@@ -504,7 +535,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       : hasCard || layout === "band-bottom"
         ? boxW - CARD_PAD * 2
         : boxW;
-
 
   const headline = fitHeadline(ctx, spec.headline, textW, centered || isSplit || isHero ? 3 : 2);
   const headLH = headline.size * 1.12;
@@ -527,7 +557,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   const ctaH = ctaIcon + CTA_PAD * 2;
   const ctaW = Math.min(isSplit || isHero ? textW : CONTENT_W, ctaContentW + CTA_PAD * 2);
 
-
   // 4. Posicionamento por layout
   let ctaY = CANVAS_H - M - SAFE_BOTTOM - ctaH;
   let blockX = M;
@@ -543,7 +572,12 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   } else if (isSplit || isHero) {
     blockTop = SAFE_TOP + (CANVAS_H - SAFE_TOP - SAFE_BOTTOM - (textH + 56 + ctaH)) / 2;
   } else {
-    blockTop = ctaY - 56 - textH - (layout === "card-bottom" ? CARD_PAD * 2 : 0) + (layout === "card-bottom" ? CARD_PAD : 0);
+    blockTop =
+      ctaY -
+      56 -
+      textH -
+      (layout === "card-bottom" ? CARD_PAD * 2 : 0) +
+      (layout === "card-bottom" ? CARD_PAD : 0);
   }
 
   ctx.globalAlpha = textAlpha;
@@ -609,7 +643,10 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       const mw = Math.min(areaW, freeH * 1.5);
       const mh = Math.min(freeH, mw * 0.66);
       const mx = style === "mockup-left" ? areaX + (areaW - mw) / 2 : (CANVAS_W - mw) / 2;
-      const my = style === "mockup-left" ? SAFE_TOP + (CANVAS_H - SAFE_TOP - SAFE_BOTTOM - mh) / 2 : freeTop + (freeH - mh) / 2;
+      const my =
+        style === "mockup-left"
+          ? SAFE_TOP + (CANVAS_H - SAFE_TOP - SAFE_BOTTOM - mh) / 2
+          : freeTop + (freeH - mh) / 2;
       const bar = mh * 0.14; // altura da barra de título
       ctx.save();
       roundRect(ctx, mx, my, mw, mh, 24);
@@ -700,7 +737,8 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
         const rows = 3;
         const rowH = (bh - head) / (rows + 1.5);
         for (let l = 0; l < rows; l++) {
-          ctx.fillStyle = i === 0 ? withAlpha(PALETTE.white, 0.35) : withAlpha(PALETTE.purple2, 0.25);
+          ctx.fillStyle =
+            i === 0 ? withAlpha(PALETTE.white, 0.35) : withAlpha(PALETTE.purple2, 0.25);
           roundRect(
             ctx,
             bx + 28,
@@ -713,7 +751,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
         }
         ctx.restore();
       });
-
     }
 
     if (style === "proof-badge" && freeH > 120 && spec.badge) {
@@ -764,7 +801,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     }
   }
 
-
   const onCard =
     isSplit || isHero || isBandTop || layout === "card-bottom" || layout === "band-bottom";
   const panelBg = cardColor;
@@ -773,9 +809,13 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     : minimal
       ? contrastTextColor(brightnessOfHex(minimalBg))
       : textColor;
-  const textBgColor = onCard ? panelBg : minimal ? minimalBg : isPhoto ? PALETTE.purple3 : spec.bgColor;
-
-
+  const textBgColor = onCard
+    ? panelBg
+    : minimal
+      ? minimalBg
+      : isPhoto
+        ? PALETTE.purple3
+        : spec.bgColor;
 
   // 5. Texto
   ctx.textAlign = align;
@@ -853,7 +893,6 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   ctx.textBaseline = "top";
   ctx.globalAlpha = 1;
 
-
   // 7. Logo (wordmark) — sempre no topo, com área de proteção
   const logoOverPanel = layout === "split-left" || isBandTop;
   const topBrightness = logoOverPanel
@@ -867,33 +906,21 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
         : (presetBrightness ?? brightnessOfHex(spec.bgColor));
   const headerColor = contrastTextColor(topBrightness);
 
-  const darkTop = topBrightness < 128;
-  // Regra de marca: o wordmark nunca pode ficar sem contraste.
-  // Em fundo escuro usa-se a versão branca; se só houver a roxa, ela vai sobre placa clara.
-  // Em fundo claro usa-se a versão roxa; se só houver a branca, ela vai sobre placa roxa.
-  const preferred = darkTop ? spec.logoWhite : spec.logoPurple;
-  const fallback = darkTop ? spec.logoPurple : spec.logoWhite;
-  const needsPlate = !preferred && !!fallback;
-  const usePlate = needsPlate || Boolean(darkTop && spec.logoPlate && spec.logoPurple);
-  const logo = usePlate ? (darkTop ? spec.logoPurple : spec.logoWhite) : preferred;
-  const plateColor = darkTop ? (spec.logoPlateColor ?? PALETTE.white) : PALETTE.purple3;
+  // Regra de marca (brand/logos.js): amostra o fundo real sob a caixa da logo e
+  // escolhe a versão em que TODAS as cores têm contraste ≥ 4,5:1; sem nenhuma
+  // que passe, entra uma placa sólida discreta. Proporção sempre preservada.
   const logoH = 58;
-  if (logo) {
-    const logoW = logoH * (logo.width / logo.height);
-    if (usePlate) {
-      const padX = 22;
-      const padY = 16;
-      ctx.fillStyle = plateColor;
-      roundRect(ctx, M - padX, TOP_M - padY, logoW + padX * 2, logoH + padY * 2, 16);
-      ctx.fill();
-    }
-    ctx.drawImage(logo, M, TOP_M, logoW, logoH);
-  } else {
-    ctx.fillStyle = headerColor;
-    ctx.font = `700 ${TYPE_SCALE.logoFallback}px ${FONT}`;
-    ctx.fillText("GOVE", M, TOP_M);
-  }
-
+  const logoSize = logoBox("logotipo", logoH);
+  const logo = drawBrandLogo(ctx, spec.logos, {
+    x: M,
+    y: TOP_M,
+    w: logoSize.w,
+    h: logoSize.h,
+    kind: "logotipo",
+    scale: RS,
+    allowed: spec.logoVariants,
+  });
+  void headerColor;
 
   // 8. Selo institucional no canto superior direito
   if (spec.badge) {
@@ -988,8 +1015,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     textBgColor,
   ];
 
-
-  return { textColor: bodyColor, textBackgroundColor: textBgColor, usedColors, brightness };
+  return { textColor: bodyColor, textBackgroundColor: textBgColor, usedColors, brightness, logo };
 }
 
 export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
