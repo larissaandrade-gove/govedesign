@@ -10,9 +10,9 @@ declare const __GOVE_EMBEDDED__: string[];
 
 export const hasEmbedded = (id: string) => __GOVE_EMBEDDED__.includes(id);
 
-type Props = { id: string; name: string; reloadKey: number; full: boolean; onExitFull: () => void };
+type Props = { id: string; name: string; reloadKey: number; full: boolean; onExitFull: () => void; hash?: string };
 
-export function EmbeddedApp({ id, name, reloadKey, full, onExitFull }: Props) {
+export function EmbeddedApp({ id, name, reloadKey, full, onExitFull, hash = '' }: Props) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => setLoaded(false), [id, reloadKey]);
@@ -38,7 +38,7 @@ export function EmbeddedApp({ id, name, reloadKey, full, onExitFull }: Props) {
       <iframe
         key={`${id}-${reloadKey}`}
         title={name}
-        src={`apps/${id}.html`}
+        src={`apps/${id}.html${hash}`}
         onLoad={() => setLoaded(true)}
         className="absolute inset-0 block h-full w-full border-0 bg-background"
       />

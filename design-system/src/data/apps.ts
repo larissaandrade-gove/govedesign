@@ -1,4 +1,4 @@
-import { LayoutTemplate, Link2, Printer, ScanSearch, Sparkles, type LucideIcon } from 'lucide-react';
+import { CalendarCheck, LayoutTemplate, Link2, Printer, ScanSearch, Sparkles, type LucideIcon } from 'lucide-react';
 import revisor1 from '../assets/apps/revisor-1.webp';
 import revisor2 from '../assets/apps/revisor-2.webp';
 import criativos1 from '../assets/apps/criativos-1.webp';
@@ -29,6 +29,8 @@ export type GoveApp = {
   /** Como o app funciona dentro do design system (artefato). */
   embeddedNote: string;
   shots: Shot[];
+  /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash. */
+  embed?: { file: string; hash?: string };
 };
 
 /** Aplicações do repositório govedesign que aplicam este design system. */
@@ -68,6 +70,22 @@ export const APPS: GoveApp[] = [
       { src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' },
       { src: criativos2, caption: 'Gerador em lote: 8 variações por rodada.' },
     ],
+  },
+  {
+    id: 'follow-ups',
+    name: 'Gerador de follow-ups',
+    route: '/criativos',
+    icon: CalendarCheck,
+    summary: 'Imagens 4:3 e 1:1 para atualizações de produto e confirmações de evento, com foto em moldura circular e a logomarca aplicada pela regra de contraste.',
+    tagline: 'Atualizações de produto e eventos.',
+    features: ['4:3 e 1:1', 'Atualização de produto', 'Confirmação de evento', 'Foto em moldura circular'],
+    stack: ['React', 'Canvas'],
+    folder: 'criativos/',
+    run: 'npm run criativos:install && npm run criativos:dev',
+    sameServer: false,
+    embeddedNote: 'Roda aqui no navegador, dentro do Gerador de criativos.',
+    shots: [],
+    embed: { file: 'criativos', hash: '#follow-ups' },
   },
   {
     id: 'links',

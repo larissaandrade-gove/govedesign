@@ -32,6 +32,7 @@ export function AppPage({ appId }: { appId: string }) {
   const [full, setFull] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
   const Icon = app.icon;
+  const embedId = app.embed?.file ?? app.id;
   const exitFull = useCallback(() => setFull(false), []);
 
   // Fecha o painel "Sobre" com Esc ou clique fora
@@ -81,7 +82,7 @@ export function AppPage({ appId }: { appId: string }) {
           <IconButton label="Sobre o app" onClick={() => setInfo((v) => !v)} pressed={info}>
             <Info className="size-5" aria-hidden />
           </IconButton>
-          {hasEmbedded(app.id) && (
+          {hasEmbedded(embedId) && (
             <>
               <IconButton label="Recarregar" onClick={() => setReloadKey((n) => n + 1)}>
                 <RotateCcw className="size-5" aria-hidden />
@@ -124,8 +125,8 @@ export function AppPage({ appId }: { appId: string }) {
         </motion.header>
 
         <motion.div variants={fadeUp}>
-          {hasEmbedded(app.id) ? (
-            <EmbeddedApp id={app.id} name={app.name} reloadKey={reloadKey} full={full} onExitFull={exitFull} />
+          {hasEmbedded(embedId) ? (
+            <EmbeddedApp id={embedId} hash={app.embed?.hash} name={app.name} reloadKey={reloadKey} full={full} onExitFull={exitFull} />
           ) : (
             <div className="grid grid-cols-1 gap-space-3 lg:grid-cols-2">
               {app.shots.map((s) => (
