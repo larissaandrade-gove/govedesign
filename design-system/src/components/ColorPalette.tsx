@@ -1,102 +1,63 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Check, Copy } from 'lucide-react';
-import { brandPalette, colors, themes } from '../data/tokens.js';
-import { useTheme } from '../lib/theme';
-import { contrast, hoverTransition } from '../lib/motion';
-import { Reveal, RevealItem, StaggerGrid } from './Reveal';
+import { BRAND_COLORS } from '../data/colorCompass';
+import { RevealItem, StaggerGrid } from './Reveal';
 import { SectionHeader } from './SectionHeader';
+import { ColorCompass } from './ColorCompass';
 
-async function copy(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function useCopy() {
-  const [copied, setCopied] = useState<string | null>(null);
-  return {
-    copied,
-    onCopy: async (hex: string) => {
-      if (await copy(hex)) {
-        setCopied(hex);
-        setTimeout(() => setCopied((c) => (c === hex ? null : c)), 1400);
-      }
-    },
-  };
-}
-
+/** Cores institucionais: uso na interface + significado, com cópia do HEX pelo próprio código. */
 export function ColorPalette() {
-  const { copied, onCopy } = useCopy();
-  const [theme] = useTheme();
-  const palette = themes[theme] as Record<string, string>;
-  const BG = palette.background;
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copy(hex: string) {
+    try {
+      await navigator.clipboard.writeText(hex);
+      setCopied(hex);
+      setTimeout(() => setCopied((c) => (c === hex ? null : c)), 1400);
+    } catch {
+      /* área de transferência indisponível: o código continua selecionável */
+    }
+  }
+
   return (
-    <section id="cores" className="gutter scroll-mt-[72px] py-space-12">
+    <section id="cores" className="gutter scroll-mt-[72px] py-space-8">
       <SectionHeader id="cores" title="Cores">
-        Valores do tema {theme === 'dark' ? 'escuro' : 'claro'}. Clique para copiar o HEX.
+        As 10 cores oficiais. Clique no código para copiar.
       </SectionHeader>
 
-      <StaggerGrid className="grid grid-cols-1 gap-space-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Object.entries(colors).map(([token, info]) => {
-          const c = { ...info, hex: palette[token] };
-          const ratio = contrast(c.hex, BG);
-          return (
-            <RevealItem key={`${theme}-${token}`}>
-              <motion.button
-                type="button"
-                onClick={() => onCopy(c.hex)}
-                whileHover={{ y: -6, scale: 1.02, boxShadow: `0 0 28px ${c.hex}${c.hex === BG ? 'CC' : '8C'}` }}
-                transition={hoverTransition}
-                className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-secondary bg-surface text-left"
-                aria-label={`Copiar ${c.hex} (${token})`}
-              >
-                <span className="relative block h-28 w-full" style={{ background: c.hex }}>
-                  <span className="absolute right-space-1 top-space-1 flex items-center gap-1 rounded-sm bg-background/80 px-2 py-1 text-[12px] text-text-secondary">
-                    {copied === c.hex ? <Check className="size-3.5 text-highlight" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-                    {copied === c.hex ? 'Copiado' : 'Copiar'}
+      <StaggerGrid className="grid grid-cols-1 gap-space-2 sm:grid-cols-2 xl:grid-cols-5">
+        {BRAND_COLORS.map((c) => (
+          <RevealItem key={c.hex}>
+            <article className="flex h-full flex-col overflow-hidden rounded-lg border border-secondary bg-background">
+              <span className="block h-16 w-full border-b border-secondary" style={{ background: c.hex }} aria-hidden />
+              <div className="flex flex-1 flex-col gap-space-1 p-space-2">
+                <div className="flex items-start justify-between gap-space-1">
+                  <h3 className="font-display text-body font-bold text-text-primary">{c.name}</h3>
+                  <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-text-secondary">{c.group}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copy(c.hex)}
+                  aria-label={`Copiar ${c.hex}`}
+                  title="Copiar HEX"
+                  className="-mx-1 flex min-h-11 items-center justify-between gap-space-1 rounded-md px-1 text-left transition-colors hover:bg-surface"
+                >
+                  <span className="flex flex-col">
+                    <span className="token text-body tabular-nums text-text-primary">{c.hex}</span>
+                    <span className="text-[12px] tabular-nums text-text-secondary">RGB {c.rgb}</span>
                   </span>
-                </span>
-                <span className="flex flex-1 flex-col gap-space-1 p-space-2">
-                  <span className="flex items-baseline justify-between gap-space-1">
-                    <span className="font-display text-body font-bold text-text-primary">{token}</span>
-                    <span className="token tabular-nums">{c.hex}</span>
-                  </span>
-                  <span className="text-caption text-text-secondary">{c.name}</span>
-                  <span className="text-caption leading-snug text-text-secondary/80">{c.usage}</span>
-                  <span className="mt-auto pt-space-1 text-[12px] tabular-nums text-text-secondary/80">
-                    {c.hex === BG ? 'é o fundo' : `${ratio.toFixed(1)}:1 sobre o fundo`}
-                  </span>
-                </span>
-              </motion.button>
-            </RevealItem>
-          );
-        })}
-      </StaggerGrid>
-
-      <Reveal className="mt-space-8 flex flex-col gap-space-2">
-        <h3 className="text-h3">Paleta institucional oficial</h3>
-      </Reveal>
-      <StaggerGrid className="mt-space-3 grid grid-cols-2 gap-space-1 min-[480px]:grid-cols-5">
-        {brandPalette.map((hex) => (
-          <RevealItem key={hex}>
-            <motion.button
-              type="button"
-              onClick={() => onCopy(hex)}
-              whileHover={{ scale: 1.05, boxShadow: `0 0 18px ${hex}99` }}
-              transition={hoverTransition}
-              className="flex w-full flex-col overflow-hidden rounded-md border border-secondary bg-surface"
-              aria-label={`Copiar ${hex}`}
-            >
-              <span className="block aspect-square w-full" style={{ background: hex }} />
-              <span className="token px-1 py-space-1 text-center text-[12px] tabular-nums">{copied === hex ? 'Copiado' : hex}</span>
-            </motion.button>
+                  {copied === c.hex ? <Check className="size-4 shrink-0 text-highlight" aria-hidden /> : <Copy className="size-4 shrink-0 text-text-muted" aria-hidden />}
+                  <span className="sr-only" aria-live="polite">{copied === c.hex ? 'Copiado' : ''}</span>
+                </button>
+                <p className="text-caption text-text-primary">{c.use}</p>
+                <p className="text-caption text-text-secondary">{c.meaning}</p>
+              </div>
+            </article>
           </RevealItem>
         ))}
       </StaggerGrid>
+
+      <ColorCompass />
     </section>
   );
 }

@@ -34,6 +34,21 @@ Use somente a paleta oficial. Nunca preto puro (#000000).
 | Azul | #16499F | 22 73 159 | Links no claro, gráficos |
 | Branco | #FFFFFF | 255 255 255 | Fundo do tema claro, texto sobre escuros |
 
+**Bússola de cores (predominância por pauta)**
+
+Antes de escolher cores, responda: Pessoa (público, idade, dores), Situação (assunto, período, importância) e Lugar (conversa pública ou privada, eixo social). Depois use a predominância da pauta:
+
+| Pauta | Predominância |
+|---|---|
+| Cidadania, direitos e políticas sociais | Lilás 46%, Gelo 38%, Grafite 16% |
+| Saúde, meio ambiente e sustentabilidade | Ciano 45%, Gelo 28%, Roxo Gove 14%, Roxo Noite 13% |
+| Educação, cultura, ciência e tecnologia | Roxo Gove 53%, Lilás 21%, Gelo 14%, Ciano 12% |
+| Economia, trabalho e desenvolvimento | Azul 53%, Amarelo Ouro 21%, Gelo 14%, Grafite 12% |
+| Segurança, justiça e instituições | Roxo Noite 53%, Cinza Azulado 21%, Gelo 14%, Ciano 12% |
+| Gestão pública, infraestrutura e território | Gelo 41%, Roxo Profundo 31%, Amarelo Ouro 14%, Azul 13% |
+
+Tons (nova bússola): Sofisticada e Profunda → Roxo Noite e Roxo Profundo; Incomum → Lilás; Intelectual e Tecnológica → Roxo Gove, Azul e Ciano; Tranquila → Ciano e Gelo; Equilibrada → Cinza Azulado e Gelo; Confiável → Azul e Grafite; Otimista → Amarelo Ouro.
+
 **Temas**
 
 - Claro (padrão): fundo Branco, superfícies Gelo, títulos Roxo Noite, corpo Grafite, links Roxo Gove.
@@ -211,5 +226,6 @@ Você cria materiais para a Gove (Governo Zero Clique). Siga estritamente:
 - Grade de 8 px; raios 4/8/16; ícones lineares de traço 2 px (estilo Lucide); sem emoji.
 - Texto em português do Brasil, frases curtas com verbo de ação, foco no benefício, sentence case, um único chamado para ação, sem textos repetidos.
 - Apresentações 16:9 com margem de 96 px, título 40–48 pt, corpo 18–24 pt, uma ideia por slide.
+- Escolha a predominância de cor pela pauta (bússola de cores): Cidadania → Lilás/Gelo/Grafite; Saúde e ambiente → Ciano/Gelo/Roxo Gove; Educação e tecnologia → Roxo Gove/Lilás; Economia → Azul/Amarelo; Segurança e instituições → Roxo Noite/Cinza; Gestão pública → Gelo/Roxo Profundo/Amarelo.
 - Antes de entregar, confira o checklist: paleta, contraste, logomarca correta, fontes, tamanhos mínimos e um único CTA.
 ```
