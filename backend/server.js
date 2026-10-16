@@ -11,11 +11,12 @@ import { writeZip } from './report/package.js';
 import { AuditInputError, runAudit, storedEntries } from './services/auditService.js';
 import { createPrintStudioRouter } from '../print-studio/server/router.js';
 import { createAuth } from './auth/index.js';
+import { createPexelsRouter } from './pexels.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
 
-export function createApp({ db = openDatabase(), authOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
+export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
   const storageDir = resolve(storageDirIn);
   const app = express();
 
@@ -25,6 +26,9 @@ export function createApp({ db = openDatabase(), authOptions = {}, storageDir: s
   app.get('/login', (_req, res) => res.sendFile(join(ROOT, 'frontend', 'login.html')));
   app.use('/login-assets', express.static(join(ROOT, 'brand', 'logos')));
   app.use(auth.guard);
+
+  // Banco de imagens Pexels (chave só no servidor)
+  app.use('/api/pexels', createPexelsRouter(pexelsOptions));
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
 
   app.use(express.json({ limit: '20mb' }));

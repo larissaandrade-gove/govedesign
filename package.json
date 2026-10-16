@@ -4,8 +4,8 @@
   "description": "Revisor de identidade visual para peças de marketing e apresentações da Gove Digital",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "node --watch backend/server.js",
+    "start": "node --env-file-if-exists=.env backend/server.js",
+    "dev": "node --env-file-if-exists=.env --watch backend/server.js",
     "db:init": "node db/init.js",
     "test": "node --test test/*.test.js",
     "revisor:artifact:install": "npm --prefix frontend/revisor-artifact install",
