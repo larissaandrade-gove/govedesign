@@ -12,6 +12,8 @@ import {
 import { slugify } from "@/lib/gove/export";
 import type { AuditIssue } from "@/lib/gove/audit";
 
+const downloadLabel = "Baixar como .txt";
+
 export function ExportDialog({
   open,
   onOpenChange,
@@ -57,8 +59,7 @@ export function ExportDialog({
         <DialogHeader>
           <DialogTitle>Exportar HTML + CSS</DialogTitle>
           <DialogDescription>
-            Cole este bloco como elemento HTML na outra plataforma. O snippet do RD Station foi
-            preservado sem alterações.
+            Cole como elemento HTML na plataforma final. O snippet do RD Station é preservado.
           </DialogDescription>
         </DialogHeader>
 
@@ -75,8 +76,9 @@ export function ExportDialog({
                 </li>
               ))}
             </ul>
-            <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-destructive">
+            <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-semibold text-destructive">
               <input
+                className="size-5"
                 type="checkbox"
                 checked={override}
                 onChange={(e) => setOverride(e.target.checked)}
@@ -85,27 +87,39 @@ export function ExportDialog({
             </label>
           </div>
         ) : (
-          <p className="flex items-center gap-2 rounded-md bg-secondary p-3 text-sm font-semibold text-foreground">
-            <CheckCircle2 className="size-4 text-[var(--gove-primary)]" aria-hidden />
-            Check de acessibilidade aprovado: contraste 4.5:1+, alt em todas as imagens, textos com
-            16px ou mais, formulário RD Station presente e nenhum lorem ipsum pendente.
-          </p>
+          <details className="rounded-xl bg-secondary text-sm">
+            <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 font-semibold text-foreground">
+              <CheckCircle2 className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+              Check de acessibilidade aprovado
+            </summary>
+            <p className="px-3 pb-3 text-muted-foreground">
+              Contraste 4.5:1+, alt em todas as imagens, textos com 16px ou mais, formulário RD
+              Station presente e nenhum lorem ipsum pendente.
+            </p>
+          </details>
         )}
 
         <textarea
           readOnly
           value={code}
-          rows={16}
+          rows={12}
           aria-label="Código HTML gerado"
           className="w-full rounded-md border border-input bg-secondary p-3 font-mono text-xs"
         />
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={download} disabled={blocked}>
-            <Download className="size-4" aria-hidden /> Baixar como .txt
+          <Button
+            variant="outline"
+            size="iconTouch"
+            onClick={download}
+            disabled={blocked}
+            aria-label={downloadLabel}
+            title={downloadLabel}
+          >
+            <Download aria-hidden />
           </Button>
-          <Button onClick={copy} disabled={blocked}>
-            <Copy className="size-4" aria-hidden /> {copied ? "Copiado!" : "Copiar código"}
+          <Button variant="cta" size="touch" onClick={copy} disabled={blocked}>
+            <Copy aria-hidden /> {copied ? "Copiado!" : "Copiar código"}
           </Button>
         </div>
       </DialogContent>

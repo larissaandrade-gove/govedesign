@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Download, Loader2, Pencil, X } from "lucide-react";
+import { Check, ChevronLeft, Copy, Download, Loader2, Pencil, QrCode } from "lucide-react";
 import { useState } from "react";
 
 import { buildShortUrl } from "@/lib/short-domain";
@@ -8,8 +8,8 @@ import { linkClickStatsQuery, linkClicksQuery, linkDetailQuery } from "@/lib/lin
 import { isCircularShortUrl, isValidHttpUrl } from "@/lib/short-links";
 import { exportClicksCsv, saveOutcomeMessage, updateLink } from "../lib/link-actions";
 import {
+  ActiveSwitch,
   Feedback,
-  PublicUrlNotice,
   QrPanel,
   TestLinkButton,
   copyText,
@@ -33,6 +33,7 @@ export function LinkDetailPage() {
   const [urlDraft, setUrlDraft] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState(false);
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: ["links"] });
@@ -92,115 +93,116 @@ export function LinkDetailPage() {
 
   return (
     <>
-      <header className="mb-8">
+      <header className="mb-6 flex items-center gap-2">
         <Link
           to="/links"
-          className="mb-4 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+          aria-label="Voltar para Meus links"
+          title="Voltar para Meus links"
+          className="icon-btn -ml-3"
         >
-          <ArrowLeft className="size-3.5" />
-          Meus links
+          <ChevronLeft className="size-6" aria-hidden />
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight">
-          {row?.internal_name || (row ? `/${row.slug}` : "Detalhes do link")}
+        <h1 className="min-w-0 break-words text-2xl font-bold tracking-tight sm:text-3xl">
+          {row?.internal_name || (row ? `/${row.slug}` : link.isPending ? "Carregando…" : "Link não encontrado")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {link.isPending
-            ? "Carregando informações do link."
-            : row
-              ? "Métricas de acesso e destino configurado."
-              : "Link não encontrado."}
-        </p>
       </header>
 
       {row && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-            <div className="rounded-xl bg-card p-6 ring-1 ring-border">
-              <p className="label-caps mb-4 text-muted-foreground">Total de cliques</p>
-              <span className="font-mono text-4xl font-light" data-testid="detail-clicks">
+        <div className="space-y-4">
+          <section className="surface space-y-3 p-5" aria-label="Link curto">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 flex-1 break-all font-mono text-base font-medium">
+                {buildShortUrl(row.slug)}
+              </span>
+              <div className="flex items-center gap-1">
+                <TestLinkButton
+                  slug={row.slug}
+                  pending={tester.pendingId === row.id}
+                  onClick={() => tester.run(row.id)}
+                />
+                <button
+                  type="button"
+                  aria-label={showQr ? "Ocultar QR Code" : "Mostrar QR Code"}
+                  title="QR Code"
+                  aria-expanded={showQr}
+                  aria-controls="qr-panel"
+                  onClick={() => setShowQr((v) => !v)}
+                  className={`icon-btn ${showQr ? "bg-secondary text-foreground" : ""}`}
+                >
+                  <QrCode className="size-5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  aria-label={copied ? "Link copiado" : "Copiar link"}
+                  className="btn btn-cta ml-1"
+                >
+                  {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+                  <span className="hidden min-[480px]:inline">{copied ? "Copiado" : "Copiar"}</span>
+                </button>
+              </div>
+            </div>
+            {tester.message && (
+              <Feedback tone={tester.feedback?.result === "opened" ? "info" : "error"} onClose={tester.clear}>
+                {tester.message}
+              </Feedback>
+            )}
+            {showQr && (
+              <div id="qr-panel" className="border-t border-border pt-4">
+                <QrPanel slug={row.slug} />
+              </div>
+            )}
+          </section>
+
+          <dl className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="surface flex flex-col-reverse justify-end p-5">
+              <dt className="mt-2 text-sm font-medium text-muted-foreground">Cliques</dt>
+              <dd className="font-mono text-4xl font-light tabular-nums" data-testid="detail-clicks">
                 {stats.isPending ? "—" : (stats.data?.count ?? 0)}
-              </span>
+              </dd>
             </div>
-            <div className="rounded-xl bg-card p-6 ring-1 ring-border">
-              <p className="label-caps mb-4 text-muted-foreground">Último clique</p>
-              <span className="font-mono text-sm">
+            <div className="surface flex flex-col-reverse justify-between p-5">
+              <dt className="mt-2 text-sm font-medium text-muted-foreground">Último clique</dt>
+              <dd className="font-mono text-sm">
                 {stats.isPending ? "—" : formatDateTime(stats.data?.lastClickAt ?? null)}
-              </span>
+              </dd>
             </div>
-          </div>
+          </dl>
 
-          <div className="space-y-5 rounded-xl bg-card p-6 ring-1 ring-border">
-            <div className="space-y-1.5">
-              <span className="label-caps block text-muted-foreground">Link curto</span>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <span className="break-all font-mono text-sm font-medium">{buildShortUrl(row.slug)}</span>
-                <div className="flex flex-wrap gap-2">
-                  <TestLinkButton
-                    slug={row.slug}
-                    pending={tester.pendingId === row.id}
-                    onClick={() => tester.run(row.id)}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90"
-                  >
-                    {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-                    {copied ? "Link copiado!" : "Copiar link"}
-                  </button>
-                </div>
-              </div>
-              {tester.message && (
-                <div className="pt-2">
-                  <Feedback tone={tester.feedback?.result === "opened" ? "info" : "error"} onClose={tester.clear}>
-                    {tester.message}
-                  </Feedback>
-                </div>
-              )}
-              <div className="pt-2">
-                <PublicUrlNotice compact />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
+          <section className="surface divide-y divide-border px-5" aria-label="Configuração">
+            <div className="py-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="label-caps block text-muted-foreground">Destino</span>
+                <span id="dest-label" className="text-sm font-medium">
+                  Destino
+                </span>
                 {!editingUrl && (
                   <button
                     type="button"
                     onClick={startEditUrl}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label="Editar destino"
+                    title="Editar destino"
+                    className="icon-btn -mr-3"
                   >
-                    <Pencil className="size-3.5" />
-                    Editar
+                    <Pencil className="size-5" aria-hidden />
                   </button>
                 )}
               </div>
               {editingUrl ? (
-                <div className="space-y-3">
+                <div className="space-y-3 pb-2 pt-1">
                   <input
                     type="url"
                     aria-label="Nova URL de destino"
                     value={urlDraft}
                     onChange={(event) => setUrlDraft(event.target.value)}
                     placeholder="https://exemplo.com/pagina"
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none transition-colors focus:border-primary"
+                    className="field font-mono"
                   />
                   {urlError && (
-                    <p role="alert" className="text-xs font-medium text-destructive">
+                    <p role="alert" className="text-sm font-medium text-destructive">
                       {urlError}
                     </p>
                   )}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={updateUrl.isPending}
-                      onClick={handleSaveUrl}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-                    >
-                      {updateUrl.isPending && <Loader2 className="size-3.5 animate-spin" />}
-                      Salvar destino
-                    </button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <button
                       type="button"
                       disabled={updateUrl.isPending}
@@ -208,88 +210,81 @@ export function LinkDetailPage() {
                         setEditingUrl(false);
                         setUrlError(null);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors hover:bg-secondary disabled:opacity-60"
+                      className="btn btn-secondary"
                     >
-                      <X className="size-3.5" />
                       Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={updateUrl.isPending}
+                      onClick={handleSaveUrl}
+                      className="btn btn-cta"
+                    >
+                      {updateUrl.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                      Salvar destino
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="break-all text-sm text-muted-foreground">{row.final_url}</p>
+                <p className="break-all pb-1 text-sm text-muted-foreground">
+                  {row.final_url}
+                </p>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
-              <div>
-                <span className="label-caps block text-muted-foreground">Status</span>
-                <span
-                  className={`text-[11px] font-bold uppercase tracking-widest ${
-                    row.is_active ? "text-accent-ink" : "text-muted-foreground"
-                  }`}
-                >
-                  {row.is_active ? "Ativo" : "Inativo"}
-                </span>
-              </div>
-              <button
-                type="button"
+            <div className="py-1">
+              <ActiveSwitch
+                checked={row.is_active}
                 disabled={toggle.isPending}
-                onClick={() => toggle.mutate(!row.is_active)}
-                className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors hover:bg-secondary disabled:opacity-60"
-              >
-                {toggle.isPending && <Loader2 className="size-3.5 animate-spin" />}
-                {row.is_active ? "Desativar link" : "Ativar link"}
-              </button>
+                pending={toggle.isPending}
+                onChange={(next) => toggle.mutate(next)}
+              />
+              {toggle.isError && (
+                <p role="alert" className="pb-3 text-sm font-medium text-destructive">
+                  Não foi possível atualizar o status do link.
+                </p>
+              )}
             </div>
-            {toggle.isError && (
-              <p role="alert" className="text-xs font-medium text-destructive">
-                Não foi possível atualizar o status do link.
-              </p>
-            )}
-          </div>
+          </section>
 
-          <div className="rounded-xl bg-card p-6 ring-1 ring-border">
-            <p className="label-caps mb-4 text-muted-foreground">QR Code</p>
-            <QrPanel slug={row.slug} />
-          </div>
-
-          <div className="rounded-xl bg-card ring-1 ring-border">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-              <h2 className="text-sm font-bold uppercase tracking-wider">Cliques recentes</h2>
+          <section className="surface" aria-labelledby="clicks-title">
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2 pl-5 pr-2">
+              <h2 id="clicks-title" className="text-base font-semibold">
+                Cliques recentes
+              </h2>
               <button
                 type="button"
                 disabled={!clicks.data?.length}
                 onClick={handleExportClicks}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors hover:bg-secondary disabled:opacity-60"
+                aria-label="Exportar CSV"
+                title="Exportar CSV"
+                className="icon-btn"
               >
-                <Download className="size-3.5" />
-                Exportar CSV
+                <Download className="size-5" aria-hidden />
               </button>
             </div>
             {exportError && (
-              <div className="px-6 pt-4">
+              <div className="px-5 pt-4">
                 <Feedback tone="error" onClose={() => setExportError(null)}>
                   {exportError}
                 </Feedback>
               </div>
             )}
             {clicks.data && clicks.data.length > 0 ? (
-              <ul className="divide-y divide-border/50" data-testid="click-list">
+              <ul className="divide-y divide-border" data-testid="click-list">
                 {clicks.data.map((c) => (
-                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-xs">
-                    <span className="font-mono">{formatDateTime(c.clicked_at)}</span>
-                    <span className="text-muted-foreground">
+                  <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                    <span className="font-mono text-xs">{formatDateTime(c.clicked_at)}</span>
+                    <span className="min-w-0 truncate text-xs text-muted-foreground">
                       {c.referer ?? "direto"} · {c.user_agent ?? "navegador desconhecido"}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="px-6 py-6 text-xs text-muted-foreground">
-                Nenhum clique registrado ainda. Use “Testar link” para registrar um clique de teste.
-              </p>
+              <p className="px-5 py-6 text-sm text-muted-foreground">Nenhum clique registrado ainda.</p>
             )}
-          </div>
+          </section>
         </div>
       )}
     </>

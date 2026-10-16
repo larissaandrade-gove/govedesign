@@ -374,7 +374,7 @@ export function currentTheme(): Theme {
 
 function applyTheme(t: Theme) {
   const el = document.documentElement;
-  el.dataset.theme = t;
+  el.dataset['theme'] = t;
   el.classList.toggle('dark', t === 'dark');
   el.style.colorScheme = t;
 }

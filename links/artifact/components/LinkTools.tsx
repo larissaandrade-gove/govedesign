@@ -1,30 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
-import { Download, ExternalLink, Info, Loader2, X } from "lucide-react";
+import { Download, ExternalLink, Loader2, X, type LucideIcon } from "lucide-react";
 import { saveFile } from "@gove/runtime";
 
-import { buildShortUrl, getShortDomainLabel } from "../lib/short-domain";
+import { buildShortUrl } from "../lib/short-domain";
 import { testLink, saveOutcomeMessage, type TestResult } from "../lib/link-actions";
 import { qrPng, qrSvg } from "../lib/qr";
-
-/** Aviso fixo: o link curto só redireciona no servidor publicado. */
-export function PublicUrlNotice({ compact = false }: { compact?: boolean }) {
-  return (
-    <div
-      role="note"
-      className="flex gap-3 rounded-lg border border-notice-border bg-notice px-4 py-3 text-xs leading-relaxed text-foreground"
-    >
-      <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-      <p>
-        <strong className="font-semibold">Versão artefato.</strong> O link curto (
-        <span className="font-mono">{getShortDomainLabel()}/…</span>) só redireciona
-        publicamente no servidor publicado do Gove Links.
-        {!compact &&
-          " Aqui, use “Testar link” para abrir o destino e registrar um clique de teste (origem “artefato”)."}
-      </p>
-    </div>
-  );
-}
 
 const testMessages: Record<TestResult, string> = {
   opened: "Clique de teste registrado. O destino foi aberto em uma nova aba.",
@@ -61,40 +42,30 @@ export function useTestLink() {
   };
 }
 
+/** Abre o destino e registra um clique de teste (substitui o redirecionamento do servidor). */
 export function TestLinkButton({
   onClick,
   pending,
-  variant = "solid",
   slug,
 }: {
   onClick: () => void;
   pending: boolean;
-  variant?: "solid" | "icon";
   slug: string;
 }) {
-  if (variant === "icon") {
-    return (
-      <button
-        type="button"
-        aria-label={`Testar /${slug}`}
-        title="Testar link (abre o destino e registra um clique)"
-        disabled={pending}
-        onClick={onClick}
-        className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-60"
-      >
-        {pending ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
-      </button>
-    );
-  }
   return (
     <button
       type="button"
+      aria-label={`Testar /${slug}`}
+      title="Testar link: abre o destino e registra um clique"
       disabled={pending}
       onClick={onClick}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-secondary disabled:opacity-60"
+      className="icon-btn"
     >
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <ExternalLink className="size-3.5" />}
-      Testar link
+      {pending ? (
+        <Loader2 className="size-5 animate-spin" aria-hidden />
+      ) : (
+        <ExternalLink className="size-5" aria-hidden />
+      )}
     </button>
   );
 }
@@ -111,16 +82,20 @@ export function Feedback({
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-xs font-medium ${
-        tone === "error"
-          ? "border-destructive/30 bg-destructive/5 text-destructive"
-          : "border-border bg-secondary text-foreground"
+      className={`flex items-center justify-between gap-2 rounded-xl py-1 pl-4 pr-1 text-sm font-medium ${
+        tone === "error" ? "bg-destructive/10 text-destructive" : "bg-secondary text-foreground"
       }`}
     >
-      <span>{children}</span>
+      <span className="py-2">{children}</span>
       {onClose && (
-        <button type="button" aria-label="Fechar aviso" onClick={onClose} className="shrink-0 opacity-70 hover:opacity-100">
-          <X className="size-3.5" />
+        <button
+          type="button"
+          aria-label="Fechar aviso"
+          title="Fechar"
+          onClick={onClose}
+          className="icon-btn text-current"
+        >
+          <X className="size-4" aria-hidden />
         </button>
       )}
     </div>
@@ -150,33 +125,34 @@ export function QrPanel({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+    <div className="flex flex-wrap items-center gap-4">
       <div
-        className="size-36 shrink-0 overflow-hidden rounded-lg ring-1 ring-border"
+        className="size-36 shrink-0 overflow-hidden rounded-xl ring-1 ring-border"
         // SVG gerado localmente a partir do link curto (texto escapado em qrSvg).
         dangerouslySetInnerHTML={{ __html: svg }}
       />
-      <div className="space-y-3">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          QR Code do link curto, gerado neste navegador. Ele aponta para{" "}
-          <span className="break-all font-mono">{shortUrl}</span> e funciona quando o servidor
-          publicado estiver no ar.
-        </p>
+      <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
           {(["svg", "png"] as const).map((kind) => (
             <button
               key={kind}
               type="button"
               disabled={busy}
+              aria-label={`Baixar ${kind.toUpperCase()}`}
+              title={`Baixar QR Code em ${kind.toUpperCase()}`}
               onClick={() => download(kind)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors hover:bg-secondary disabled:opacity-60"
+              className="btn btn-secondary"
             >
-              <Download className="size-3.5" />
-              Baixar {kind.toUpperCase()}
+              <Download className="size-4" aria-hidden />
+              {kind.toUpperCase()}
             </button>
           ))}
         </div>
-        {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -200,18 +176,13 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-card p-6 shadow-elegant ring-1 ring-border"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-5 shadow-elegant ring-1 ring-border sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          <button
-            type="button"
-            aria-label="Fechar"
-            onClick={onClose}
-            className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <X className="size-4" />
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="min-w-0 break-words text-lg font-semibold tracking-tight">{title}</h2>
+          <button type="button" aria-label="Fechar" title="Fechar" onClick={onClose} className="icon-btn -mr-2">
+            <X className="size-5" aria-hidden />
           </button>
         </div>
         {children}
@@ -241,4 +212,77 @@ export async function copyText(text: string): Promise<boolean> {
       return false;
     }
   }
+}
+
+/** Status do link: ponto + texto; em `compact`, o texto some abaixo de 900px (fica sr-only). */
+export function StatusBadge({ active, compact = false }: { active: boolean; compact?: boolean }) {
+  const label = active ? "Ativo" : "Inativo";
+  return (
+    <span
+      title={label}
+      className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+        active ? "text-success" : "text-muted-foreground"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`size-2 rounded-full ${active ? "bg-success" : "border border-muted-foreground"}`}
+      />
+      <span className={compact ? "sr-only min-[900px]:not-sr-only" : undefined}>{label}</span>
+    </span>
+  );
+}
+
+/** Rótulo de coluna como ícone, com o texto para leitores de tela e tooltip. */
+export function IconHeader({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <span title={label} className="inline-flex items-center gap-1.5">
+      <Icon className="size-4" aria-hidden />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+/** Interruptor “Link ativo” (estilo iOS), com alvo de toque de 44px. */
+export function ActiveSwitch({
+  checked,
+  onChange,
+  disabled = false,
+  pending = false,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  pending?: boolean;
+}) {
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-4">
+      <span className="text-sm font-medium">Link ativo</span>
+      <span className="flex items-center gap-2">
+        {pending && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label="Link ativo"
+          disabled={disabled}
+          onClick={() => onChange(!checked)}
+          className="relative inline-flex h-11 w-14 shrink-0 items-center disabled:opacity-60"
+        >
+          <span
+            aria-hidden
+            className={`absolute inset-x-0 top-1/2 h-8 -translate-y-1/2 rounded-full transition-colors ${
+              checked ? "bg-success" : "bg-muted-foreground"
+            }`}
+          />
+          <span
+            aria-hidden
+            className={`absolute top-1/2 size-7 -translate-y-1/2 rounded-full bg-white shadow transition-[left] ${
+              checked ? "left-[1.625rem]" : "left-0.5"
+            }`}
+          />
+        </button>
+      </span>
+    </div>
+  );
 }

@@ -35,8 +35,16 @@ export function PexelsSearch() {
           placeholder="Pesquisar imagem"
           aria-label="Pesquisar imagem"
         />
-        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={open}>
-          <ExternalLink className="size-4" aria-hidden /> Buscar no banco de imagens
+        <Button
+          type="button"
+          variant="outline"
+          size="iconTouch"
+          className="shrink-0"
+          onClick={open}
+          aria-label="Buscar no banco de imagens"
+          title="Buscar no banco de imagens"
+        >
+          <ExternalLink aria-hidden />
         </Button>
       </div>
     </div>

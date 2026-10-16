@@ -36,7 +36,8 @@
   --card-foreground: #f4f4f4;
   --popover: #20133d;
   --popover-foreground: #f4f4f4;
-  --primary: #ffc72c; /* texto #20133D 11:1 */
+  /* Lilás nos estados selecionados; o amarelo fica só na ação principal (variant "cta"). */
+  --primary: #a278da; /* texto #20133D 5:1; como texto sobre #20133D 5:1 */
   --primary-foreground: #20133d;
   --secondary: #160c2b;
   --secondary-foreground: #f4f4f4;

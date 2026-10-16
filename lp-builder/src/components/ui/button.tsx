@@ -12,9 +12,11 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-input bg-background shadow-sm hover:bg-secondary hover:text-secondary-foreground",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        ghost: "hover:bg-secondary hover:text-secondary-foreground",
+        // Ação principal da tela (uma por tela): amarelo GOVE com texto #20133D (11:1).
+        cta: "bg-[#FFC72C] text-[#20133D] font-semibold shadow-sm hover:bg-[#F2B705]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -22,6 +24,9 @@ const buttonVariants = cva(
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
+        // Alvos de toque ≥ 44px.
+        touch: "min-h-11 rounded-xl px-4",
+        iconTouch: "size-11 rounded-xl [&_svg]:size-5",
       },
     },
     defaultVariants: {

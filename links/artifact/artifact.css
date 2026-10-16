@@ -40,6 +40,10 @@
   --chart-3: #ffc72c;
   --chart-4: #5ac2cd;
   --chart-5: #16499f;
+  /* Ação principal (uma por tela): amarelo Gove com texto #20133D (11:1). */
+  --cta: #ffc72c;
+  --cta-foreground: #20133d;
+  --success: #16499f;
 }
 
 :root.dark {
@@ -69,6 +73,7 @@
   --notice: #351f65;
   --notice-border: #a278da;
   --shadow-elegant: 0 20px 50px -20px rgb(0 0 0 / 0.6);
+  --success: #5ac2cd;
 }
 
 @theme inline {
@@ -76,6 +81,9 @@
   --color-overlay: var(--overlay);
   --color-notice: var(--notice);
   --color-notice-border: var(--notice-border);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-success: var(--success);
 }
 
 /* Componentes reaproveitados do app publicado usam text-accent como texto. */
@@ -86,4 +94,105 @@
 html,
 body {
   background-color: var(--background);
+}
+
+/*
+ * Revisão de interface (inspirada nas Human Interface Guidelines):
+ * alvos de toque ≥ 44px, uma ação principal amarela por tela, ações
+ * secundárias como ícones (com aria-label e title) e rótulos em caixa normal.
+ */
+@layer components {
+  .btn {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 150ms,
+      opacity 150ms,
+      color 150ms;
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .btn-cta {
+    background-color: var(--cta);
+    color: var(--cta-foreground);
+  }
+  .btn-cta:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--cta) 88%, #20133d);
+  }
+  .btn-secondary {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--secondary) 88%, var(--foreground));
+  }
+  .btn-danger {
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+  }
+  .icon-btn {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 0.75rem;
+    color: var(--muted-foreground);
+    transition:
+      background-color 150ms,
+      color 150ms;
+  }
+  .icon-btn:hover:not(:disabled) {
+    background-color: var(--secondary);
+    color: var(--foreground);
+  }
+  .icon-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .icon-btn-danger:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
+    color: var(--destructive);
+  }
+  .field {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 0.75rem;
+    border: 1px solid var(--input);
+    background-color: var(--background);
+    padding: 0 0.875rem;
+    font-size: 0.9375rem;
+    outline: none;
+    transition: border-color 150ms;
+  }
+  .field:focus {
+    border-color: var(--ring);
+  }
+  .field-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .surface {
+    border-radius: 1rem;
+    background-color: var(--card);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .btn:focus-visible,
+  .icon-btn:focus-visible,
+  .nav-item:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FilePlus2, LayoutTemplate, LogOut, Pencil, Trash2 } from "lucide-react";
+import { Clock, FilePlus2, LayoutTemplate, LogOut, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { HERO_PRESETS, pageFromPreset, type HeroPresetId } from "@/lib/gove/presets";
 import { createPage, deletePage, listPages, type StoredPage } from "@/lib/gove/storage";
@@ -65,74 +65,88 @@ function Dashboard() {
   return (
     <main className="min-h-screen bg-secondary">
       <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
+          <div className="flex min-h-11 items-center gap-3">
             <span
-              className="flex size-9 items-center justify-center rounded-lg"
+              className="flex size-9 items-center justify-center rounded-xl"
               style={{ backgroundColor: "var(--gove-primary)" }}
             >
               <LayoutTemplate className="size-5" color="#FFFFFF" aria-hidden />
             </span>
-            <span className="text-[20px] font-bold">GOVE LP Builder</span>
+            <span className="text-lg font-bold">GOVE LP Builder</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut className="size-4" aria-hidden /> Sair
+            <Button variant="ghost" size="iconTouch" onClick={signOut} aria-label="Sair" title="Sair">
+              <LogOut aria-hidden />
             </Button>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-[31px] leading-tight font-bold">Landing pages</h1>
-            <p className="mt-2 text-muted-foreground">
-              Monte visualmente, exporte o HTML e cole na plataforma final. Os projetos ficam
-              guardados no histórico local do seu navegador — nada é enviado para servidores.
-            </p>
-          </div>
-          <Button onClick={() => setOpen(true)}>
-            <FilePlus2 className="size-4" aria-hidden /> Nova Landing Page
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <h1 className="text-2xl leading-tight font-bold sm:text-[31px]">Landing pages</h1>
+          <Button
+            variant="cta"
+            size="touch"
+            onClick={() => setOpen(true)}
+            aria-label="Nova Landing Page"
+            title="Nova Landing Page"
+          >
+            <FilePlus2 aria-hidden />
+            <span className="hidden min-[480px]:inline">Nova Landing Page</span>
           </Button>
         </div>
 
         {pages === null ? (
           <p className="text-muted-foreground">Carregando projetos locais…</p>
         ) : !pages.length ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-            <p className="text-muted-foreground">
-              Nenhuma landing page ainda. Crie a primeira com um preset de Hero.
-            </p>
+          <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+            <p className="text-muted-foreground">Nenhuma landing page ainda.</p>
           </div>
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 min-[600px]:grid-cols-2 lg:grid-cols-3">
             {pages.map((page) => (
               <li
                 key={page.id}
-                className="flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm"
+                className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-card py-3 pr-2 pl-5 shadow-sm"
               >
-                <div>
-                  <h2 className="text-[20px] font-bold break-words">{page.nome}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Atualizada em {new Date(page.atualizado_em).toLocaleString("pt-BR")}
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-bold" title={page.nome}>
+                    {page.nome}
+                  </h2>
+                  <p
+                    className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"
+                    title="Atualizada em"
+                  >
+                    <Clock className="size-3.5 shrink-0" aria-hidden />
+                    <span className="sr-only">Atualizada em </span>
+                    {new Date(page.atualizado_em).toLocaleString("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
                   </p>
                 </div>
-                <div className="mt-6 flex gap-2">
+                <div className="flex shrink-0">
                   <Button
-                    size="sm"
+                    variant="ghost"
+                    size="iconTouch"
+                    aria-label={`Editar ${page.nome}`}
+                    title="Editar"
                     onClick={() => navigate({ to: "/editor/$id", params: { id: page.id } })}
                   >
-                    <Pencil className="size-4" aria-hidden /> Editar
+                    <Pencil aria-hidden />
                   </Button>
                   <Button
-                    size="sm"
-                    variant="outline"
+                    variant="ghost"
+                    size="iconTouch"
                     aria-label={`Excluir ${page.nome}`}
+                    title="Excluir"
+                    className="hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => handleRemove(page.id)}
                   >
-                    <Trash2 className="size-4" aria-hidden />
+                    <Trash2 aria-hidden />
                   </Button>
                 </div>
               </li>
@@ -145,9 +159,7 @@ function Dashboard() {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Nova Landing Page</DialogTitle>
-            <DialogDescription>
-              Escolha um preset de Hero como ponto de partida. Tudo pode ser editado depois.
-            </DialogDescription>
+            <DialogDescription>Escolha um preset de Hero.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
@@ -157,33 +169,36 @@ function Dashboard() {
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex.: Captura — Webinar de Gestão Pública"
+              className="min-h-11"
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {HERO_PRESETS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setPreset(item.id)}
                 aria-pressed={preset === item.id}
-                className="rounded-xl border-2 p-4 text-left transition-colors"
+                className="rounded-2xl border-2 p-3 text-left transition-colors"
                 style={{
                   borderColor: preset === item.id ? "var(--gove-primary)" : "var(--color-border)",
                 }}
               >
                 <PresetThumb id={item.id} />
-                <p className="mt-3 font-bold">{item.nome}</p>
+                <p className="mt-2 font-bold">{item.nome}</p>
                 <p className="text-sm text-muted-foreground">{item.descricao}</p>
               </button>
             ))}
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" size="touch" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleCreate}>Criar landing page</Button>
+            <Button variant="cta" size="touch" onClick={handleCreate}>
+              Criar landing page
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

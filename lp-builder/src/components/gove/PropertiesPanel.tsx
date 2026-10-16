@@ -64,7 +64,7 @@ function ColorField({
             type="button"
             aria-label={`Usar cor ${color}`}
             onClick={() => onChange(color)}
-            className="size-8 rounded-md border border-border"
+            className="size-11 rounded-lg border border-border"
             style={{ backgroundColor: color }}
           />
         ))}
@@ -75,7 +75,7 @@ function ColorField({
           aria-label={`${label} — seletor`}
           value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#000000"}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-12 rounded border border-border"
+          className="h-11 w-12 shrink-0 rounded-lg border border-border"
         />
         <Input value={value} onChange={(e) => onChange(e.target.value)} aria-label={`${label} hex`} />
       </div>
@@ -105,7 +105,7 @@ function StepSelect({
   return (
     <Field label={label}>
       <select
-        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+        className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       >
@@ -142,7 +142,7 @@ function RadiusField({
           value={clamp(value)}
           onChange={(e) => onChange(clamp(Number(e.target.value)))}
           aria-label={`${label} em px`}
-          className="h-9 w-full accent-[var(--gove-primary)]"
+          className="h-11 w-full accent-[var(--gove-primary)]"
         />
         <Input
           type="number"
@@ -176,7 +176,7 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
               type="button"
               aria-pressed={box.fill === value}
               onClick={() => onChange({ fill: value })}
-              className="rounded-md border-2 px-2 py-2 text-xs font-bold"
+              className="min-h-11 rounded-lg border-2 px-2 py-2 text-xs font-bold"
               style={{
                 borderColor: box.fill === value ? "var(--gove-primary)" : "var(--color-border)",
               }}
@@ -250,7 +250,7 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
           <PexelsSearch />
           <Field label="Ajuste da imagem">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={box.bgSize}
               onChange={(e) => onChange({ bgSize: e.target.value as BoxProps["bgSize"] })}
             >
@@ -261,7 +261,7 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
           </Field>
           <Field label="Posição da imagem">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={box.bgPosition}
               onChange={(e) => onChange({ bgPosition: e.target.value as BoxProps["bgPosition"] })}
             >
@@ -304,7 +304,7 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
       <RadiusField value={box.radius} onChange={(v) => onChange({ radius: v })} />
       <Field label="Sombra">
         <select
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
           value={box.shadow}
           onChange={(e) => onChange({ shadow: e.target.value as BoxProps["shadow"] })}
         >
@@ -317,7 +317,7 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
       <StepSelect label="Padding horizontal" value={box.paddingX} steps={SPACING_STEPS} onChange={(v) => onChange({ paddingX: v })} />
       <Field label="Animação do fundo">
         <select
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
           value={box.animation ?? "none"}
           onChange={(e) => onChange({ animation: e.target.value as NonNullable<BoxProps["animation"]> })}
         >
@@ -347,7 +347,7 @@ function CursorEditor({
       <h3 className="text-sm font-bold">Cursor do mouse</h3>
       <Field label="Modo">
         <select
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
           value={cursor.mode}
           onChange={(e) => onCursorChange({ mode: e.target.value as PageCursor["mode"] })}
         >
@@ -398,7 +398,7 @@ function CursorEditor({
                   type="button"
                   aria-pressed={cursor.size === size}
                   onClick={() => onCursorChange({ size })}
-                  className={`min-h-9 rounded-md border px-3 text-sm ${
+                  className={`min-h-11 rounded-md border px-3 text-sm ${
                     cursor.size === size ? "border-primary bg-accent" : "border-border"
                   }`}
                 >
@@ -409,7 +409,7 @@ function CursorEditor({
           </Field>
           <Field label="Ponto de clique">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={cursor.hotspot}
               onChange={(e) => onCursorChange({ hotspot: e.target.value as PageCursor["hotspot"] })}
             >
@@ -476,10 +476,17 @@ export function PropertiesPanel({
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-bold capitalize">{labelFor(node.type)}</h2>
-        <Button variant="outline" size="sm" aria-label="Remover elemento" onClick={onDelete}>
-          <Trash2 className="size-4" aria-hidden />
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[20px] font-bold">{labelFor(node.type)}</h2>
+        <Button
+          variant="ghost"
+          size="iconTouch"
+          aria-label="Remover elemento"
+          title="Remover elemento"
+          className="hover:bg-destructive/10 hover:text-destructive"
+          onClick={onDelete}
+        >
+          <Trash2 aria-hidden />
         </Button>
       </div>
 
@@ -493,7 +500,7 @@ export function PropertiesPanel({
           <StepSelect label="Espaço entre colunas" value={node.gap} steps={SPACING_STEPS} onChange={(v) => onChange({ gap: v })} />
           <Field label="Alinhamento vertical">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.alignItems ?? "start"}
               onChange={(e) => onChange({ alignItems: e.target.value })}
             >
@@ -510,7 +517,7 @@ export function PropertiesPanel({
         <>
           <Field label="Tipo">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.tag}
               onChange={(e) => onChange({ tag: e.target.value })}
             >
@@ -536,7 +543,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Estilo">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.variant}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
@@ -551,7 +558,7 @@ export function PropertiesPanel({
           <RadiusField value={node.radius} onChange={(v) => onChange({ radius: v })} />
           <Field label="Animação">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.animation ?? "none"}
               onChange={(e) => onChange({ animation: e.target.value })}
             >
@@ -576,7 +583,7 @@ export function PropertiesPanel({
                 <Button
                   key={weight}
                   type="button"
-                  size="sm"
+                  size="touch"
                   variant={(node as { weight: string }).weight === weight ? "default" : "outline"}
                   onClick={() => onChange({ weight })}
                 >
@@ -588,7 +595,7 @@ export function PropertiesPanel({
           <Field label="Estilo do texto">
             <Button
               type="button"
-              size="sm"
+              size="touch"
               variant={(node as { italic: boolean }).italic ? "default" : "outline"}
               aria-pressed={(node as { italic: boolean }).italic}
               onClick={() => onChange({ italic: !(node as { italic: boolean }).italic })}
@@ -598,7 +605,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Tamanho">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={TYPE_SCALE.includes((node as { size: number }).size) ? (node as { size: number }).size : "custom"}
               onChange={(e) =>
                 e.target.value !== "custom" && onChange({ size: Number(e.target.value) })
@@ -631,7 +638,7 @@ export function PropertiesPanel({
               {(["left", "center", "right"] as const).map((align) => (
                 <Button
                   key={align}
-                  size="sm"
+                  size="touch"
                   variant={(node as { align: string }).align === align ? "default" : "outline"}
                   onClick={() => onChange({ align })}
                 >
@@ -687,7 +694,7 @@ export function PropertiesPanel({
                   type="button"
                   aria-pressed={(node.frame ?? "free") === value}
                   onClick={() => onChange({ frame: value })}
-                  className="rounded-md border-2 px-2 py-2 text-xs font-bold"
+                  className="min-h-11 rounded-lg border-2 px-2 py-2 text-xs font-bold"
                   style={{
                     borderColor: (node.frame ?? "free") === value ? "var(--gove-primary)" : "var(--color-border)",
                   }}
@@ -732,7 +739,7 @@ export function PropertiesPanel({
           <StepSelect label="Padding interno" value={node.padding} steps={SPACING_STEPS} onChange={(v) => onChange({ padding: v })} />
           <Field label="Sombra">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.shadow}
               onChange={(e) => onChange({ shadow: e.target.value })}
             >
@@ -766,7 +773,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Proporção">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.aspect}
               onChange={(e) => onChange({ aspect: e.target.value })}
             >
@@ -782,7 +789,7 @@ export function PropertiesPanel({
           <Field label="Alinhamento">
             <div className="flex gap-2">
               {(["left", "center", "right"] as const).map((align) => (
-                <Button key={align} size="sm" variant={node.align === align ? "default" : "outline"} onClick={() => onChange({ align })}>
+                <Button key={align} size="touch" variant={node.align === align ? "default" : "outline"} onClick={() => onChange({ align })}>
                   {align === "left" ? "Esquerda" : align === "center" ? "Centro" : "Direita"}
                 </Button>
               ))}
@@ -802,7 +809,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Unidades exibidas">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.mode}
               onChange={(e) => onChange({ mode: e.target.value })}
             >
@@ -839,7 +846,7 @@ export function PropertiesPanel({
           <ColorField label="Cor de fundo dos blocos" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
           <Field label="Estilo dos blocos">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.variant ?? "filled"}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
@@ -852,7 +859,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Animação">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.animation ?? "none"}
               onChange={(e) => onChange({ animation: e.target.value })}
             >
@@ -865,7 +872,7 @@ export function PropertiesPanel({
           </Field>
           <Field label="Tamanho dos números">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={TYPE_SCALE.includes(node.size) ? node.size : "custom"}
               onChange={(e) => e.target.value !== "custom" && onChange({ size: Number(e.target.value) })}
             >
@@ -889,7 +896,7 @@ export function PropertiesPanel({
           <Field label="Alinhamento">
             <div className="flex gap-2">
               {(["left", "center", "right"] as const).map((align) => (
-                <Button key={align} size="sm" variant={node.align === align ? "default" : "outline"} onClick={() => onChange({ align })}>
+                <Button key={align} size="touch" variant={node.align === align ? "default" : "outline"} onClick={() => onChange({ align })}>
                   {align === "left" ? "Esquerda" : align === "center" ? "Centro" : "Direita"}
                 </Button>
               ))}

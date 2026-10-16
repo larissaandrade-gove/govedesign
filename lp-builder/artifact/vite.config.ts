@@ -38,12 +38,8 @@ const patches: Record<string, Patch[]> = {
       /useEffect\(\(\) => \{\s*setPages\(listPages\(\)\);\s*\}, \[\]\);/,
       "useEffect(() => {\n    setPages(listPages());\n    return subscribePages(() => setPages(listPages()));\n  }, []);",
     ],
-    // Sem login no artefato: some o botão "Sair".
-    [/<Button variant="outline" size="sm" onClick=\{signOut\}>[\s\S]*?<\/Button>/, ""],
-    [
-      /Os projetos ficam\s+guardados no histórico local do seu navegador — nada é enviado para servidores\./,
-      "Os projetos ficam salvos no próprio Design System, sem servidores externos.",
-    ],
+    // Sem login no artefato: some o botão "Sair" (ícone).
+    [/<Button[^>]*onClick=\{signOut\}[\s\S]*?<\/Button>/, ""],
     ["Landing page excluída deste navegador.", "Landing page excluída."],
     ["Carregando projetos locais…", "Carregando projetos…"],
   ],

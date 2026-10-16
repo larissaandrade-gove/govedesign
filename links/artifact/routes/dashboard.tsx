@@ -1,132 +1,122 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CircleCheck, Globe, Link2, MousePointerClick, Plus, Power } from "lucide-react";
 
 import { clickStatsQuery, dashboardStatsQuery, recentLinksQuery } from "@/lib/links-queries";
-import { PublicUrlNotice } from "../components/LinkTools";
-
-const columns = ["Identificador", "URL Original", "Cliques", "Status"];
+import { IconHeader, StatusBadge } from "../components/LinkTools";
 
 function pad(value: number) {
   return value < 10 ? `0${value}` : String(value);
 }
 
-/** Dashboard do app publicado, com cliques por link e o aviso do artefato. */
+/** Dashboard: indicadores e links recentes. */
 export function DashboardPage() {
   const stats = useQuery(dashboardStatsQuery);
   const links = useQuery(recentLinksQuery);
   const clicks = useQuery(clickStatsQuery);
 
   const indicators = [
-    { label: "Total de links", value: stats.data?.totalLinks ?? 0 },
-    { label: "Links ativos", value: stats.data?.activeLinks ?? 0 },
-    { label: "Total de cliques", value: stats.data?.totalClicks ?? 0 },
+    { label: "Total de links", value: stats.data?.totalLinks ?? 0, icon: Link2 },
+    { label: "Links ativos", value: stats.data?.activeLinks ?? 0, icon: CircleCheck },
+    { label: "Total de cliques", value: stats.data?.totalClicks ?? 0, icon: MousePointerClick },
   ];
 
   const rows = links.data ?? [];
 
   return (
     <>
-      <header className="mb-8">
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Indicadores e links recentes do encurtador interno da Gove.
-        </p>
-      </header>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+      <div className="mb-8 grid grid-cols-1 gap-3 min-[600px]:grid-cols-3 sm:gap-4">
         {indicators.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl bg-card p-6 ring-1 ring-border"
-            data-testid={`stat-${item.label}`}
-          >
-            <p className="label-caps mb-4 text-muted-foreground">{item.label}</p>
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`font-mono text-4xl font-light ${
-                  item.value > 0 ? "text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {stats.isPending ? "—" : pad(item.value)}
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
-                {stats.isError ? "Erro" : stats.isPending ? "Carregando" : "Atualizado"}
-              </span>
-            </div>
+          <div key={item.label} className="surface p-5" data-testid={`stat-${item.label}`}>
+            <span
+              className={`block font-mono text-4xl font-light tabular-nums ${
+                item.value > 0 ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {stats.isPending ? "—" : pad(item.value)}
+            </span>
+            <p className="mt-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <item.icon className="size-4 shrink-0" aria-hidden />
+              {item.label}
+            </p>
           </div>
         ))}
       </div>
+      {stats.isError && (
+        <p role="alert" className="-mt-4 mb-8 text-sm font-medium text-destructive">
+          Não foi possível carregar os indicadores.
+        </p>
+      )}
 
-      <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider">Links Recentes</h2>
-          <Link
-            to="/criar-link"
-            className="text-[11px] font-bold uppercase tracking-widest text-accent-ink transition-opacity hover:opacity-80"
-          >
-            Novo Link +
-          </Link>
-        </div>
+      <section className="surface overflow-hidden" aria-labelledby="recent-title">
+        <h2 id="recent-title" className="border-b border-border px-5 py-4 text-base font-semibold">
+          Links recentes
+        </h2>
 
-        <div className="relative">
-          <div className="hidden grid-cols-4 border-b border-border/50 px-6 py-3 md:grid">
-            {columns.map((col, i) => (
-              <div
-                key={col}
-                className={`label-caps text-[10px] text-muted-foreground ${
-                  i === columns.length - 1 ? "text-right" : ""
-                }`}
-              >
-                {col}
-              </div>
-            ))}
-          </div>
-
-          {rows.length > 0 ? (
-            <ul className="divide-y divide-border/50">
-              {rows.map((row) => (
-                <li key={row.id}>
-                  <Link
-                    to="/links/$id"
-                    params={{ id: row.id }}
-                    className="grid grid-cols-1 gap-1 px-6 py-4 text-sm transition-colors hover:bg-secondary/60 md:grid-cols-4 md:items-center md:gap-0"
-                  >
-                    <span className="font-mono text-xs font-medium text-foreground">/{row.slug}</span>
-                    <span className="truncate pr-4 text-xs text-muted-foreground">{row.original_url}</span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {clicks.isPending ? "—" : (clicks.data?.get(row.id)?.count ?? 0)}
-                      <span className="md:hidden"> cliques</span>
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest md:text-right">
-                      <span className={row.is_active ? "text-accent-ink" : "text-muted-foreground"}>
-                        {row.is_active ? "Ativo" : "Inativo"}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex h-64 flex-col items-center justify-center p-8 text-center">
-              <div className="mb-4 flex size-12 items-center justify-center rounded-full border border-dashed border-border">
-                <div className="size-2 rounded-full bg-border" />
-              </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {links.isPending ? "Carregando links" : "Nenhum link gerado"}
-              </h3>
-              <p className="mt-2 max-w-[280px] text-xs leading-relaxed text-muted-foreground">
-                {links.isError
-                  ? "Não foi possível carregar os links agora."
-                  : "Sua fila de links recentes está vazia. Comece a encurtar URLs para visualizar as métricas aqui."}
-              </p>
+        {rows.length > 0 ? (
+          <>
+            <div
+              aria-hidden
+              className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_5rem_6rem] gap-4 border-b border-border px-5 py-2.5 text-muted-foreground min-[900px]:grid"
+            >
+              <IconHeader icon={Link2} label="Identificador" />
+              <IconHeader icon={Globe} label="URL original" />
+              <IconHeader icon={MousePointerClick} label="Cliques" />
+              <span className="text-right">
+                <IconHeader icon={Power} label="Status" />
+              </span>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <PublicUrlNotice />
-      </div>
+            <ul className="divide-y divide-border">
+              {rows.map((row) => {
+                const count = clicks.isPending ? "—" : (clicks.data?.get(row.id)?.count ?? 0);
+                return (
+                  <li key={row.id}>
+                    <Link
+                      to="/links/$id"
+                      params={{ id: row.id }}
+                      className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-0.5 px-5 py-3 text-sm transition-colors hover:bg-secondary/60 min-[900px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_5rem_6rem]"
+                    >
+                      <span className="truncate font-mono font-medium text-foreground">/{row.slug}</span>
+                      <span className="col-span-3 row-start-2 truncate text-xs text-muted-foreground min-[900px]:col-span-1 min-[900px]:col-start-2 min-[900px]:row-start-1 min-[900px]:text-sm">
+                        {row.original_url}
+                      </span>
+                      <span
+                        className="inline-flex items-center gap-1 font-mono text-sm text-muted-foreground tabular-nums"
+                        title={`${count} cliques`}
+                      >
+                        <MousePointerClick className="size-3.5 min-[900px]:hidden" aria-hidden />
+                        {count}
+                        <span className="sr-only"> cliques</span>
+                      </span>
+                      <span className="text-right">
+                        <StatusBadge active={row.is_active} compact />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-4 px-6 py-14 text-center">
+            <p className="text-sm text-muted-foreground">
+              {links.isPending
+                ? "Carregando links…"
+                : links.isError
+                  ? "Não foi possível carregar os links agora."
+                  : "Nenhum link criado ainda."}
+            </p>
+            {!links.isPending && !links.isError && (
+              <Link to="/criar-link" className="btn btn-cta">
+                <Plus className="size-4" aria-hidden />
+                Criar link
+              </Link>
+            )}
+          </div>
+        )}
+      </section>
     </>
   );
 }
