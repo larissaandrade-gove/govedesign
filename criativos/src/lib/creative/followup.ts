@@ -7,7 +7,7 @@
  * Tipografia: Montserrat nos títulos, Inter no corpo.
  */
 import { PALETTE } from "./brand";
-import { BG_PRESETS, type BgPreset } from "./renderer";
+import { BG_PRESETS, findOverlaps, type BgPreset, type LayoutBox } from "./renderer";
 import {
   contrast,
   drawBrandLogo,
@@ -81,10 +81,18 @@ export type FollowupSpec = {
   logos: LogoLibrary | null;
   logoVariants?: LogoVariantId[] | undefined;
   renderScale?: number | undefined;
+  /** Foto de fundo (ex.: Pexels). Recebe sobreposição da cor do fundo escolhido. */
+  bgImage?: HTMLImageElement | null | undefined;
 };
 
 export type FollowupCheck = { id: string; label: string; pass: boolean };
-export type FollowupResult = { checks: FollowupCheck[]; pass: boolean; logo: LogoRender | null };
+export type FollowupResult = {
+  checks: FollowupCheck[];
+  pass: boolean;
+  logo: LogoRender | null;
+  boxes: LayoutBox[];
+  overlaps: [string, string][];
+};
 
 const TITLE_FONT = "Montserrat, Archivo, 'Helvetica Neue', Arial, sans-serif";
 const BODY_FONT = "Inter, Archivo, 'Helvetica Neue', Arial, sans-serif";
@@ -124,9 +132,8 @@ function pickText(bgs: string[], candidates: string[]) {
   return ok ?? candidates.reduce((a, b) => (score(b) > score(a) ? b : a));
 }
 
-function themeFor(preset: BgPreset) {
-  const bgs = preset.colors;
-  const light = bgs.every((c) => contrast(c, PALETTE.purple1) >= MIN_CONTRAST);
+function themeFor(bgs: string[], forceLight?: boolean) {
+  const light = forceLight ?? bgs.every((c) => contrast(c, PALETTE.purple1) >= MIN_CONTRAST);
   const title = pickText(bgs, light ? ["#3D0099", "#20133D"] : ["#FFFFFF", "#F4F4F4"]);
   const body = pickText(bgs, light ? ["#2F3539", "#20133D"] : ["#F4F4F4", "#FFFFFF"]);
   const meta = pickText(bgs, light ? ["#5B6770", "#2F3539"] : ["#A278DA", "#F4F4F4"]);
@@ -276,7 +283,115 @@ export function formatEventDate(date: string, time: string) {
   return out;
 }
 
+/* ---------- Foto de fundo com sobreposição ---------- */
+
+const toHex = (r: number, g: number, b: number) =>
+  "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  W: number,
+  H: number,
+) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const s = Math.max(W / iw, H / ih);
+  const w = iw * s;
+  const h = ih * s;
+  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+}
+
+/**
+ * Aplica sobreposição (roxo noite ou branco, conforme o fundo escolhido) com a
+ * menor opacidade que garante contraste ≥ 4,5:1 dos textos sobre TODOS os
+ * pixels amostrados da foto. Retorna as cores extremas resultantes.
+ */
+function overlayForText(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  scale: number,
+  light: boolean,
+): string[] {
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  let data: Uint8ClampedArray | null = null;
+  try {
+    data = ctx.getImageData(0, 0, cw, ch).data;
+  } catch {
+    data = null;
+  }
+  const samples: [number, number, number][] = [];
+  if (data) {
+    const step = Math.max(1, Math.round(Math.min(cw, ch) / 40));
+    for (let y = 0; y < ch; y += step)
+      for (let x = 0; x < cw; x += step) {
+        const i = (y * cw + x) * 4;
+        samples.push([data[i]!, data[i + 1]!, data[i + 2]!]);
+      }
+  }
+  const overlay = light ? [255, 255, 255] : [0x20, 0x13, 0x3d];
+  const texts = light ? ["#3D0099", "#2F3539"] : ["#FFFFFF", "#F4F4F4", "#FFC72C"];
+  let alpha = 0.95;
+  let extremes = [light ? "#FFFFFF" : "#20133D"];
+  for (let a = 0.7; a <= 0.951; a += 0.05) {
+    const comp = samples.map(
+      ([r, g, b]) =>
+        [
+          a * overlay[0]! + (1 - a) * r,
+          a * overlay[1]! + (1 - a) * g,
+          a * overlay[2]! + (1 - a) * b,
+        ] as const,
+    );
+    const hexes = comp.map(([r, g, b]) => toHex(r, g, b));
+    const ok =
+      !hexes.length || texts.every((t) => hexes.every((h) => contrast(t, h) >= MIN_CONTRAST));
+    if (ok || a >= 0.95) {
+      alpha = a;
+      // Pior caso: as cores mais clara e mais escura após a sobreposição.
+      const byLum = [...hexes].sort((x, y) => contrast(x, "#000000") - contrast(y, "#000000"));
+      extremes = byLum.length ? [byLum[0]!, byLum[byLum.length - 1]!] : extremes;
+      break;
+    }
+  }
+  ctx.save();
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.fillStyle = `rgba(${overlay[0]}, ${overlay[1]}, ${overlay[2]}, ${alpha})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  return extremes;
+}
+
+/* ---------- Render com resolvedor de sobreposição ---------- */
+
+/**
+ * Escada de ajustes (do mais leve ao mais forte). Prioridade dos elementos:
+ *   logo · título/nome · foto (obrigatórios) > itens / evento > data > CTA
+ *   > versão/data do produto > chamada (kicker).
+ * Produto: título no mínimo → itens em 1 linha → sem versão → sem CTA → itens
+ *          finais omitidos. Evento: foto menor → evento em menos linhas → sem
+ *          chamada → foto mínima.
+ */
+const FOLLOWUP_LADDER = [0, 1, 2, 3, 4, 5, 6] as const;
+
 export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): FollowupResult {
+  const { w, h } = followupSize(spec.format);
+  let last: FollowupResult | null = null;
+  for (const level of FOLLOWUP_LADDER) {
+    last = renderFollowupOnce(canvas, spec, level);
+    if (!last.overlaps.length) break;
+  }
+  void w;
+  void h;
+  return last!;
+}
+
+function renderFollowupOnce(
+  canvas: HTMLCanvasElement,
+  spec: FollowupSpec,
+  level: number,
+): FollowupResult {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas 2D indisponível");
   const { w: W, h: H } = followupSize(spec.format);
@@ -289,18 +404,51 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
   ctx.textAlign = "left";
 
   const preset = BG_PRESETS.find((p) => p.key === spec.bgPreset) ?? BG_PRESETS[0]!;
-  const t = themeFor(preset);
-  paintPreset(ctx, preset, W, H);
+  const presetLight = themeFor(preset.colors).light;
+  let t = themeFor(preset.colors);
+  if (spec.bgImage) {
+    drawCoverImage(ctx, spec.bgImage, W, H);
+    const extremes = overlayForText(ctx, W, H, RS, presetLight);
+    t = themeFor(extremes, presetLight);
+  } else {
+    paintPreset(ctx, preset, W, H);
+  }
 
   const M = spec.format === "4x3" ? 96 : 88;
   const checks: FollowupCheck[] = [];
   const textPairs: [string, string, string[]][] = [];
+  const boxes: LayoutBox[] = [];
+  const reg = (id: string, x: number, y: number, w: number, h: number) => {
+    if (w > 0 && h > 0) boxes.push({ id, x, y, w, h });
+  };
+  const ink = (text: string, x: number, y: number) => {
+    const m = ctx.measureText(text);
+    return {
+      x: x - m.actualBoundingBoxLeft,
+      y: y - m.actualBoundingBoxAscent,
+      w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+      h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+    };
+  };
+  const regUnion = (id: string, list: { x: number; y: number; w: number; h: number }[]) => {
+    if (!list.length) return;
+    const x0 = Math.min(...list.map((b) => b.x));
+    const y0 = Math.min(...list.map((b) => b.y));
+    reg(
+      id,
+      x0,
+      y0,
+      Math.max(...list.map((b) => b.x + b.w)) - x0,
+      Math.max(...list.map((b) => b.y + b.h)) - y0,
+    );
+  };
   let fitsOk = true;
   let sizesOk = true;
+  let omitted = 0;
   let logo: LogoRender | null = null;
 
-  const drawLogo = (x: number, y: number, h: number, maxW?: number) => {
-    const box = logoBox("logotipo", h, maxW);
+  const drawLogo = (x: number, y: number, h: number) => {
+    const box = logoBox("logotipo", h);
     const kind = kindForBox(box.w, box.h);
     const b = kind === "logotipo" ? box : logoBox("simbolo", h);
     logo = drawBrandLogo(ctx, spec.logos, {
@@ -312,21 +460,32 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
       scale: RS,
       allowed: spec.logoVariants,
     });
+    const pad = logo.plate ? Math.round(b.h * 0.28) : 0;
+    reg("logo", x - pad, y - pad, b.w + pad * 2, b.h + pad * 2);
     return b;
   };
 
   if (spec.model === "product") {
     const p = spec.product;
     const square = spec.format === "1x1";
-    // Topo: logo à esquerda, versão/data à direita.
     const logoH = 60;
-    drawLogo(M, M, logoH);
-    if (p.version.trim()) {
-      ctx.font = `600 ${MIN_BODY}px ${BODY_FONT}`;
+    const lb = drawLogo(M, M, logoH);
+    const version = level >= 3 ? "" : p.version.trim();
+    if (p.version.trim() && !version) omitted++;
+    if (version) {
+      let vs = MIN_BODY;
+      ctx.font = `600 ${vs}px ${BODY_FONT}`;
+      // Versão longa: reduz até caber ao lado do logo (sem passar do piso de leitura).
+      const room = W - M * 2 - lb.w - 32;
+      while (ctx.measureText(version).width > room && vs > 22) {
+        vs -= 1;
+        ctx.font = `600 ${vs}px ${BODY_FONT}`;
+      }
       ctx.fillStyle = t.meta;
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillText(p.version.trim(), W - M, M + logoH / 2);
+      ctx.fillText(version, W - M, M + logoH / 2);
+      regUnion("versão", [ink(version, W - M, M + logoH / 2)]);
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       textPairs.push(["Versão/data", t.meta, t.bgs]);
@@ -334,66 +493,75 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
 
     const contentW = W - M * 2;
     let y = M + logoH + (square ? 56 : 64);
-    // Título
+    const titleMax = level >= 1 ? MIN_TITLE + 8 : square ? 68 : 76;
     const title = fit(
       ctx,
       p.title.trim() || "Novidades",
       (s) => `800 ${s}px ${TITLE_FONT}`,
       contentW,
       2,
-      square ? 68 : 76,
+      titleMax,
       MIN_TITLE,
     );
     if (title.clipped) fitsOk = false;
     ctx.fillStyle = t.title;
     ctx.font = `800 ${title.size}px ${TITLE_FONT}`;
+    const tInk: { x: number; y: number; w: number; h: number }[] = [];
     for (const line of title.lines) {
       ctx.fillText(line, M, y);
+      tInk.push(ink(line, M, y));
       y += title.size * 1.12;
     }
+    regUnion("título", tInk);
     textPairs.push(["Título", t.title, t.bgs]);
-    // Faixa de acento sob o título
     y += 20;
     ctx.fillStyle = t.accent;
     roundRect(ctx, M, y, 96, 8, 4);
     ctx.fill();
+    reg("faixa", M, y, 96, 8);
     y += 8 + (square ? 40 : 48);
 
-    // CTA (opcional) reserva a base
-    const cta = p.cta.trim();
+    const cta = level >= 4 ? "" : p.cta.trim();
+    if (p.cta.trim() && !cta) omitted++;
     const ctaFont = 32;
     const ctaPadX = 32;
     const ctaH = 76;
     const bottom = H - M - (cta ? ctaH + 36 : 0);
 
-    // Itens: maior fonte que cabe no espaço disponível
-    const items = p.items
+    // Itens: maior fonte que cabe; depois 1 linha por item; por fim omite os finais.
+    let items = p.items
       .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, FOLLOWUP_MAX.items);
-    let size = square ? 38 : 40;
-    let layout: { lines: string[]; h: number }[] = [];
+    const maxItemLines = level >= 2 ? 1 : 2;
     const iconFor = (s: number) => Math.round(s * 1.45);
-    for (; size >= MIN_BODY; size -= 2) {
+    const measure = (list: string[], size: number) => {
       const icon = iconFor(size);
       const textW = contentW - icon - 28;
       ctx.font = `500 ${size}px ${BODY_FONT}`;
-      layout = items.map((it) => {
-        const { lines } = clampLines(ctx, wrap(ctx, it, textW), 2, textW);
+      const rows = list.map((it) => {
+        const { lines, clipped } = clampLines(ctx, wrap(ctx, it, textW), maxItemLines, textW);
+        if (clipped) fitsOk = false;
         return { lines, h: Math.max(icon, size * 1.3) + (lines.length - 1) * size * 1.3 };
       });
       const total =
-        layout.reduce((acc, l) => acc + l.h, 0) + Math.max(0, items.length - 1) * size * 0.75;
-      if (total <= bottom - y) break;
+        rows.reduce((acc, l) => acc + l.h, 0) + Math.max(0, list.length - 1) * size * 0.75;
+      return { rows, total };
+    };
+    let size = square ? 38 : 40;
+    let layout = measure(items, size);
+    while (layout.total > bottom - y && size > MIN_BODY) {
+      size -= 2;
+      layout = measure(items, size);
     }
-    if (size < MIN_BODY) {
-      size = MIN_BODY;
-      fitsOk = false;
+    while (layout.total > bottom - y && items.length > 1 && level >= 5) {
+      items = items.slice(0, -1);
+      omitted++;
+      layout = measure(items, size);
     }
     const icon = iconFor(size);
-    ctx.font = `500 ${size}px ${BODY_FONT}`;
     items.forEach((_, i) => {
-      const l = layout[i]!;
+      const l = layout.rows[i]!;
       const lineH = size * 1.3;
       const cy = y + Math.max(icon, lineH) / 2;
       const cx = M + icon / 2;
@@ -415,15 +583,20 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
           ctx.fillText(String(i + 1), cx, cy + 1);
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
-          ctx.font = `500 ${size}px ${BODY_FONT}`;
         } else {
           glyph(ctx, p.marker, cx, cy, icon * 0.56, t.onAccent, 3);
         }
       }
+      ctx.font = `500 ${size}px ${BODY_FONT}`;
       ctx.fillStyle = t.body;
       ctx.textBaseline = "middle";
-      l.lines.forEach((line, k) => ctx.fillText(line, M + icon + 28, cy + k * lineH + 1));
+      const rowInk = [{ x: M, y: cy - icon / 2, w: icon, h: icon }];
+      l.lines.forEach((line, k) => {
+        ctx.fillText(line, M + icon + 28, cy + k * lineH + 1);
+        rowInk.push(ink(line, M + icon + 28, cy + k * lineH + 1));
+      });
       ctx.textBaseline = "top";
+      regUnion(`item ${i + 1}`, rowInk);
       y += l.h + size * 0.75;
     });
     if (items.length) textPairs.push(["Itens", t.body, t.bgs]);
@@ -437,6 +610,7 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
       ctx.fillStyle = t.accent;
       roundRect(ctx, M, by, bw, ctaH, ctaH / 2);
       ctx.fill();
+      reg("cta", M, by, bw, ctaH);
       ctx.fillStyle = t.onAccent;
       ctx.textBaseline = "middle";
       ctx.fillText(cta, M + ctaPadX, by + ctaH / 2 + 1, bw - ctaPadX * 2 - 44);
@@ -447,13 +621,14 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
   } else {
     const e = spec.event;
     const square = spec.format === "1x1";
-    const D = square ? 360 : 500;
+    const shrink = level >= 4 ? 0.7 : level >= 1 ? 0.84 : 1;
+    const D = Math.round((square ? 360 : 500) * shrink);
     const ring = square ? 12 : 14;
     const name = e.name.trim() || "Nome do colaborador";
-    const kicker = e.kicker.trim();
+    const kicker = level >= 3 ? "" : e.kicker.trim();
+    if (e.kicker.trim() && !kicker) omitted++;
     const when = formatEventDate(e.date, e.time);
 
-    // Medidas do bloco de texto (antes do posicionamento, para centralizar a pilha)
     const textW = square ? W - M * 2 : W - (M + 20 + D + 88) - M;
     const kickerSize = 28;
     const nameFit = fit(
@@ -465,12 +640,13 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
       square ? 60 : 72,
       MIN_TITLE,
     );
+    const eventLines = Math.max(1, (square ? 2 : 3) - (level >= 2 ? 1 : 0));
     const eventFit = fit(
       ctx,
       e.event.trim(),
       (s) => `500 ${s}px ${BODY_FONT}`,
       textW,
-      square ? 2 : 3,
+      eventLines,
       square ? 34 : 40,
       MIN_BODY,
     );
@@ -498,14 +674,17 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
       textX = W / 2;
       align = "center";
       y = cy + D / 2 + ring + 36;
-      if (y + blockH > H - M + 24) fitsOk = false;
     } else {
-      drawLogo(M, M, 60);
+      const logoH = 60;
+      drawLogo(M, M, logoH);
+      // Abaixo do logo, centrado na área restante.
+      const areaTop = M + logoH + 40;
+      const areaH = H - M - areaTop;
       cx = M + 20 + D / 2;
-      cy = H / 2 + 30;
+      cy = areaTop + areaH / 2;
       textX = M + 20 + D + 88;
       align = "left";
-      y = cy - blockH / 2;
+      y = Math.max(areaTop, areaTop + (areaH - blockH) / 2);
     }
 
     // Moldura circular: foto (recorte central, sem distorção) ou placeholder neutro.
@@ -541,30 +720,39 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
     ctx.beginPath();
     ctx.arc(cx, cy, D / 2 + ring / 2, 0, Math.PI * 2);
     ctx.stroke();
+    reg("foto", cx - D / 2 - ring, cy - D / 2 - ring, D + ring * 2, D + ring * 2);
 
     ctx.textAlign = align;
     if (kicker) {
       ctx.font = `700 ${kickerSize}px ${BODY_FONT}`;
-      ctx.fillStyle = t.light ? t.title : PALETTE.gold;
-      ctx.fillText(kicker.toUpperCase(), textX, y);
-      textPairs.push(["Chamada", t.light ? t.title : PALETTE.gold, t.bgs]);
+      const kc = t.light ? t.title : PALETTE.gold;
+      ctx.fillStyle = kc;
+      ctx.fillText(kicker.toUpperCase(), textX, y, textW);
+      regUnion("chamada", [ink(kicker.toUpperCase(), textX, y)]);
+      textPairs.push(["Chamada", kc, t.bgs]);
       y += kickerSize + 20;
     }
     ctx.font = `800 ${nameFit.size}px ${TITLE_FONT}`;
     ctx.fillStyle = t.title;
+    const nInk: { x: number; y: number; w: number; h: number }[] = [];
     for (const line of nameFit.lines) {
       ctx.fillText(line, textX, y);
+      nInk.push(ink(line, textX, y));
       y += nameFit.size * 1.12;
     }
+    regUnion("nome", nInk);
     textPairs.push(["Nome", t.title, t.bgs]);
     if (eventFit.lines.length) {
       y += 16;
       ctx.font = `500 ${eventFit.size}px ${BODY_FONT}`;
       ctx.fillStyle = t.body;
+      const eInk: { x: number; y: number; w: number; h: number }[] = [];
       for (const line of eventFit.lines) {
         ctx.fillText(line, textX, y);
+        eInk.push(ink(line, textX, y));
         y += eventFit.size * 1.3;
       }
+      regUnion("evento", eInk);
       textPairs.push(["Evento", t.body, t.bgs]);
     }
     if (when) {
@@ -576,6 +764,7 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
       ctx.fillStyle = t.accent;
       roundRect(ctx, px, y, pw, pillH, pillH / 2);
       ctx.fill();
+      reg("data", px, y, pw, pillH);
       glyph(ctx, "calendar", px + 20 + 18, y + pillH / 2, 32, t.onAccent, 2.4);
       ctx.fillStyle = t.onAccent;
       ctx.textAlign = "left";
@@ -587,6 +776,8 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
     ctx.textAlign = "left";
     if (nameFit.size < MIN_TITLE || eventFit.size < MIN_BODY) sizesOk = false;
   }
+
+  const overlaps = findOverlaps(boxes, W, H);
 
   // Checagens de marca
   const allowed = FOLLOWUP_TEXT_COLORS.map((c) => c.toUpperCase());
@@ -606,9 +797,21 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
     pass: textPairs.every(([, fg]) => allowed.includes(fg.toUpperCase())),
   });
   checks.push({
+    id: "overlap",
+    label: overlaps.length
+      ? `Sem sobreposição de elementos (${overlaps.map(([a, b]) => `${a} × ${b}`).join(", ")})`
+      : "Sem sobreposição de elementos",
+    pass: !overlaps.length,
+  });
+  checks.push({
     id: "fit",
-    label: fitsOk ? "Textos cabem na peça" : "Texto longo demais: foi cortado",
-    pass: fitsOk,
+    label:
+      fitsOk && !omitted
+        ? "Textos cabem na peça"
+        : omitted
+          ? `Texto longo demais: ${omitted} elemento(s) omitido(s) para não sobrepor`
+          : "Texto longo demais: foi cortado",
+    pass: fitsOk && !omitted,
   });
   checks.push({ id: "size", label: "Tamanhos mínimos de leitura", pass: sizesOk });
   const lg = logo as LogoRender | null;
@@ -622,5 +825,5 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
   if (spec.model === "event") {
     checks.push({ id: "photo", label: "Foto do colaborador enviada", pass: !!spec.event.photo });
   }
-  return { checks, pass: checks.every((c) => c.pass), logo: lg };
+  return { checks, pass: checks.every((c) => c.pass), logo: lg, boxes, overlaps };
 }

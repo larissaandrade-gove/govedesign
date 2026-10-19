@@ -105,6 +105,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
         headline: spec.headline,
         subhead: spec.subhead,
         logo: result.logo,
+          overlaps: result.overlaps,
       }),
     );
   }, [spec, preview]);

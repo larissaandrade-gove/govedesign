@@ -108,6 +108,8 @@ export function validateCreative(spec: {
   /** Resultado da regra de contraste da logomarca (renderer). */
   logo?:
     { ok: boolean; minContrast: number; drawn: boolean; plate: string | null } | null | undefined;
+  /** Pares de elementos que ainda se cruzam após o resolvedor de layout. */
+  overlaps?: [string, string][] | undefined;
 }): ComplianceReport {
   const norm = (c: string) => c.toUpperCase();
   const paletteOk = spec.usedColors.every((c) => ALLOWED_COLORS.map(norm).includes(norm(c)));
@@ -127,6 +129,13 @@ export function validateCreative(spec: {
         ? `Logomarca oficial com contraste ${spec.logo.minContrast.toFixed(1).replace(".", ",")}:1${spec.logo.plate ? " (sobre placa)" : ""} — mínimo 4,5:1`
         : "Logomarca oficial carregada",
       pass: spec.logoIsWordmark && !!spec.logo?.drawn && spec.logo.ok,
+    },
+    {
+      id: "overlap",
+      label: spec.overlaps?.length
+        ? `Sem sobreposição de elementos (${spec.overlaps.map(([a, b]) => `${a} × ${b}`).join(", ")})`
+        : "Sem sobreposição de elementos",
+      pass: !spec.overlaps?.length,
     },
     { id: "palette", label: "Cores dentro da paleta institucional", pass: paletteOk },
     { id: "pair", label: "Par texto/fundo aprovado", pass: pairOk },

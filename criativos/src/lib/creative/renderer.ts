@@ -275,8 +275,9 @@ function fitHeadline(
   text: string,
   maxWidth: number,
   maxLines: number,
+  max: number = TYPE_SCALE.headlineMax,
 ) {
-  let size: number = TYPE_SCALE.headlineMax;
+  let size: number = Math.max(TYPE_SCALE.headlineMin, max);
   const min = TYPE_SCALE.headlineMin;
   let lines: string[] = [];
   for (;;) {
@@ -289,8 +290,13 @@ function fitHeadline(
   return { size, lines };
 }
 
-function fitSubhead(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
-  let size: number = TYPE_SCALE.subheadMax;
+function fitSubhead(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  max: number = TYPE_SCALE.subheadMax,
+) {
+  let size: number = Math.max(TYPE_SCALE.subheadMin, max);
   const min = TYPE_SCALE.subheadMin;
   let lines: string[] = [];
   for (;;) {
@@ -339,6 +345,83 @@ function drawCover(
   ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
 }
 
+/** Caixa de um elemento desenhado (coordenadas lógicas do canvas). */
+export type LayoutBox = { id: string; x: number; y: number; w: number; h: number };
+
+/** Ajustes progressivos aplicados pelo resolvedor de sobreposição. */
+type FitOpts = {
+  headMax?: number;
+  subMax?: number;
+  subMaxLines?: number;
+  expertCompact?: boolean;
+  omit?: string[];
+};
+
+/** Respiro mínimo entre elementos: proporcional ao menor lado da peça. */
+export const breathingGap = (w: number, h: number) =>
+  Math.max(8, Math.round(Math.min(w, h) * 0.01));
+
+/**
+ * Pares de caixas que se cruzam (ou ficam mais próximos que `gap`) e caixas
+ * que saem da peça. Função pura, usada pelo renderer e pelos testes.
+ */
+export function findOverlaps(boxes: LayoutBox[], W: number, H: number, gap = breathingGap(W, H)) {
+  const out: [string, string][] = [];
+  for (let i = 0; i < boxes.length; i++) {
+    const a = boxes[i]!;
+    if (a.x < -0.5 || a.y < -0.5 || a.x + a.w > W + 0.5 || a.y + a.h > H + 0.5)
+      out.push([a.id, "limite da peça"]);
+    for (let j = i + 1; j < boxes.length; j++) {
+      const b = boxes[j]!;
+      // Respiro exigido = gap entre as bordas das duas caixas.
+      if (!(
+        a.x + a.w + gap <= b.x ||
+        b.x + b.w + gap <= a.x ||
+        a.y + a.h + gap <= b.y ||
+        b.y + b.h + gap <= a.y
+      ))
+        out.push([a.id, b.id]);
+    }
+  }
+  return out;
+}
+
+/**
+ * Ordem de prioridade (do mais ao menos importante) usada pelo resolvedor:
+ *   logo · headline · CTA · especialista (obrigatórios)
+ *   > subhead > chip de urgência > selo > token regional > módulo editorial.
+ * Escada de ajustes, na ordem: fonte até o mínimo legível → subhead com menos
+ * linhas → especialista compacto e reposicionado sob o logo → omitir módulo
+ * editorial → token → selo → urgência → subhead em 1 linha.
+ */
+const FIT_LADDER: FitOpts[] = (() => {
+  const min = { headMax: TYPE_SCALE.headlineMin, subMax: TYPE_SCALE.subheadMin };
+  const steps: FitOpts[] = [
+    {},
+    { ...min },
+    { ...min, subMaxLines: 3 },
+    { ...min, subMaxLines: 2, expertCompact: true },
+  ];
+  const omitOrder = ["module", "token", "badge", "urgency"];
+  omitOrder.forEach((_, i) =>
+    steps.push({ ...min, subMaxLines: 2, expertCompact: true, omit: omitOrder.slice(0, i + 1) }),
+  );
+  steps.push({ ...min, subMaxLines: 1, expertCompact: true, omit: omitOrder });
+  return steps;
+})();
+
+export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): RenderResult {
+  const { w, h } = formatSize(spec.format);
+  let last: (RenderResult & { boxes: LayoutBox[] }) | null = null;
+  for (const fit of FIT_LADDER) {
+    const r = renderCreativeOnce(canvas, spec, fit);
+    const overlaps = findOverlaps(r.boxes, w, h);
+    last = { ...r, overlaps };
+    if (!overlaps.length) return last;
+  }
+  return last!;
+}
+
 export type RenderResult = {
   textColor: string;
   textBackgroundColor: string;
@@ -346,10 +429,18 @@ export type RenderResult = {
   brightness: number;
   /** Versão de logo aplicada e o contraste de pior caso com o fundo amostrado. */
   logo: LogoRender | null;
+  /** Interseções que restaram após o resolvedor (vazio = sem sobreposição). */
+  overlaps: [string, string][];
+  /** Caixas registradas de cada elemento desenhado. */
+  boxes?: LayoutBox[];
 };
 
-export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): RenderResult {
-  const ctx = canvas.getContext("2d");
+function renderCreativeOnce(
+  canvas: HTMLCanvasElement,
+  spec: CreativeSpec,
+  fit: FitOpts,
+): RenderResult & { boxes: LayoutBox[] } {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas 2D indisponível");
   const size = formatSize(spec.format);
   const CANVAS_W = size.w;
@@ -361,6 +452,35 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   const TOP_M = M + SAFE_TOP;
   const textAlpha = spec.textAlpha ?? 1;
   const ctaAlpha = spec.ctaAlpha ?? 1;
+
+  // Registro de caixas (bounding boxes) de tudo que é desenhado como conteúdo.
+  const boxes: LayoutBox[] = [];
+  const omit = new Set(fit.omit ?? []);
+  const reg = (id: string, x: number, y: number, w: number, h: number) => {
+    if (w > 0 && h > 0) boxes.push({ id, x, y, w, h });
+  };
+  /** Caixa de tinta real de um texto na posição/alinhamento/baseline atuais. */
+  const ink = (text: string, x: number, y: number) => {
+    const m = ctx.measureText(text);
+    return {
+      x: x - m.actualBoundingBoxLeft,
+      y: y - m.actualBoundingBoxAscent,
+      w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+      h: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+    };
+  };
+  const regUnion = (id: string, list: { x: number; y: number; w: number; h: number }[]) => {
+    if (!list.length) return;
+    const x0 = Math.min(...list.map((b) => b.x));
+    const y0 = Math.min(...list.map((b) => b.y));
+    const x1 = Math.max(...list.map((b) => b.x + b.w));
+    const y1 = Math.max(...list.map((b) => b.y + b.h));
+    reg(id, x0, y0, x1 - x0, y1 - y0);
+  };
+  const urgencyText = omit.has("urgency") ? undefined : spec.urgency;
+  const tokenText = omit.has("token") ? undefined : spec.token;
+  const badgeText = omit.has("badge") ? "" : spec.badge;
+  const showModule = !omit.has("module");
 
   const CARD_PAD = BASE_CARD_PAD;
   // Em peças largas o bloco de texto é limitado para não gerar linhas quilométricas.
@@ -536,26 +656,55 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
         ? boxW - CARD_PAD * 2
         : boxW;
 
-  const headline = fitHeadline(ctx, spec.headline, textW, centered || isSplit || isHero ? 3 : 2);
+  const headline = fitHeadline(
+    ctx,
+    spec.headline,
+    textW,
+    centered || isSplit || isHero ? 3 : 2,
+    fit.headMax,
+  );
   const headLH = headline.size * 1.12;
-  const sub = fitSubhead(ctx, spec.subhead, textW);
+  const sub = fitSubhead(ctx, spec.subhead, textW, fit.subMax);
+  if (fit.subMaxLines && sub.lines.length > fit.subMaxLines) {
+    ctx.font = `400 ${sub.size}px ${FONT}`;
+    const kept = sub.lines.slice(0, fit.subMaxLines);
+    let last = kept[kept.length - 1] ?? "";
+    while (last.length > 1 && ctx.measureText(`${last}…`).width > textW) last = last.slice(0, -1);
+    kept[kept.length - 1] = `${last.replace(/[\s,.;:–—-]+$/, "")}…`;
+    sub.lines = kept;
+  }
   const subLH = sub.size * 1.35;
 
-  const urgencyH = spec.urgency ? 58 : 0;
-  const urgencyGap = spec.urgency ? 24 : 0;
-  const tokenH = spec.token ? 40 : 0;
+  const urgencyH = urgencyText ? 58 : 0;
+  const urgencyGap = urgencyText ? 24 : 0;
+  const tokenH = tokenText ? 40 : 0;
 
   const textH =
     urgencyH + urgencyGap + headline.lines.length * headLH + 20 + sub.lines.length * subLH + tokenH;
 
   // 3. CTA (medidas) — padding idêntico nas quatro extremidades
-  ctx.font = `700 ${TYPE_SCALE.cta}px ${FONT}`;
-  const ctaLabelW = ctx.measureText(spec.cta).width;
+  // O rótulo precisa caber dentro do botão: reduz a fonte até o piso legível
+  // (24pt ≈ 32px → 28px no limite) e, só então, abrevia com reticências.
   const ctaIcon = 36;
   const CTA_PAD = 34;
+  const ctaMaxW = isSplit || isHero ? textW : CONTENT_W;
+  let ctaFont: number = TYPE_SCALE.cta;
+  let ctaLabel = spec.cta;
+  ctx.font = `700 ${ctaFont}px ${FONT}`;
+  while (ctx.measureText(ctaLabel).width + 22 + ctaIcon + CTA_PAD * 2 > ctaMaxW && ctaFont > 28) {
+    ctaFont -= 2;
+    ctx.font = `700 ${ctaFont}px ${FONT}`;
+  }
+  while (
+    ctaLabel.length > 1 &&
+    ctx.measureText(ctaLabel).width + 22 + ctaIcon + CTA_PAD * 2 > ctaMaxW
+  ) {
+    ctaLabel = ctaLabel.slice(0, -2).trimEnd() + "…";
+  }
+  const ctaLabelW = ctx.measureText(ctaLabel).width;
   const ctaContentW = ctaLabelW + 22 + ctaIcon;
   const ctaH = ctaIcon + CTA_PAD * 2;
-  const ctaW = Math.min(isSplit || isHero ? textW : CONTENT_W, ctaContentW + CTA_PAD * 2);
+  const ctaW = Math.min(ctaMaxW, ctaContentW + CTA_PAD * 2);
 
   // 4. Posicionamento por layout
   let ctaY = CANVAS_H - M - SAFE_BOTTOM - ctaH;
@@ -637,16 +786,21 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     const accent = minimal ? accentColor : PALETTE.gold;
     const inkOnBg = contrastTextColor(brightness);
 
-    if ((style === "mockup-center-top" || style === "mockup-left") && freeH > 130) {
+    if (showModule && (style === "mockup-center-top" || style === "mockup-left") && freeH > 130) {
       const areaX = M;
       const areaW = style === "mockup-left" ? CANVAS_W - panelW - M * 2 : CONTENT_W;
-      const mw = Math.min(areaW, freeH * 1.5);
-      const mh = Math.min(freeH, mw * 0.66);
+      // Mockup lateral: fica entre a área do logo/selo e a base, dentro da área segura.
+      const sideTop = TOP_M + 58 + 48;
+      const sideH = CANVAS_H - SAFE_BOTTOM - M - sideTop;
+      const availH = style === "mockup-left" ? Math.min(freeH, sideH) : freeH;
+      const mw = Math.min(areaW, availH * 1.5);
+      const mh = Math.min(availH, mw * 0.66);
       const mx = style === "mockup-left" ? areaX + (areaW - mw) / 2 : (CANVAS_W - mw) / 2;
       const my =
         style === "mockup-left"
-          ? SAFE_TOP + (CANVAS_H - SAFE_TOP - SAFE_BOTTOM - mh) / 2
+          ? Math.max(sideTop, SAFE_TOP + (CANVAS_H - SAFE_TOP - SAFE_BOTTOM - mh) / 2)
           : freeTop + (freeH - mh) / 2;
+      reg("modulo", mx, my, mw, mh);
       const bar = mh * 0.14; // altura da barra de título
       ctx.save();
       roundRect(ctx, mx, my, mw, mh, 24);
@@ -691,7 +845,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       ctx.restore();
     }
 
-    if (style === "stat-hero" && freeH > 140) {
+    if (showModule && style === "stat-hero" && freeH > 140) {
       const match = spec.headline.match(/[\d][\d.,]*\s*(%|x|mil|mi)?/i);
       const stat = (match?.[0] ?? (spec.badge || "100%")).trim().toUpperCase();
       ctx.save();
@@ -705,14 +859,16 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       }
       ctx.fillStyle = accent;
       ctx.fillText(stat, CANVAS_W / 2, freeTop + freeH / 2);
+      regUnion("modulo", [ink(stat, CANVAS_W / 2, freeTop + freeH / 2)]);
       ctx.restore();
     }
 
-    if (style === "before-after" && freeH > 120) {
+    if (showModule && style === "before-after" && freeH > 120) {
       const gap = 28;
       const bw = (CONTENT_W - gap) / 2;
       const bh = Math.min(freeH, bw * 1.1);
       const by = freeTop + (freeH - bh) / 2;
+      reg("modulo", M, by, CONTENT_W, bh);
       const head = Math.min(56, bh * 0.24);
       const blocks: Array<[string, string]> = [
         ["ANTES", PALETTE.supportMid],
@@ -753,7 +909,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       });
     }
 
-    if (style === "proof-badge" && freeH > 120 && spec.badge) {
+    if (showModule && style === "proof-badge" && freeH > 120 && spec.badge) {
       ctx.save();
       const label = spec.badge.toUpperCase();
       let ps = Math.min(72, freeH * 0.35);
@@ -769,6 +925,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       ctx.fillStyle = accent;
       roundRect(ctx, px, py, pw, ph, ph / 2);
       ctx.fill();
+      reg("modulo", px, py, pw, ph);
       ctx.fillStyle = minimal ? accentTextColor : PALETTE.purple3;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -778,17 +935,18 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       ctx.textBaseline = "top";
     }
 
-    if (style === "quote-split") {
+    if (showModule && style === "quote-split") {
       ctx.save();
       ctx.fillStyle = accent;
       ctx.font = `700 190px Georgia, ${FONT}`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText("“", textX, Math.max(TOP_M + 70, blockTop - 190));
+      regUnion("modulo", [ink("“", textX, Math.max(TOP_M + 70, blockTop - 190))]);
       ctx.restore();
     }
 
-    if (style === "full-bleed") {
+    if (showModule && style === "full-bleed") {
       ctx.save();
       ctx.strokeStyle = withAlpha(inkOnBg, 0.35);
       ctx.lineWidth = 4;
@@ -797,6 +955,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
       ctx.moveTo((CANVAS_W - lw) / 2, Math.max(TOP_M + 140, blockTop - 70));
       ctx.lineTo((CANVAS_W + lw) / 2, Math.max(TOP_M + 140, blockTop - 70));
       ctx.stroke();
+      reg("modulo", (CANVAS_W - lw) / 2, Math.max(TOP_M + 140, blockTop - 70) - 2, lw, 4);
       ctx.restore();
     }
   }
@@ -822,16 +981,17 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   ctx.textBaseline = "top";
   let y = blockTop;
 
-  if (spec.urgency) {
+  if (urgencyText) {
     const chipFont = `700 ${TYPE_SCALE.label}px ${FONT}`;
     ctx.font = chipFont;
-    const label = spec.urgency.toUpperCase();
+    const label = urgencyText.toUpperCase();
     const iconKey = spec.themeIcon ?? "clock";
     const chipW = ctx.measureText(label).width + 40 + 32 + 14;
     const chipX = centered ? CANVAS_W / 2 - chipW / 2 : textX;
     ctx.fillStyle = minimal ? accentColor : PALETTE.gold;
     roundRect(ctx, chipX, y, chipW, urgencyH, urgencyH / 2);
     ctx.fill();
+    reg("urgencia", chipX, y, chipW, urgencyH);
     const chipFg = minimal ? accentTextColor : PALETTE.purple3;
     drawIconPath(ctx, iconKey, chipX + 20 + 14, y + urgencyH / 2, 28, chipFg);
     ctx.fillStyle = chipFg;
@@ -846,23 +1006,30 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
 
   ctx.fillStyle = bodyColor;
   ctx.font = `700 ${headline.size}px ${FONT}`;
+  const headInk: { x: number; y: number; w: number; h: number }[] = [];
   for (const line of headline.lines) {
     ctx.fillText(line, textX, y);
+    headInk.push(ink(line, textX, y));
     y += headLH;
   }
+  regUnion("headline", headInk);
   y += 20;
   ctx.font = `400 ${sub.size}px ${FONT}`;
   ctx.globalAlpha = 0.92 * textAlpha;
+  const subInk: { x: number; y: number; w: number; h: number }[] = [];
   for (const line of sub.lines) {
     ctx.fillText(line, textX, y);
+    subInk.push(ink(line, textX, y));
     y += subLH;
   }
+  regUnion("subhead", subInk);
   ctx.globalAlpha = textAlpha;
 
-  if (spec.token) {
+  if (tokenText) {
     ctx.font = `700 ${TYPE_SCALE.label}px ${FONT}`;
     ctx.globalAlpha = 0.8 * textAlpha;
-    ctx.fillText(spec.token.toUpperCase(), textX, y + 10);
+    ctx.fillText(tokenText.toUpperCase(), textX, y + 10);
+    regUnion("token", [ink(tokenText.toUpperCase(), textX, y + 10)]);
   }
   ctx.globalAlpha = 1;
 
@@ -871,16 +1038,28 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
   const ctaX = centered ? (CANVAS_W - ctaW) / 2 : blockX;
   ctx.fillStyle = accentColor;
   roundRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
+  reg("cta", ctaX, ctaY, ctaW, ctaH);
 
   ctx.fill();
-  ctx.font = `700 ${TYPE_SCALE.cta}px ${FONT}`;
+  ctx.font = `700 ${ctaFont}px ${FONT}`;
   const groupW = ctaContentW;
   const startX = ctaX + (ctaW - groupW) / 2;
 
   ctx.fillStyle = accentTextColor;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(spec.cta, startX, ctaY + ctaH / 2 + 1);
+  ctx.fillText(ctaLabel, startX, ctaY + ctaH / 2 + 1);
+  {
+    // A caixa do CTA cobre o botão e o rótulo (garante que o texto não vaze).
+    const t = ink(ctaLabel, startX, ctaY + ctaH / 2 + 1);
+    const b = boxes.find((x) => x.id === "cta");
+    if (b) {
+      const x0 = Math.min(b.x, t.x);
+      const x1 = Math.max(b.x + b.w, t.x + t.w);
+      b.x = x0;
+      b.w = x1 - x0;
+    }
+  }
   drawIconPath(
     ctx,
     spec.icon,
@@ -920,12 +1099,16 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     scale: RS,
     allowed: spec.logoVariants,
   });
+  {
+    const pad = logo.plate ? Math.round(logoSize.h * 0.28) : 0;
+    reg("logo", M - pad, TOP_M - pad, logoSize.w + pad * 2, logoSize.h + pad * 2);
+  }
   void headerColor;
 
   // 8. Selo institucional no canto superior direito
-  if (spec.badge) {
+  if (badgeText) {
     ctx.font = `700 ${TYPE_SCALE.label}px ${FONT}`;
-    const bw = ctx.measureText(spec.badge.toUpperCase()).width + 44;
+    const bw = ctx.measureText(badgeText.toUpperCase()).width + 44;
     const bh = 52;
     const bx = CANVAS_W - M - bw;
     const by = TOP_M + (logoH - bh) / 2;
@@ -937,15 +1120,16 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     ctx.fill();
     ctx.fillStyle = badgeFg;
     ctx.textBaseline = "middle";
-    ctx.fillText(spec.badge.toUpperCase(), bx + 22, by + bh / 2 + 1);
+    ctx.fillText(badgeText.toUpperCase(), bx + 22, by + bh / 2 + 1);
+    reg("selo", bx, by, bw, bh);
     ctx.textBaseline = "top";
   }
 
   if (isExpertLayout(style) && spec.expert && expertReady(spec.expert)) {
     const ex = spec.expert;
-    const D = wide ? 170 : 190;
+    const D = fit.expertCompact ? (wide ? 130 : 150) : wide ? 170 : 190;
     const bx = M;
-    const by = TOP_M + (wide ? 130 : 150);
+    const by = fit.expertCompact ? TOP_M + logoH + 28 : TOP_M + (wide ? 130 : 150);
     const plateDark = scheme !== "minimal-light";
     const plateBg = plateDark ? PALETTE.purple3 : PALETTE.supportLight;
     const nameColor = plateDark ? PALETTE.white : PALETTE.purple3;
@@ -975,6 +1159,7 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     ctx.fillStyle = plateBg;
     roundRect(ctx, bx, by, plateW, plateH, plateH / 2);
     ctx.fill();
+    reg("especialista", bx, by, plateW, plateH);
     // Foto em moldura circular 1:1 (recorte central, sem distorção)
     const cx = bx + pad + D / 2;
     const cy = by + pad + D / 2;
@@ -1015,7 +1200,15 @@ export function renderCreative(canvas: HTMLCanvasElement, spec: CreativeSpec): R
     textBgColor,
   ];
 
-  return { textColor: bodyColor, textBackgroundColor: textBgColor, usedColors, brightness, logo };
+  return {
+    textColor: bodyColor,
+    textBackgroundColor: textBgColor,
+    usedColors,
+    brightness,
+    logo,
+    overlaps: [],
+    boxes,
+  };
 }
 
 export function loadImageFromFile(file: File): Promise<HTMLImageElement> {

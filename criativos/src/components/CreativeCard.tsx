@@ -34,6 +34,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           headline: spec.headline,
           subhead: spec.subhead,
           logo: result.logo,
+          overlaps: result.overlaps,
         }),
       );
     };

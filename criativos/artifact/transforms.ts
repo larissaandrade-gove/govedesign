@@ -29,12 +29,6 @@ const clipboard: Patch = {
   replace: "if (!(await __copyText($1))) return;",
 };
 
-const PEXELS_NOTE = (cls: string) =>
-  `<p className="${cls} text-xs text-muted-foreground">Busca online (Pexels) indisponível nesta versão, que roda sem serviços externos. Envie imagens do dispositivo — elas ficam só neste navegador.</p>`;
-
-/** Campo de busca Pexels (ícone de lupa + Input) nas duas telas. */
-const PEXELS_FIELD = /<div className="relative">\s*<Search[\s\S]*?aria-label="Buscar imagens no Pexels"\s*\/>\s*<\/div>/;
-
 const FILES: FilePatch[] = [
   {
     file: "src/routes/index.tsx",
@@ -44,11 +38,6 @@ const FILES: FilePatch[] = [
         label: "botão Sair (sem login no artefato)",
         find: /<Button\s+variant="ghost"\s+size="icon"\s+className="size-11 shrink-0"\s+onClick=\{handleSignOut\}[\s\S]*?<\/Button>/,
         replace: "null",
-      },
-      {
-        label: "busca Pexels → aviso de upload",
-        find: PEXELS_FIELD,
-        replace: PEXELS_NOTE(""),
       },
       {
         label: "baixar todos → .zip",
@@ -71,11 +60,6 @@ const FILES: FilePatch[] = [
     file: "src/routes/studio.tsx",
     imports: BRIDGE,
     patches: [
-      {
-        label: "busca Pexels → aviso de upload",
-        find: PEXELS_FIELD,
-        replace: PEXELS_NOTE(""),
-      },
       asyncToBlob,
       anchorDownload(),
       clipboard,

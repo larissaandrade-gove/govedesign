@@ -44,7 +44,8 @@ import {
 import { LogoVariantPicker } from "@/components/LogoVariantPicker";
 import { ICONS } from "@/lib/creative/icons";
 import { getGateStatus, signOut } from "@/lib/gate.functions";
-import { searchPexels, type PexelsPhoto } from "@/lib/pexels.functions";
+import { type PexelsPhoto } from "@/lib/pexels.functions";
+import { PexelsCredit, PexelsPicker, orientationFor } from "@/components/PexelsPicker";
 import {
   BG_PRESETS,
   FORMATS,
@@ -166,15 +167,11 @@ function Index() {
   const [useUrgency, setUseUrgency] = useState(true);
   const [useImage, setUseImage] = useState(false);
   const [backgrounds, setBackgrounds] = useState<
-    { img: HTMLImageElement; name: string; tone: "light" | "dark" }[]
+    { img: HTMLImageElement; name: string; tone: "light" | "dark"; credit?: PexelsPhoto }[]
   >([]);
   const [library, setLibrary] = useState<LogoLibrary | null>(null);
   const [enabledPresets, setEnabledPresets] = useState<string[]>(BG_PRESETS.map((p) => p.key));
   // Busca de imagens Pexels (terceira origem de fundo, igual ao Studio).
-  const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [enabledLogos, setEnabledLogos] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
   const [enabledLayouts, setEnabledLayouts] = useState<CreativeLayout[]>(LAYOUTS.map((l) => l.key));
   const [enabledSchemes, setEnabledSchemes] = useState<CreativeScheme[]>(SCHEMES.map((s) => s.key));
@@ -524,51 +521,14 @@ function Index() {
     toast.success(`${canvases.length} criativos baixados.`);
   };
 
-  // Debounce de 500ms na busca Pexels.
-  useEffect(() => {
-    const term = query.trim();
-    if (term.length < 2) {
-      setPhotos(null);
-      setSearchError(null);
-      setSearching(false);
-      return;
-    }
-    let alive = true;
-    setSearching(true);
-    const t = setTimeout(() => {
-      searchPexels({ data: { query: term } })
-        .then((res) => {
-          if (!alive) return;
-          setPhotos(res.photos);
-          setSearchError(null);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setPhotos(null);
-          setSearchError(
-            "Busca de imagens indisponível no momento. Use um upload ou os fundos pré-definidos.",
-          );
-        })
-        .finally(() => {
-          if (alive) setSearching(false);
-        });
-    }, 500);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [query]);
-
-  /** Adiciona uma foto do Pexels ao conjunto de imagens de fundo do lote. */
-  const addPexelsPhoto = async (photo: PexelsPhoto) => {
-    try {
-      const img = await loadImageFromUrl(photo.large2x);
-      const tone: "light" | "dark" = imageBrightness(img, "all") >= 128 ? "light" : "dark";
-      setBackgrounds((prev) => [...prev, { img, name: photo.alt || `Pexels #${photo.id}`, tone }]);
-      toast.success("Imagem adicionada aos fundos.");
-    } catch {
-      toast.error("Não foi possível carregar essa imagem.");
-    }
+  /** Adiciona uma foto do Pexels (já segura para o canvas) aos fundos do lote. */
+  const addPexelsPhoto = (img: HTMLImageElement, photo: PexelsPhoto) => {
+    const tone: "light" | "dark" = imageBrightness(img, "all") >= 128 ? "light" : "dark";
+    setBackgrounds((prev) => [
+      ...prev,
+      { img, name: photo.alt || `Pexels #${photo.id}`, tone, credit: photo },
+    ]);
+    toast.success("Imagem adicionada aos fundos.");
   };
 
   const handleBackgrounds = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -850,62 +810,18 @@ function Index() {
                     </ul>
                   )}
 
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search
-                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <Input
-                        id="pexels-query"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Buscar no Pexels (ex: prefeitura, cidade)"
-                        className="h-11 pl-9"
-                        aria-label="Buscar imagens no Pexels"
-                      />
+                  {backgrounds.some((b) => b.credit) && (
+                    <div className="space-y-0.5">
+                      {backgrounds.map((b, i) =>
+                        b.credit ? <PexelsCredit key={`c-${i}`} photo={b.credit} /> : null,
+                      )}
                     </div>
-                    {searching && <p className="text-xs text-muted-foreground">Buscando…</p>}
-                    {searchError && <p className="text-xs text-amber-700">{searchError}</p>}
-                    {!searching && !searchError && photos?.length === 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Nenhuma imagem encontrada. Tente outro termo.
-                      </p>
-                    )}
-                    {photos && photos.length > 0 && (
-                      <>
-                        <div className="grid grid-cols-3 gap-2">
-                          {photos.map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              title={p.alt || `Foto de ${p.photographer}`}
-                              onClick={() => void addPexelsPhoto(p)}
-                              className="overflow-hidden rounded-lg border-2 border-border hover:border-primary"
-                            >
-                              <img
-                                src={p.medium}
-                                alt={p.alt || `Foto de ${p.photographer}`}
-                                className="h-14 w-full object-cover"
-                                loading="lazy"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Fotos via{" "}
-                          <a
-                            href="https://www.pexels.com"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline"
-                          >
-                            Pexels
-                          </a>
-                        </p>
-                      </>
-                    )}
-                  </div>
+                  )}
+                  <PexelsPicker
+                    orientation={orientationFor(size.w, size.h)}
+                    onPick={addPexelsPhoto}
+                    label="Buscar imagens no Pexels"
+                  />
                 </>
               ) : (
                 <div role="group" aria-label="Fundos padrão" className="grid grid-cols-3 gap-2">

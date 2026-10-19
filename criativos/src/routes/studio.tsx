@@ -40,7 +40,8 @@ import { buildAltText } from "@/lib/creative/alt";
 import { getGateStatus } from "@/lib/gate.functions";
 import { ExpertFields } from "@/components/ExpertFields";
 import { AppHeader, FormatChip, Section } from "@/components/AppChrome";
-import { searchPexels, type PexelsPhoto } from "@/lib/pexels.functions";
+import { type PexelsPhoto } from "@/lib/pexels.functions";
+import { PexelsCredit, PexelsPicker, orientationFor } from "@/components/PexelsPicker";
 import {
   BG_PRESETS,
   STUDIO_LAYOUTS,
@@ -52,6 +53,7 @@ import {
   FORMATS,
   SCHEMES,
   formatSize,
+  imageBrightness,
   loadImageFromFile,
   loadImageFromUrl,
   renderCreative,
@@ -88,7 +90,9 @@ export const Route = createFileRoute("/studio")({
   component: Studio,
 });
 
-type Bg = { kind: "preset"; key: string } | { kind: "upload"; img: HTMLImageElement; name: string };
+type Bg =
+  | { kind: "preset"; key: string }
+  | { kind: "upload"; img: HTMLImageElement; name: string; credit?: PexelsPhoto };
 
 /** Miniatura esquemática de cada diagramação (apenas ilustrativa). */
 function LayoutThumb({ layout }: { layout: CreativeLayout }) {
@@ -220,10 +224,6 @@ function Studio() {
   const [pending, setPending] = useState<{ img: HTMLImageElement; name: string } | null>(null);
 
   // Busca Pexels (terceira origem de fundo)
-  const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
 
   const [exportFormat, setExportFormat] = useState<CreativeFormat>("square-11");
   const [layout, setLayout] = useState<CreativeLayout>("mockup-center-top");
@@ -335,6 +335,7 @@ function Studio() {
           headline: spec.headline,
           subhead: spec.subhead,
           logo: result.logo,
+          overlaps: result.overlaps,
         }),
       );
     };
@@ -356,49 +357,9 @@ function Studio() {
     }
   }, []);
 
-  // Debounce de 500ms na busca Pexels.
-  useEffect(() => {
-    const term = query.trim();
-    if (term.length < 2) {
-      setPhotos(null);
-      setSearchError(null);
-      setSearching(false);
-      return;
-    }
-    let alive = true;
-    setSearching(true);
-    const t = setTimeout(() => {
-      searchPexels({ data: { query: term } })
-        .then((res) => {
-          if (!alive) return;
-          setPhotos(res.photos);
-          setSearchError(null);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setPhotos(null);
-          setSearchError(
-            "Busca de imagens indisponível no momento. Use um upload ou os fundos pré-definidos.",
-          );
-        })
-        .finally(() => {
-          if (alive) setSearching(false);
-        });
-    }, 500);
-    return () => {
-      alive = false;
-      clearTimeout(t);
-    };
-  }, [query]);
-
-  const usePexelsPhoto = async (photo: PexelsPhoto) => {
-    try {
-      const img = await loadImageFromUrl(photo.large2x);
-      setBg({ kind: "upload", img, name: photo.alt || `Pexels #${photo.id}` });
-      setTone("dark");
-    } catch {
-      toast.error("Não foi possível carregar essa imagem.");
-    }
+  const usePexelsPhoto = (img: HTMLImageElement, photo: PexelsPhoto) => {
+    setBg({ kind: "upload", img, name: photo.alt || `Pexels #${photo.id}`, credit: photo });
+    setTone(imageBrightness(img, "top") >= 128 ? "light" : "dark");
   };
 
   const download = () => {
@@ -715,61 +676,11 @@ function Studio() {
               />
             </label>
 
-            <div className="space-y-2">
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar no Pexels (ex: prefeitura, cidade)"
-                  className="h-11 pl-9"
-                  aria-label="Buscar imagens no Pexels"
-                />
-              </div>
-              {searching && <p className="text-xs text-muted-foreground">Buscando…</p>}
-              {searchError && <p className="text-xs text-amber-700">{searchError}</p>}
-              {!searching && !searchError && photos?.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Nenhuma imagem encontrada. Tente outro termo.
-                </p>
-              )}
-              {photos && photos.length > 0 && (
-                <>
-                  <div className="grid grid-cols-3 gap-2">
-                    {photos.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        title={p.alt || `Foto de ${p.photographer}`}
-                        onClick={() => void usePexelsPhoto(p)}
-                        className="overflow-hidden rounded-lg border-2 border-border hover:border-primary"
-                      >
-                        <img
-                          src={p.medium}
-                          alt={p.alt || `Foto de ${p.photographer}`}
-                          className="h-14 w-full object-cover"
-                          loading="lazy"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Fotos via{" "}
-                    <a
-                      href="https://www.pexels.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline"
-                    >
-                      Pexels
-                    </a>
-                  </p>
-                </>
-              )}
-            </div>
+            <PexelsPicker
+              orientation={orientationFor(size.w, size.h)}
+              onPick={usePexelsPhoto}
+              label="Buscar imagens no Pexels"
+            />
 
             {pending && (
               <div className="space-y-2 rounded-lg border border-border p-2">
@@ -807,7 +718,7 @@ function Studio() {
               <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
                 <img src={bg.img.src} alt="" className="size-10 shrink-0 rounded object-cover" />
                 <span className="line-clamp-1 min-w-0 flex-1 px-1 text-xs" title={bg.name}>
-                  {bg.name}
+                  {bg.credit ? `Foto de ${bg.credit.photographer}` : bg.name}
                 </span>
                 {(["dark", "light"] as const).map((t) => {
                   const label = t === "dark" ? "Fundo escuro" : "Fundo claro";
@@ -855,6 +766,7 @@ function Studio() {
                 </button>
               </div>
             )}
+            {bg.kind === "upload" && bg.credit && <PexelsCredit photo={bg.credit} />}
           </Section>
 
           <Section

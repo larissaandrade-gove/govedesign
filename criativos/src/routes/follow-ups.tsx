@@ -26,6 +26,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { AppHeader, FormatChip, Section } from "@/components/AppChrome";
 import { LogoVariantPicker } from "@/components/LogoVariantPicker";
+import { PexelsCredit, PexelsPicker } from "@/components/PexelsPicker";
+import type { PexelsPhoto } from "@/lib/pexels.functions";
 import { getGateStatus } from "@/lib/gate.functions";
 import {
   ALL_LOGO_VARIANTS,
@@ -111,6 +113,11 @@ function Followups() {
   const [model, setModel] = useState<FollowupModel>("product");
   const [format, setFormat] = useState<FollowupFormat>("4x3");
   const [bgPreset, setBgPreset] = useState("deep");
+  const [bgImage, setBgImage] = useState<{
+    img: HTMLImageElement;
+    credit: PexelsPhoto | null;
+  } | null>(null);
+  const [photoCredit, setPhotoCredit] = useState<PexelsPhoto | null>(null);
   const [product, setProduct] = useState<ProductUpdate>(DEFAULT_PRODUCT);
   const [event, setEvent] = useState<EventConfirmation>(DEFAULT_EVENT);
   const [library, setLibrary] = useState<LogoLibrary | null>(null);
@@ -132,8 +139,17 @@ function Followups() {
   }, []);
 
   const spec: FollowupSpec = useMemo(
-    () => ({ model, format, bgPreset, product, event, logos: library, logoVariants }),
-    [model, format, bgPreset, product, event, library, logoVariants],
+    () => ({
+      model,
+      format,
+      bgPreset,
+      product,
+      event,
+      logos: library,
+      logoVariants,
+      bgImage: bgImage?.img ?? null,
+    }),
+    [model, format, bgPreset, product, event, library, logoVariants, bgImage],
   );
 
   useEffect(() => {
@@ -398,12 +414,25 @@ function Followups() {
                       className="size-11 shrink-0"
                       aria-label="Remover foto"
                       title="Remover foto"
-                      onClick={() => setEvent((e) => ({ ...e, photo: null }))}
+                      onClick={() => {
+                        setEvent((e) => ({ ...e, photo: null }));
+                        setPhotoCredit(null);
+                      }}
                     >
                       <Trash2 aria-hidden="true" />
                     </Button>
                   )}
                 </div>
+                {photoCredit && event.photo && <PexelsCredit photo={photoCredit} />}
+                <PexelsPicker
+                  orientation="square"
+                  label="Buscar foto do colaborador no Pexels"
+                  placeholder="Ou busque uma foto no Pexels"
+                  onPick={(img, photo) => {
+                    setEvent((e) => ({ ...e, photo: img }));
+                    setPhotoCredit(photo);
+                  }}
+                />
                 <div className="space-y-1">
                   <Label htmlFor="fu-name">Nome do colaborador</Label>
                   <Input
@@ -495,6 +524,50 @@ function Followups() {
                 );
               })}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {bgImage
+                ? "Foto de fundo com sobreposição na cor acima (contraste ≥ 4,5:1 garantido)."
+                : "Opcional: foto de fundo, coberta pela cor acima para manter o contraste."}
+            </p>
+            <div className="flex items-center gap-2">
+              <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
+                <ImagePlus className="size-5" aria-hidden="true" />
+                {bgImage ? "Trocar foto de fundo" : "Foto de fundo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  aria-label="Foto de fundo"
+                  className="sr-only"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      setBgImage({ img: await loadImageFromFile(f), credit: null });
+                    } catch {
+                      toast.error("Não foi possível carregar a imagem.");
+                    }
+                  }}
+                />
+              </label>
+              {bgImage && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 shrink-0"
+                  aria-label="Remover foto de fundo"
+                  title="Remover foto de fundo"
+                  onClick={() => setBgImage(null)}
+                >
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+            {bgImage?.credit && <PexelsCredit photo={bgImage.credit} />}
+            <PexelsPicker
+              orientation={format === "4x3" ? "landscape" : "square"}
+              label="Buscar foto de fundo no Pexels"
+              onPick={(img, photo) => setBgImage({ img, credit: photo })}
+            />
           </Section>
 
           <Section
