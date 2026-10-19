@@ -21,6 +21,8 @@ export const colors = {
   blue: { name: 'Azul', usage: 'Elementos informativos e séries de gráficos secundárias.' },
   'on-primary': { name: 'Sobre o primary', usage: 'Texto e ícones sobre o Roxo Gove.' },
   'on-accent': { name: 'Sobre o accent', usage: 'Texto e ícones sobre o Amarelo Ouro.' },
+  success: { name: 'Sucesso', usage: 'Somente estado de interface (concluído, enviado). Nunca em peças de marca.' },
+  error: { name: 'Erro', usage: 'Somente estado de interface (campo inválido, falha). Nunca em peças de marca.' },
 };
 
 /**
@@ -44,6 +46,8 @@ export const themes = {
     blue: '#16499F',
     'on-primary': '#FFFFFF',
     'on-accent': '#20133D',
+    success: '#1E7A46',
+    error: '#B42318',
   },
   dark: {
     background: '#20133D',
@@ -61,6 +65,8 @@ export const themes = {
     blue: '#16499F',
     'on-primary': '#FFFFFF',
     'on-accent': '#20133D',
+    success: '#75E0A7',
+    error: '#FDA29B',
   },
 };
 

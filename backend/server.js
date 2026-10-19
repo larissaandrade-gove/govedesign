@@ -12,11 +12,12 @@ import { AuditInputError, runAudit, storedEntries } from './services/auditServic
 import { createPrintStudioRouter } from '../print-studio/server/router.js';
 import { createAuth } from './auth/index.js';
 import { createPexelsRouter } from './pexels.js';
+import { createTicketsRouter } from './tickets.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
 
-export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
+export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, ticketsOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
   const storageDir = resolve(storageDirIn);
   const app = express();
 
@@ -29,6 +30,8 @@ export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions
 
   // Banco de imagens Pexels (chave só no servidor)
   app.use('/api/pexels', createPexelsRouter(pexelsOptions));
+  // Solicitações para a área de design (RAR, e-mail e agenda)
+  app.use('/api/tickets', createTicketsRouter({ db, sessionEmail: auth.sessionEmail, ...ticketsOptions }));
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
 
   app.use(express.json({ limit: '20mb' }));

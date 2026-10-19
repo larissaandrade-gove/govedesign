@@ -8,6 +8,7 @@ import { Diretrizes } from './components/Diretrizes';
 import { Logomarca } from './components/Logomarca';
 import { Hero } from './components/Hero';
 import { Sidebar } from './components/Sidebar';
+import { Solicitacoes } from './components/Solicitacoes';
 import { Typography } from './components/Typography';
 import { UIKit } from './components/UIKit';
 import { useView } from './lib/router';
@@ -40,6 +41,7 @@ export default function App() {
           <>
             <Hero />
             <Apps />
+            <Solicitacoes />
             <ColorPalette />
             <Logomarca />
             <Typography />

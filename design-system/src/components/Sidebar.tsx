@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Type } from 'lucide-react';
+import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Ticket, Type } from 'lucide-react';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
@@ -11,6 +11,7 @@ import { LogoutButton } from './LogoutButton';
 export const SECTIONS = [
   { id: 'inicio', label: 'Início', icon: Home },
   { id: 'aplicacoes', label: 'Aplicações', icon: AppWindow },
+  { id: 'solicitacoes', label: 'Solicitações', icon: Ticket },
   { id: 'cores', label: 'Cores', icon: Palette },
   { id: 'logomarca', label: 'Logomarca', icon: BadgeCheck },
   { id: 'tipografia', label: 'Tipografia', icon: Type },
@@ -23,8 +24,8 @@ const TABS = [
   { id: 'inicio', label: 'Início', icon: Home },
   { id: 'aplicacoes', label: 'Apps', icon: AppWindow },
   { id: 'cores', label: 'Tokens', icon: Palette, also: ['logomarca', 'tipografia'] },
-  { id: 'componentes', label: 'Componentes', icon: Blocks },
-  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
+  { id: 'componentes', label: 'Guias', icon: BookOpenCheck, also: ['diretrizes'] },
+  { id: 'solicitacoes', label: 'Pedidos', icon: Ticket },
 ];
 
 const RAIL_KEY = 'gove-rail';
