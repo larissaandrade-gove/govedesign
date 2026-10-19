@@ -9,13 +9,25 @@ lendo as colunas pelo nome do cabeçalho e sem duplicar o mesmo código `DS-…`
 | Trimestre | `4T26` (data do pedido) |
 | Data | `19/10/2026` |
 | Frente | Redesign · Edição de vídeo · Documentação impressa · Brindes e outros materiais |
-| Atividades previstas | `[DS-XXXXXX] Título` |
-| Prioridade | caixa marcada quando a prioridade é alta |
+| Atividades previstas | `[DS-XXXXXX] Título — Tipo de peça (Formato)` |
+| Prioridade | caixa marcada quando é alta urgência |
 | Status | `Não iniciado` |
-| Resultado / Comentários | prazo, descrição, detalhes da frente e links |
-| Comentários gerais | quem pediu (nome e e-mail) |
+| Resultado / Comentários | entrega, prioridade, blocos de produção, descrição, detalhes e links |
+| Comentários gerais | quem pediu (nome e e-mail do login) |
 
-Cada frente exige no mínimo **10 h úteis** entre o pedido e a entrega. O expediente é de segunda a sexta, das 9h às 12h e das 13h às 18h, sem contar os feriados nacionais. A entrega é às 18h do dia escolhido.
+**Prazos e produção** (horas úteis: segunda a sexta, 9h–12h e 13h–18h, sem
+feriados nacionais; entrega às 18h do dia escolhido). Os números ficam em
+`shared/tickets.js` (`LEAD_HOURS`, `EFFORT_HOURS` e `factor` de cada frente).
+
+| Frente | Alta urgência | Normal | Produção reservada |
+| --- | --- | --- | --- |
+| Redesign, Documentação impressa, Brindes | 24 h | 48 h | 8 h |
+| Edição de vídeo (dobro) | 48 h | 96 h | 16 h |
+
+A produção é distribuída **por igual** entre os dias úteis até a entrega, apenas
+nos horários livres da agenda do design. Reuniões, ausências e produções já
+marcadas ficam de fora. Se não houver espaço até a data pedida, o pedido é recusado
+e o formulário mostra a primeira data com espaço.
 
 ## Instalação (uma vez, com a conta que recebe os pedidos)
 
@@ -42,11 +54,16 @@ Cada frente exige no mínimo **10 h úteis** entre o pedido e a entrega. O exped
 
 ## Como cada caminho funciona
 
-- **Servidor do projeto** (`/design-system/#solicitacoes`): o servidor chama o
-  App da Web. O script lança a linha, envia o e-mail para `TICKETS_INBOX`, com cópia para quem pediu,
-  e cria o evento no dia do prazo, das 17h às 18h, com convite e lembretes. Sem o App da
+- **Servidor do projeto** (`/design-system/#solicitacoes`): quem pede vem do
+  login. O servidor consulta os horários ocupados da agenda (`action: "ocupado"`)
+  e distribui a produção. Depois chama o App da Web, que lança a linha, envia o
+  e-mail para `TICKETS_INBOX` com cópia para quem pediu, cria o evento de
+  entrega (17h–18h, com convite e lembretes) e os blocos "Produção n/N". Sem o App da
   Web, mas com SMTP configurado, o servidor envia o e-mail com o convite `.ics`,
   e o gatilho do passo 3 lança a linha.
-- **Artefato no claude.ai**: quem pede envia o e-mail e cria o evento pelo próprio
-  Gmail e Google Agenda, conectados ao claude.ai. O gatilho do passo 3 lança a linha
-  no RAR. Se a agenda de quem pede não estiver conectada, o script também cria o evento.
+- **Artefato no claude.ai**: quem pede vem da conta do claude.ai. A página consulta
+  os horários livres da agenda do design pelo Google Agenda de quem pede
+  (`suggest_time`) e distribui a produção. Depois envia o e-mail e cria o evento
+  de entrega pelo Gmail e pelo Google Agenda dessa pessoa. O gatilho do passo 3
+  lança a linha no RAR e cria os blocos de produção na agenda do design. Se a
+  agenda de quem pede não estiver conectada, o script também cria o evento de entrega.

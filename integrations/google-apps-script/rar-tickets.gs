@@ -2,12 +2,15 @@
  * Gove Design System → planilha "Larissa Andrade RAR", aba "Novo RAR".
  *
  * Dois caminhos, ambos lançam uma linha nova por solicitação (sem duplicar):
- * 1. doPost — chamado pelo servidor do projeto (TICKETS_WEBHOOK_URL). Lança a
- *    linha, envia o e-mail para a área de design e cria o evento na agenda.
+ * 1. doPost — chamado pelo servidor do projeto (TICKETS_WEBHOOK_URL).
+ *    - action "ocupado": devolve os horários ocupados da agenda (reuniões,
+ *      produções já marcadas, ausências) para o servidor distribuir a produção;
+ *    - pedido: lança a linha, envia o e-mail (com quem pediu em cópia), cria o
+ *      evento de entrega (com quem pediu convidado) e os blocos de produção.
  * 2. lerCaixaDeEntrada — gatilho de tempo (a cada 5 min). Lê os e-mails
  *    "[Design] …" com o marcador gove-ticket (enviados pelo artefato no
- *    claude.ai ou pelo servidor via SMTP) e lança a linha; cria o evento só se
- *    quem enviou ainda não criou.
+ *    claude.ai ou pelo servidor via SMTP), lança a linha e cria os blocos de
+ *    produção; cria o evento de entrega só se quem enviou ainda não criou.
  *
  * Instalação: ver README.md desta pasta.
  */
@@ -63,6 +66,39 @@ function lancarNoRar_(ticket, row) {
   }
 }
 
+/** Horários ocupados da agenda (eventos com hora, não recusados; ausências de dia inteiro). */
+function ocupado_(inicio, fim) {
+  return CalendarApp.getDefaultCalendar()
+    .getEvents(inicio, fim)
+    .filter(function (ev) {
+      if (ev.getMyStatus && ev.getMyStatus() === CalendarApp.GuestStatus.NO) return false;
+      if (ev.isAllDayEvent()) return ev.getEventType && ev.getEventType() === CalendarApp.EventType.OUT_OF_OFFICE;
+      return ev.getTransparency ? ev.getTransparency() !== CalendarApp.EventTransparency.TRANSPARENT : true;
+    })
+    .map(function (ev) {
+      return { start: ev.getStartTime().toISOString(), end: ev.getEndTime().toISOString(), title: ev.getTitle() };
+    });
+}
+
+/** Blocos de produção na agenda do design (não duplica se já existirem). */
+function criarProducao_(ticket, work) {
+  if (!work || !work.length) return 0;
+  var cal = CalendarApp.getDefaultCalendar();
+  var ini = new Date(work[0].startTime + '-03:00');
+  var fim = new Date(work[work.length - 1].endTime + '-03:00');
+  var jaTem = cal.getEvents(ini, fim, { search: ticket.id }).some(function (ev) {
+    return ev.getTitle().indexOf('Produção') === 0;
+  });
+  if (jaTem) return 0;
+  work.forEach(function (w) {
+    var ev = cal.createEvent(w.summary, new Date(w.startTime + '-03:00'), new Date(w.endTime + '-03:00'), { description: w.description });
+    ev.setColor(CalendarApp.EventColor.MAUVE);
+    ev.removeAllReminders();
+    ev.addPopupReminder(10);
+  });
+  return work.length;
+}
+
 function criarEvento_(ticket, ev) {
   var inicio = new Date(ev.startTime + '-03:00');
   var fim = new Date(ev.endTime + '-03:00');
@@ -88,6 +124,7 @@ function doPost(e) {
   }
   var token = prop_('TICKETS_TOKEN');
   if (!token || corpo.token !== token) return json_({ error: 'Token inválido.' });
+  if (corpo.action === 'ocupado') return json_({ busy: ocupado_(new Date(corpo.start), new Date(corpo.end)) });
 
   var t = corpo.ticket;
   var r = { rar: false, email: false, calendar: false };
@@ -114,6 +151,7 @@ function doPost(e) {
   }
   try {
     r.eventId = criarEvento_(t, corpo.event);
+    r.producao = criarProducao_(t, corpo.work);
     r.calendar = true;
   } catch (err) {
     erros.push('Agenda: ' + err.message);
@@ -149,10 +187,11 @@ function lerCaixaDeEntrada() {
           .createTextFinder('[' + dado.ticket.id + ']')
           .findNext();
         lancarNoRar_(dado.ticket, dado.row);
+        criarProducao_(dado.ticket, dado.work);
         if (novo && dado.calendar === false) {
           var ev = {
             summary: 'Entrega design: ' + dado.ticket.title + ' (' + dado.ticket.id + ')',
-            description: dado.row['Resultado / Comentários'],
+            description: 'Solicitante: ' + dado.ticket.requesterName + ' (' + dado.ticket.requesterEmail + ')\n' + dado.row['Resultado / Comentários'],
             startTime: dado.ticket.dueDate + 'T17:00:00',
             endTime: dado.ticket.dueDate + 'T18:00:00',
           };

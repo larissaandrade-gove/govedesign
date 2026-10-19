@@ -31,7 +31,7 @@ export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions
   // Banco de imagens Pexels (chave só no servidor)
   app.use('/api/pexels', createPexelsRouter(pexelsOptions));
   // Solicitações para a área de design (RAR, e-mail e agenda)
-  app.use('/api/tickets', createTicketsRouter({ db, sessionEmail: auth.sessionEmail, ...ticketsOptions }));
+  app.use('/api/tickets', createTicketsRouter({ db, sessionEmail: auth.currentEmail, ...ticketsOptions }));
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
 
   app.use(express.json({ limit: '20mb' }));

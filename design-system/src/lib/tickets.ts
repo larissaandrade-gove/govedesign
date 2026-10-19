@@ -1,17 +1,38 @@
-import { DESIGN_INBOX, ticketEmail, ticketEvent, ticketIcs, type Ticket } from '../../../shared/tickets.js';
+import {
+  DESIGN_INBOX,
+  brDateFromIso,
+  dueInstant,
+  earliestDueDate,
+  earliestFeasibleDate,
+  effortHours,
+  leadHours,
+  localIso,
+  nameFromEmail,
+  planWork,
+  ticketEmail,
+  ticketEvent,
+  ticketIcs,
+  type Interval,
+  type Ticket,
+} from '../../../shared/tickets.js';
 
 /**
  * Onde a solicitação é registrada:
- * - 'server': servidor do projeto (/api/tickets) — RAR, e-mail e agenda pelo Apps Script.
- * - 'artifact': artefato no claude.ai — pedido no banco compartilhado; e-mail e
- *   agenda pelo Gmail e Google Agenda de quem pede; o Apps Script lança o RAR a partir do e-mail.
- * - 'local': prévia sem servidor nem artefato — só neste navegador, com e-mail e .ics manuais.
+ * - 'server': servidor do projeto (/api/tickets) — login, agenda do design, RAR,
+ *   e-mail e agenda pelo Apps Script.
+ * - 'artifact': artefato no claude.ai — quem pede vem da conta do claude.ai; a
+ *   agenda do design é consultada (horários livres), e-mail e evento de entrega
+ *   saem pelo Gmail e Google Agenda de quem pede; o Apps Script lança o RAR e a
+ *   produção a partir do e-mail.
+ * - 'local': prévia sem servidor nem artefato — só neste navegador.
  */
 export type Mode = 'server' | 'artifact' | 'local';
 export type Step = 'ok' | 'pendente' | 'falhou' | 'não configurado';
 export type TicketStatus = { rar: Step; email: Step; calendar: Step };
-export type StoredTicket = Ticket & { status: TicketStatus; error?: string };
+export type StoredTicket = Ticket & { status: TicketStatus; work?: Interval[]; error?: string; requesterId?: string };
 export type SubmitResult = { ticket: StoredTicket; notes: string[] };
+export type Me = { name: string; email: string } | null;
+export type Availability = { earliest: string | null; earliestLead: string; calendar: 'consultada' | 'não consultada'; leadHours: number; effortHours: number };
 
 type ClaudeLike = { use: (n: string) => Promise<any> };
 const claude = (): ClaudeLike | null => (window as unknown as { claude?: ClaudeLike }).claude ?? null;
@@ -34,6 +55,83 @@ export async function detectMode(): Promise<Mode> {
     /* sem servidor */
   }
   return 'local';
+}
+
+/** Quem está logado: login do Design System (servidor) ou conta do claude.ai (artefato). */
+export async function currentUser(mode: Mode): Promise<Me> {
+  if (mode === 'server') {
+    try {
+      const r = await fetch('/api/tickets/me', { credentials: 'same-origin' });
+      return r.ok ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  }
+  if (mode === 'artifact') {
+    const user = await use('user');
+    if (!user) return null;
+    try {
+      // Sem o escopo de e-mail no claude.ai, vem só o nome; o e-mail é pedido uma vez e lembrado
+      const me = await user.me();
+      const email = me?.email ? String(me.email).toLowerCase() : '';
+      const name = me?.name || (email ? nameFromEmail(email) : '');
+      return name || email ? { name, email } : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/* ------------------------------------------------- agenda do design */
+
+const DAY = 864e5;
+let freeCache: { at: number; free: Interval[] | null } | null = null;
+
+/** Horários livres da agenda do design pelo Google Agenda de quem pede (artefato). */
+async function artifactFree(): Promise<Interval[] | null> {
+  if (freeCache && Date.now() - freeCache.at < 5 * 60e3) return freeCache.free;
+  const mcp = await use('mcp');
+  let free: Interval[] | null = null;
+  if (mcp) {
+    const start = Date.now();
+    const end = start + 45 * DAY;
+    try {
+      const r = await mcp.callTool('Google Calendar', 'suggest_time', {
+        attendeeEmails: [DESIGN_INBOX],
+        startTime: localIso(start),
+        endTime: localIso(end),
+        durationMinutes: 30,
+        preferences: { startHour: '09:00', endHour: '18:00', excludeWeekends: true, pageSize: 100 },
+      });
+      const slots: any[] = (r?.payload as any)?.timeSlots ?? [];
+      free = slots
+        .map((s) => ({ start: Date.parse(s.startTime ?? s.start?.dateTime), end: Date.parse(s.endTime ?? s.end?.dateTime) }))
+        .filter((s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start);
+      if (!slots.length) free = null; // sem resposta útil: não trata a agenda como cheia
+    } catch {
+      free = null;
+    }
+  }
+  freeCache = { at: Date.now(), free };
+  return free;
+}
+
+/** Primeira entrega possível para a frente e a prioridade, com a agenda do design quando dá para consultar. */
+export async function availability(mode: Mode, typeId: string, priority: string): Promise<Availability> {
+  if (mode === 'server') {
+    const r = await fetch(`/api/tickets/availability?type=${encodeURIComponent(typeId)}&priority=${encodeURIComponent(priority)}`, { credentials: 'same-origin' });
+    if (r.ok) return r.json();
+  }
+  const now = Date.now();
+  const free = mode === 'artifact' ? await artifactFree() : null;
+  return {
+    leadHours: leadHours(typeId, priority),
+    effortHours: effortHours(typeId),
+    earliestLead: earliestDueDate(now, leadHours(typeId, priority)),
+    earliest: earliestFeasibleDate({ nowMs: now, typeId, priority, free }),
+    calendar: free ? 'consultada' : 'não consultada',
+  };
 }
 
 /* ---------------------------------------------------------- lista */
@@ -68,7 +166,7 @@ export function watchTickets(mode: Mode, on: (list: StoredTicket[]) => void): ()
     const t = setInterval(load, 60_000);
     stop = () => clearInterval(t);
   } else if (mode === 'artifact') {
-    use('db').then((db) => {
+    Promise.all([use('db'), use('user')]).then(([db, user]) => {
       if (!alive) return;
       if (!db) return on(readLocal());
       stop = db
@@ -76,7 +174,13 @@ export function watchTickets(mode: Mode, on: (list: StoredTicket[]) => void): ()
         .orderBy('createdAt', 'desc')
         .limit(30)
         .onSnapshot(
-          (snap: any) => on(snap.docs.map((d: any) => ({ ...d.data(), id: d.id }))),
+          async (snap: any) => {
+            const docs: StoredTicket[] = snap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+            // Nomes vêm do perfil de quem pediu (o banco guarda só o id)
+            const ids = [...new Set(docs.map((d) => d.requesterId).filter(Boolean))] as string[];
+            const ps = user && ids.length ? await user.profiles(ids).catch(() => ({})) : {};
+            if (alive) on(docs.map((d) => ({ ...d, requesterName: (d.requesterId && ps[d.requesterId]?.name) || d.requesterName || '' })));
+          },
           () => on(readLocal()),
         );
     });
@@ -111,6 +215,8 @@ function connectorNote(server: string, e: any): string {
   }
 }
 
+const fieldError = (fields: Record<string, string>) => Object.assign(new Error('Revise os campos destacados.'), { fields });
+
 export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitResult> {
   if (mode === 'server') {
     const r = await fetch('/api/tickets', {
@@ -123,6 +229,16 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
     if (!r.ok) throw Object.assign(new Error(j.error ?? 'Não foi possível enviar.'), { fields: j.errors });
     return { ticket: { ...j.ticket, status: j.status, error: j.error }, notes: j.error ? [j.error] : [] };
   }
+
+  // Produção distribuída nos horários livres da agenda do design
+  const now = Date.now();
+  const free = mode === 'artifact' ? await artifactFree() : null;
+  const plan = planWork({ nowMs: now, dueMs: dueInstant(ticket.dueDate), hours: ticket.effortHours, free });
+  if (plan.missingHours > 0) {
+    const first = earliestFeasibleDate({ nowMs: now, typeId: ticket.type, priority: ticket.priority, free });
+    throw fieldError({ dueDate: `A agenda do design não tem ${ticket.effortHours} h livres até ${brDateFromIso(ticket.dueDate)}.${first ? ` Primeira data com espaço: ${brDateFromIso(first)}.` : ''}` });
+  }
+  const blocks = plan.blocks;
 
   const notes: string[] = [];
   const status: TicketStatus = { rar: 'pendente', email: 'pendente', calendar: 'pendente' };
@@ -145,7 +261,7 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
       status.calendar = 'falhou';
       notes.push(connectorNote('Google Agenda', e));
     }
-    const mail = ticketEmail(ticket, { calendar: status.calendar === 'ok' });
+    const mail = ticketEmail(ticket, { calendar: status.calendar === 'ok', blocks });
     try {
       await mcp.callTool('Gmail', 'send_message', { to: [DESIGN_INBOX], subject: mail.subject, body: mail.text, htmlBody: mail.html });
       status.email = 'ok';
@@ -156,12 +272,16 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
   } else {
     status.email = status.calendar = 'não configurado';
   }
+  if (mode === 'artifact' && !free) notes.push('A agenda do design não pôde ser consultada; a produção foi distribuída no horário de trabalho.');
 
-  const stored: StoredTicket = { ...ticket, status };
-  const db = mode === 'artifact' ? await use('db') : null;
+  const stored: StoredTicket = { ...ticket, status, work: blocks };
+  const [db, user] = mode === 'artifact' ? await Promise.all([use('db'), use('user')]) : [null, null];
   if (db) {
     try {
-      await db.collection('tickets').doc(ticket.id).set(JSON.parse(JSON.stringify(stored)));
+      // No banco compartilhado vai o id de quem pediu, não o nome nem o e-mail
+      const requesterId = user ? await user.id() : undefined;
+      const { requesterName: _n, requesterEmail: _e, ...rest } = stored;
+      await db.collection('tickets').doc(ticket.id).set(JSON.parse(JSON.stringify({ ...rest, requesterId })));
     } catch {
       notes.push('O pedido não foi salvo na lista compartilhada.');
     }
@@ -171,8 +291,8 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
 }
 
 /** Link de e-mail pronto (quando o Gmail não está conectado). */
-export function mailtoFor(ticket: Ticket) {
-  const m = ticketEmail(ticket, { calendar: false });
+export function mailtoFor(ticket: StoredTicket) {
+  const m = ticketEmail(ticket, { calendar: false, blocks: ticket.work ?? [] });
   return `mailto:${DESIGN_INBOX}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.text)}`;
 }
 

@@ -234,5 +234,7 @@ export function createAuth({ db, secret = process.env.AUTH_SECRET, domain = proc
     return fail(res, 401, 'Faça login para continuar.');
   }
 
-  return { router, guard, domain, sessionEmail };
+  /** E-mail de quem está logado (no modo sem login, o usuário de desenvolvimento). */
+  const currentEmail = (req) => (disabled ? 'dev@' + domain : sessionEmail(req));
+  return { router, guard, domain, sessionEmail, currentEmail };
 }
