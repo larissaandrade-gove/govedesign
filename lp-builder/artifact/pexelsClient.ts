@@ -4,19 +4,32 @@
  * MESMO servidor (backend/pexels.js), que guarda a chave. Sem servidor (ex.:
  * artefato no claude.ai, sem rede externa) /status falha e a busca some.
  */
-import type { PexelsPage, PexelsQuery } from "@/lib/gove/pexels.types";
+import type { PexelsPage, PexelsPhoto, PexelsQuery } from "@/lib/gove/pexels.types";
+import { connectorAvailable, connectorImage, connectorSearch } from "../../artifact-runtime/pexels";
 
-let status: Promise<boolean> | null = null;
-
-export function pexelsAvailable(): Promise<boolean> {
-  status ??= fetch("/api/pexels/status", { headers: { accept: "application/json" } })
+/** "server": rota /api/pexels do servidor do projeto; "connector": conector Pexels Gove do claude.ai. */
+let mode: Promise<"server" | "connector" | null> | null = null;
+function detect() {
+  mode ??= fetch("/api/pexels/status", { headers: { accept: "application/json" } })
     .then((r) => (r.ok ? r.json() : { available: false }))
-    .then((j: { available?: unknown }) => j.available === true)
-    .catch(() => false);
-  return status;
+    .then((j: { available?: unknown }) => (j.available === true ? ("server" as const) : null))
+    .catch(() => null)
+    .then(async (m) => m ?? ((await connectorAvailable()) ? ("connector" as const) : null));
+  return mode;
+}
+
+export async function pexelsAvailable(): Promise<boolean> {
+  return (await detect()) !== null;
+}
+
+/** No claude.ai a foto escolhida vira data URI (a página não carrega imagens de outros sites). */
+export async function resolvePexelsPhoto(photo: PexelsPhoto): Promise<PexelsPhoto> {
+  if ((await detect()) !== "connector") return photo;
+  return { ...photo, src: { ...photo.src, large: await connectorImage(photo.src.large, 1600) } };
 }
 
 export async function pexelsSearch(query: PexelsQuery): Promise<PexelsPage> {
+  if ((await detect()) === "connector") return connectorSearch(query.q, query.page, query.perPage, query.orientation);
   const params = new URLSearchParams({
     q: query.q,
     page: String(query.page),

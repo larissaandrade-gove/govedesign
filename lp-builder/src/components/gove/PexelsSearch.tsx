@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { pexelsAvailable, pexelsSearch } from "@/lib/gove/pexelsClient";
+import { pexelsAvailable, pexelsSearch, resolvePexelsPhoto } from "@/lib/gove/pexelsClient";
 import type { PexelsOrientation, PexelsPage, PexelsPhoto } from "@/lib/gove/pexels.types";
 import type { ImageCredit } from "@/lib/gove/types";
 
@@ -156,7 +156,13 @@ export function PexelsSearch({
                 <li key={photo.id}>
                   <button
                     type="button"
-                    onClick={() => onPick(photo)}
+                    onClick={async () => {
+                      try {
+                        onPick(await resolvePexelsPhoto(photo));
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Não foi possível carregar a foto.");
+                      }
+                    }}
                     aria-label={`Usar foto de ${photo.photographer}${photo.alt ? `: ${photo.alt}` : ""}`}
                     title={`Foto de ${photo.photographer}`}
                     className="block aspect-square w-full overflow-hidden rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-ring"
