@@ -1,3 +1,4 @@
+import { findClaude } from './claude';
 import {
   DESIGN_INBOX,
   brDateFromIso,
@@ -34,8 +35,7 @@ export type SubmitResult = { ticket: StoredTicket; notes: string[] };
 export type Me = { name: string; email: string } | null;
 export type Availability = { earliest: string | null; earliestLead: string; calendar: 'consultada' | 'não consultada'; leadHours: number; effortHours: number };
 
-type ClaudeLike = { use: (n: string) => Promise<any> };
-const claude = (): ClaudeLike | null => (window as unknown as { claude?: ClaudeLike }).claude ?? null;
+const claude = findClaude;
 const use = async (name: string) => {
   const c = claude();
   if (!c) return null;

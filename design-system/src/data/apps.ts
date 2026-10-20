@@ -32,11 +32,16 @@ export type GoveApp = {
   /** Como o app funciona dentro do design system (artefato). */
   embeddedNote: string;
   shots: Shot[];
+  /** Fora da versão mobile (só no computador). */
+  desktopOnly?: boolean;
   /** Categoria para os filtros da lista de aplicações. */
   tag: AppTag;
   /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash. */
   embed?: { file: string; hash?: string };
 };
+
+/** Apps disponíveis no tamanho de tela atual (o Print Studio fica só no computador). */
+export const appsFor = (mobile: boolean) => (mobile ? APPS.filter((a) => !a.desktopOnly) : APPS);
 
 /** Aplicações do repositório govedesign que aplicam este design system. */
 export const APPS: GoveApp[] = [
@@ -132,6 +137,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'print-studio',
+    desktopOnly: true,
     tag: 'Impresso',
     name: 'Print Studio',
     route: '/print-studio/',

@@ -1,8 +1,8 @@
+import { findClaude } from '../lib/claude';
 import { useEffect, useState, type ReactNode } from 'react';
 import { LogIn, ShieldAlert } from 'lucide-react';
 import { GoveLogo } from './GoveLogo';
 
-type ClaudeLike = { use: (n: string) => Promise<any> };
 type State = 'checking' | 'ok' | 'signed-out' | 'guest';
 
 /**
@@ -12,7 +12,7 @@ type State = 'checking' | 'ok' | 'signed-out' | 'guest';
  * (VPN Gove + e-mail @gove.digital), e a página abre direto.
  */
 export function AccessGate({ children }: { children: ReactNode }) {
-  const claude = (window as unknown as { claude?: ClaudeLike }).claude;
+  const claude = findClaude();
   const [state, setState] = useState<State>(claude ? 'checking' : 'ok');
 
   useEffect(() => {

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { appHref } from '../lib/router';
-import { APPS, APP_TAGS, type AppTag } from '../data/apps';
+import { APP_TAGS, appsFor, type AppTag } from '../data/apps';
+import { useMobile } from '../lib/useMobile';
 import { SectionHeader } from './SectionHeader';
 
 /** Aplicações: carrossel no computador; lista no celular. */
@@ -9,7 +10,8 @@ export function Apps() {
   const track = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
   const [tag, setTag] = useState<AppTag | null>(null);
-  const shown = tag ? APPS.filter((a) => a.tag === tag) : APPS;
+  const available = appsFor(useMobile());
+  const shown = tag ? available.filter((a) => a.tag === tag) : available;
 
   useEffect(() => {
     const el = track.current;
@@ -48,7 +50,7 @@ export function Apps() {
 
       {/* Celular: filtros por categoria */}
       <div role="group" aria-label="Filtrar aplicações" className="-mt-space-2 mb-space-2 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] lg:hidden">
-        {[null, ...APP_TAGS].map((t) => (
+        {[null, ...APP_TAGS.filter((t) => available.some((a) => a.tag === t))].map((t) => (
           <button
             key={t ?? 'todos'}
             type="button"

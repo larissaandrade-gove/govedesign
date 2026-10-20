@@ -1,5 +1,5 @@
 import { BookOpenCheck, Palette, Search } from 'lucide-react';
-import { APPS } from '../data/apps';
+import { appsFor } from '../data/apps';
 import { appHref } from '../lib/router';
 import { openSearch } from '../lib/useMobile';
 import { GoveLogo } from './GoveLogo';
@@ -29,7 +29,7 @@ export function MobileHome() {
       <nav aria-label="Aplicações" className="flex flex-col gap-space-1">
         <h2 className="gutter text-body-large font-semibold">Aplicações</h2>
         <ul className="flex gap-space-2 overflow-x-auto px-space-2 pb-space-1 [scrollbar-width:none]">
-          {APPS.map(({ id, name, icon: Icon }) => (
+          {appsFor(true).map(({ id, name, icon: Icon }) => (
             <li key={id} className="shrink-0">
               <a href={appHref(id)} className="flex w-[76px] flex-col items-center gap-1 text-center text-caption font-medium text-text-primary no-underline">
                 <span className="flex size-[60px] items-center justify-center rounded-[20px] bg-secondary text-highlight shadow-sm">

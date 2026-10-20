@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Search, X } from 'lucide-react';
-import { APPS } from '../data/apps';
+import { appsFor } from '../data/apps';
 import { appHref } from '../lib/router';
 import { openNewRequest } from '../lib/useMobile';
 import { SECTIONS } from './Sidebar';
@@ -25,7 +25,7 @@ export function MobileSearch() {
 
   const items = useMemo(() => {
     const all = [
-      ...APPS.map((a) => ({ key: a.id, label: a.name, hint: a.tagline, href: appHref(a.id), icon: a.icon })),
+      ...appsFor(true).map((a) => ({ key: a.id, label: a.name, hint: a.tagline, href: appHref(a.id), icon: a.icon })),
       ...SECTIONS.filter((s) => s.id !== 'inicio').map((s) => ({ key: s.id, label: s.label, hint: '', href: `#${s.id}`, icon: s.icon })),
     ];
     const t = norm(q.trim());

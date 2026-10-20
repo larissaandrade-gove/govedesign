@@ -12,6 +12,7 @@ import { Solicitacoes } from './components/Solicitacoes';
 import { Typography } from './components/Typography';
 import { UIKit } from './components/UIKit';
 import { useView } from './lib/router';
+import { appsFor } from './data/apps';
 import { groupOf, useMobile } from './lib/useMobile';
 import { MobileHome } from './components/MobileHome';
 import { MobileSearch } from './components/MobileSearch';
@@ -92,7 +93,11 @@ function Shell() {
       </a>
       <Sidebar view={view} />
       <main className="transition-[padding] duration-300 ease-entry lg:pl-[var(--rail,248px)]">
-        {view.kind === 'app' ? (
+        {view.kind === 'app' && mobile && appsFor(true).every((a) => a.id !== view.appId) ? (
+          <div className="pb-[104px] pt-[56px] [&>section]:pt-space-3">
+            <Apps />
+          </div>
+        ) : view.kind === 'app' ? (
           <AppPage key={view.appId} appId={view.appId} />
         ) : mobile ? (
           <div className="pb-[104px] pt-[56px] [&>section]:pt-space-3">

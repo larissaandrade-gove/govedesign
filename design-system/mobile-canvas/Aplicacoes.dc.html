@@ -94,15 +94,14 @@ class Component extends DCLogic {
       { name: 'Gerador de follow-ups', line: 'Produto e eventos, 4:3 e 1:1', tag: 'midia', d: 'M4 5h16v16H4zM4 9h16M8 3v4M16 3v4M9 15l2 2 4-4' },
       { name: 'Gove Links', line: 'Links curtos com cliques e QR', tag: 'web', d: 'M9 15l6-6M11 6l1-1a5 5 0 0 1 7 7l-1 1M13 18l-1 1a5 5 0 0 1-7-7l1-1' },
       { name: 'LP Builder', line: 'Landing pages em minutos', tag: 'web', d: 'M3 4h18v6H3zM3 14h8v6H3zM15 14h6M15 18h6' },
-      { name: 'Print Studio', line: 'PDFs de gráfica por município', tag: 'impresso', d: 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z' },
     ];
-    const FILTERS = [['todas', 'Todas'], ['midia', 'Mídia'], ['web', 'Web'], ['impresso', 'Impressos'], ['marca', 'Marca']];
+    const FILTERS = [['todas', 'Todas'], ['midia', 'Mídia'], ['web', 'Web'], ['marca', 'Marca']];
     const f = this.state.filter;
     const filters = FILTERS.map(([id, label]) => ({ label, on: f === id ? 'true' : 'false', bg: f === id ? '#3D0099' : '#F4F4F4', fg: f === id ? '#FFFFFF' : '#20133D', pick: () => this.setState({ filter: id }) }));
     const list = ALL.filter((a) => f === 'todas' || a.tag === f);
     const apps = list.map((a) => {
-      const featured = a.name === 'Print Studio';
-      return { ...a, href: featured ? 'App.dc.html' : 'https://claude.ai/artifact/642QCjX1Tzjwn8VdWUBZyV', target: featured ? '_self' : '_blank', featured, plain: !featured, cardBg: featured ? '#FFF6DB' : '#FFFFFF', tileBg: featured ? '#FFFFFF' : '#EFE9F8', tileFg: '#3D0099' };
+      const featured = false;
+      return { ...a, href: featured ? 'App.dc.html' : 'https://claude.ai/artifact/B3Xx5AUqZNC8enfrV36AAm', target: featured ? '_self' : '_blank', featured, plain: !featured, cardBg: featured ? '#FFF6DB' : '#FFFFFF', tileBg: featured ? '#FFFFFF' : '#EFE9F8', tileFg: '#3D0099' };
     });
     return { tabs, filters, apps, count: list.length };
   }
