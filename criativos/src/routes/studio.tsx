@@ -413,7 +413,7 @@ function Studio() {
             <div className="mx-auto max-w-[520px]">
               <canvas
                 ref={canvasRef}
-                className="w-full rounded-lg border border-border"
+                className="mx-auto block w-full rounded-lg border border-border lg:max-h-[calc(100dvh-17rem)] lg:w-auto lg:max-w-full"
                 aria-label="Prévia do criativo"
               />
             </div>

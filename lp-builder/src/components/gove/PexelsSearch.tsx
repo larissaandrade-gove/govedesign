@@ -70,7 +70,7 @@ export function PexelsSearch({
       setResult(data);
     } catch (e) {
       if (id !== request.current) return;
-      setError(e instanceof Error && e.message ? e.message : "Não foi possível buscar imagens agora.");
+      setError(e instanceof Error && e.message ? e.message : "Não foi possível buscar imagens agora. Use a URL ou o upload.");
     } finally {
       if (id === request.current) setLoading(false);
     }

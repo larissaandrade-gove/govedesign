@@ -823,7 +823,11 @@ function renderFollowupOnce(
     pass: !!lg?.drawn && lg.ok,
   });
   if (spec.model === "event") {
-    checks.push({ id: "photo", label: "Foto do colaborador enviada", pass: !!spec.event.photo });
+    checks.push({
+      id: "photo",
+      label: spec.event.photo ? "Foto do colaborador enviada" : "Envie a foto do colaborador",
+      pass: !!spec.event.photo,
+    });
   }
   return { checks, pass: checks.every((c) => c.pass), logo: lg, boxes, overlaps };
 }

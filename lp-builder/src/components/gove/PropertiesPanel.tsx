@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 import { PexelsSearch, creditFor } from "./PexelsSearch";
 import { checkContrast } from "@/lib/gove/contrast";
@@ -31,6 +31,9 @@ interface Props {
   onChange: (patch: Record<string, unknown>) => void;
   onDelete: () => void;
   onColumns: (count: number) => void;
+  /** Mover sem arrastar (toque e teclado); ausente = já está na ponta. */
+  onMoveUp?: (() => void) | undefined;
+  onMoveDown?: (() => void) | undefined;
   cursor?: PageCursor | undefined;
   onCursorChange?: ((patch: Partial<PageCursor>) => void) | undefined;
 }
@@ -41,6 +44,27 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label className="text-xs font-bold tracking-wide uppercase">{label}</Label>
       {children}
     </div>
+  );
+}
+
+const FILE_INPUT =
+  "block min-h-11 w-full text-sm text-muted-foreground file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border-0 file:bg-secondary file:px-4 file:text-sm file:font-semibold file:text-foreground";
+
+/** Envio de imagem do dispositivo (vira data URL embutida no HTML exportado). */
+function ImageUpload({ onLoad }: { onLoad: (dataUrl: string) => void }) {
+  return (
+    <input
+      type="file"
+      accept="image/*"
+      className={FILE_INPUT}
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => onLoad(String(reader.result));
+        reader.readAsDataURL(file);
+      }}
+    />
   );
 }
 
@@ -256,6 +280,9 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
             credit={box.bgImage ? box.bgCredit : null}
             onPick={(photo) => onChange({ bgImage: photo.src.large, bgCredit: creditFor(photo) })}
           />
+          <Field label="Upload">
+            <ImageUpload onLoad={(bgImage) => onChange({ bgImage, bgCredit: null })} />
+          </Field>
           <Field label="Ajuste da imagem">
             <select
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -451,6 +478,8 @@ export function PropertiesPanel({
   onChange,
   onDelete,
   onColumns,
+  onMoveUp,
+  onMoveDown,
   cursor,
   onCursorChange,
 }: Props) {
@@ -486,16 +515,38 @@ export function PropertiesPanel({
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[20px] font-bold">{labelFor(node.type)}</h2>
-        <Button
-          variant="ghost"
-          size="iconTouch"
-          aria-label="Remover elemento"
-          title="Remover elemento"
-          className="hover:bg-destructive/10 hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 aria-hidden />
-        </Button>
+        <div className="flex shrink-0">
+          <Button
+            variant="ghost"
+            size="iconTouch"
+            aria-label="Mover para cima"
+            title="Mover para cima"
+            disabled={!onMoveUp}
+            onClick={onMoveUp}
+          >
+            <ArrowUp aria-hidden />
+          </Button>
+          <Button
+            variant="ghost"
+            size="iconTouch"
+            aria-label="Mover para baixo"
+            title="Mover para baixo"
+            disabled={!onMoveDown}
+            onClick={onMoveDown}
+          >
+            <ArrowDown aria-hidden />
+          </Button>
+          <Button
+            variant="ghost"
+            size="iconTouch"
+            aria-label="Remover elemento"
+            title="Remover elemento"
+            className="hover:bg-destructive/10 hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 aria-hidden />
+          </Button>
+        </div>
       </div>
 
       {node.type === "section" || node.type === "row" ? (
@@ -678,18 +729,7 @@ export function PropertiesPanel({
             }
           />
           <Field label="Upload">
-            <input
-              type="file"
-              accept="image/*"
-              className="text-sm"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => onChange({ src: String(reader.result), credit: null });
-                reader.readAsDataURL(file);
-              }}
-            />
+            <ImageUpload onLoad={(src) => onChange({ src, credit: null })} />
           </Field>
           <Field label="Texto alternativo (obrigatório)">
             <Input value={node.alt} onChange={(e) => onChange({ alt: e.target.value })} />

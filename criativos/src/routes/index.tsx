@@ -31,7 +31,13 @@ import { toast } from "sonner";
 import { CreativeCard } from "@/components/CreativeCard";
 import { VideoCard } from "@/components/VideoCard";
 import { ExpertFields } from "@/components/ExpertFields";
-import { AppHeader, FormatChip, Section, SettingRow } from "@/components/AppChrome";
+import {
+  AppHeader,
+  FormatChip,
+  Section,
+  SettingRow,
+  shortFormatLabel,
+} from "@/components/AppChrome";
 import { BG_COLORS, MAX_HEADLINE, MAX_SUBHEAD, PALETTE } from "@/lib/creative/brand";
 import {
   ALL_LOGO_VARIANTS,
@@ -643,6 +649,9 @@ function Index() {
                     onSelect={() => setFormat(f.key)}
                   />
                 ))}
+                <p className="flex min-h-11 items-center text-xs text-muted-foreground min-[900px]:hidden">
+                  {shortFormatLabel(FORMATS.find((f) => f.key === format)?.label ?? "")}
+                </p>
               </div>
             )}
 

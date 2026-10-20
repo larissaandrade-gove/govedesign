@@ -51,8 +51,10 @@ import {
   firstColumnId,
   moveLeaf,
   moveRow,
+  moveSibling,
   removeNode,
   setColumnCount,
+  siblingInfo,
   updateNode,
 } from "@/lib/gove/tree";
 import type { Leaf, PageContent } from "@/lib/gove/types";
@@ -173,6 +175,9 @@ function EditorPage() {
   }
 
   const code = exportHtml(page, nome);
+  const at = selectedId ? siblingInfo(page, selectedId) : null;
+  const move = (dir: -1 | 1) =>
+    setPage((current) => (current && selectedId ? moveSibling(current, selectedId, dir) : current));
 
   const blocks = [
     { label: "Seção", icon: LayoutPanelTop, action: () => setPage((p) => (p ? addSection(p, makeSection({ children: [makeRow(1)] })) : p)) },
@@ -373,6 +378,8 @@ function EditorPage() {
                 return next;
               })
             }
+            onMoveUp={at && at.index > 0 ? () => move(-1) : undefined}
+            onMoveDown={at && at.index < at.count - 1 ? () => move(1) : undefined}
             onColumns={(count) =>
               setPage((current) =>
                 current && selectedId ? setColumnCount(current, selectedId, count) : current,

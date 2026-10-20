@@ -75,6 +75,48 @@ export function moveRow(
   };
 }
 
+/** Posição de uma seção, linha ou bloco entre os irmãos (para mover sem arrastar). */
+export function siblingInfo(page: PageContent, id: string): { index: number; count: number } | null {
+  const at = <T extends { id: string }>(list: T[]) => {
+    const index = list.findIndex((item) => item.id === id);
+    return index === -1 ? null : { index, count: list.length };
+  };
+  const top = at(page.sections);
+  if (top) return top;
+  for (const section of page.sections) {
+    const row = at(section.children);
+    if (row) return row;
+    for (const r of section.children)
+      for (const col of r.columns) {
+        const leaf = at(col.children);
+        if (leaf) return leaf;
+      }
+  }
+  return null;
+}
+
+/** Sobe (-1) ou desce (+1) uma seção, linha ou bloco dentro do mesmo pai. */
+export function moveSibling(page: PageContent, id: string, dir: -1 | 1): PageContent {
+  const swap = <T extends { id: string }>(list: T[]): T[] => {
+    const i = list.findIndex((item) => item.id === id);
+    const j = i + dir;
+    if (i === -1 || j < 0 || j >= list.length) return list;
+    const next = [...list];
+    [next[i], next[j]] = [next[j]!, next[i]!];
+    return next;
+  };
+  return {
+    ...page,
+    sections: swap(page.sections).map((section) => ({
+      ...section,
+      children: swap(section.children).map((row) => ({
+        ...row,
+        columns: row.columns.map((col) => ({ ...col, children: swap(col.children) })),
+      })),
+    })),
+  };
+}
+
 export function findNode(page: PageContent, id: string): AnyNode | null {
   for (const section of page.sections) {
     if (section.id === id) return section;

@@ -180,7 +180,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   type L = { id: string; name: string; trim: { w: number; h: number } };
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
+    <div className="relative h-full min-h-0 overflow-y-auto lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
       {/* Painel de controles */}
       <aside className="border-b border-border bg-card/40 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r" aria-label="Configurações da peça">
         <Section title="Layouts" icon={LayoutTemplate}>
