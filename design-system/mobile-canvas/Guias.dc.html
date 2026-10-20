@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Guias — Gove Design System</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3D0099;text-decoration:none}a:hover{color:#20133D}
+a:focus-visible,button:focus-visible{outline:2px solid #FFC72C;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F4F4F4; font-family: Inter, system-ui, sans-serif; color: #2F3539; display: flex; flex-direction: column">
+
+<header style="background: #FFFFFF; border-radius: 0 0 32px 32px; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden; box-shadow: 0 6px 18px rgba(32,19,61,0.06)">
+<span aria-hidden="true" style="position: absolute; right: -40px; top: -50px; width: 160px; height: 160px; border-radius: 9999px; background: #DDF2F4"></span>
+<span aria-hidden="true" style="position: absolute; right: 80px; top: 24px; width: 30px; height: 30px; border-radius: 9999px; background: #A278DA"></span>
+<div style="position: relative; display: flex; align-items: center; gap: 4px">
+<a href="Main.dc.html" aria-label="Voltar para o início" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #20133D">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</a>
+</div>
+<div style="position: relative">
+<h1 style="margin: 0; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 30px; color: #20133D">Guias</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #5B6770">Base para criar com pessoas e com IA</p>
+</div>
+<div role="tablist" aria-label="Guias" style="position: relative; display: flex; gap: 8px">
+<sc-for list="{{tabs2}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" style="flex: 1; min-height: 44px; border-radius: 9999px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 600 13px Inter, sans-serif; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+</header>
+
+<main style="flex: 1; overflow: auto; padding: 18px 20px 120px; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{isType}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="border-radius: 24px; background: #3D0099; color: #FFFFFF; padding: 18px; display: flex; align-items: flex-end; justify-content: space-between">
+<span><span style="display: block; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 20px">Montserrat</span><span style="font-size: 13px; color: #E9E1F7">Títulos · 700 a 900</span></span>
+<span aria-hidden="true" style="font-family: Montserrat, sans-serif; font-weight: 900; font-size: 52px; line-height: 1">Aa</span>
+</div>
+<div style="border-radius: 24px; background: #FFFFFF; padding: 18px; display: flex; align-items: flex-end; justify-content: space-between; box-shadow: 0 4px 12px rgba(32,19,61,0.06)">
+<span><span style="display: block; font-weight: 600; font-size: 20px; color: #20133D">Inter</span><span style="font-size: 13px; color: #5B6770">Corpo e interface · 400 a 600</span></span>
+<span aria-hidden="true" style="font-weight: 500; font-size: 52px; line-height: 1; color: #20133D">Aa</span>
+</div>
+<p style="margin: 0; font-size: 13px">Escala 64 · 48 · 32 · 24 · 18 · 16 px. Nada abaixo de 11 pt/px.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{isComp}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 10px; border-radius: 24px; background: #FFFFFF; padding: 18px; box-shadow: 0 4px 12px rgba(32,19,61,0.06)">
+<button type="button" style="min-height: 48px; border: 0; border-radius: 9999px; background: #FFC72C; color: #20133D; font: 700 15px Inter, sans-serif">Agendar demonstração</button>
+<button type="button" style="min-height: 48px; border: 0; border-radius: 9999px; background: #3D0099; color: #FFFFFF; font: 600 15px Inter, sans-serif">Conhecer a plataforma</button>
+<button type="button" style="min-height: 48px; border: 2px solid #E3D8F3; border-radius: 9999px; background: #FFFFFF; color: #20133D; font: 600 15px Inter, sans-serif">Falar com um especialista</button>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #20133D">E-mail profissional
+<input type="email" placeholder="nome@prefeitura.gov.br" style="height: 48px; border-radius: 14px; border: 1px solid #E3D8F3; padding: 0 14px; font: 16px Inter, sans-serif; color: #20133D">
+</label>
+</div>
+</sc-if>
+
+<sc-if value="{{isGuide}}" hint-placeholder-val="{{ false }}">
+<div style="border-radius: 24px; background: #3D0099; color: #FFFFFF; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: Montserrat, sans-serif; font-weight: 800; font-size: 20px">Diretrizes de design</span>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #F1ECFA">Anexe o guia ou cole as instruções no início da conversa com a IA: cores, logomarca, tipografia e tamanhos saem uniformes.</p>
+<span style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="padding: 6px 12px; border-radius: 9999px; background: rgba(255,255,255,0.14); font-size: 12px">Apresentações</span>
+<span style="padding: 6px 12px; border-radius: 9999px; background: rgba(255,255,255,0.14); font-size: 12px">Mídia</span>
+<span style="padding: 6px 12px; border-radius: 9999px; background: rgba(255,255,255,0.14); font-size: 12px">Impressos</span>
+<span style="padding: 6px 12px; border-radius: 9999px; background: rgba(255,255,255,0.14); font-size: 12px">E-mails</span>
+</span>
+</div>
+</sc-if>
+
+<button type="button" style="min-height: 52px; border: 0; border-radius: 9999px; background: #FFC72C; color: #20133D; font: 700 15px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Baixar guia</button>
+<button type="button" style="min-height: 52px; border: 2px solid #E3D8F3; border-radius: 9999px; background: #FFFFFF; color: #20133D; font: 600 15px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path></svg>Copiar instruções para IA</button>
+</main>
+
+<nav aria-label="Navegação principal" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -8px 24px rgba(32,19,61,0.08); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 8px 12px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<sc-if value="{{t.center}}" hint-placeholder-val="{{ false }}">
+<a href="{{t.href}}" aria-label="{{t.label}}" style="justify-self: center; width: 60px; height: 60px; margin-top: -34px; border-radius: 20px; transform: rotate(45deg); background: #FFC72C; box-shadow: 0 8px 20px rgba(255,199,44,0.55); display: flex; align-items: center; justify-content: center; color: #20133D">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(-45deg)"><path d="{{t.d}}"></path></svg>
+</a>
+</sc-if>
+<sc-if value="{{t.side}}" hint-placeholder-val="{{ true }}">
+<a href="{{t.href}}" aria-current="{{t.current}}" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{t.color}}; font-size: 11px; font-weight: 600">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+{{t.label}}
+</a>
+</sc-if>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'type' };
+  }
+  renderVals() {
+    const ICON = {
+      home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+      apps: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+      search: 'M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM20 20l-4-4',
+      palette: 'M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.5-1.6 0-.9-.6-1.4-.6-2.2 0-.9.7-1.6 1.6-1.6H17a4 4 0 0 0 4-4c0-4.7-4-8.6-9-8.6zM7.5 11.5h.01M10 7.5h.01M15 7.5h.01',
+      book: 'M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2zM20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2zM15 9l1.5 1.5L19 8',
+    };
+    const tabs = [['home', 'Início', 'Main.dc.html'], ['apps', 'Apps', 'Aplicacoes.dc.html'], ['search', 'Buscar', 'Main.dc.html'], ['palette', 'Cores', 'Cores.dc.html'], ['book', 'Guias', 'Guias.dc.html']]
+      .map(([id, label, href]) => ({ label, href, d: ICON[id], center: id === 'search', side: id !== 'search', current: id === 'book' ? 'page' : 'false', color: id === 'book' ? '#3D0099' : '#5B6770' }));
+    const t = this.state.tab;
+    const tabs2 = [['type', 'Tipografia'], ['comp', 'Componentes'], ['guide', 'Diretrizes']].map(([id, label]) => ({ label, sel: t === id ? 'true' : 'false', bg: t === id ? '#3D0099' : '#F4F4F4', fg: t === id ? '#FFFFFF' : '#20133D', pick: () => this.setState({ tab: id }) }));
+    return { tabs, tabs2, isType: t === 'type', isComp: t === 'comp', isGuide: t === 'guide' };
+  }
+}
+</script>
+</body>
+</html>

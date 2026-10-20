@@ -11,15 +11,20 @@ import { writeZip } from './report/package.js';
 import { AuditInputError, runAudit, storedEntries } from './services/auditService.js';
 import { createPrintStudioRouter } from '../print-studio/server/router.js';
 import { createAuth } from './auth/index.js';
+import { networkGate, parseNetworks } from './auth/network.js';
 import { createPexelsRouter } from './pexels.js';
 import { createTicketsRouter } from './tickets.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
 
-export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, ticketsOptions = {}, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
+export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, ticketsOptions = {}, allowedNetworks, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
   const storageDir = resolve(storageDirIn);
   const app = express();
+  if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY);
+
+  // Só pela VPN Gove (ALLOWED_NETWORKS = faixas da VPN); depois, login @gove.digital
+  app.use(networkGate(parseNetworks(allowedNetworks ?? process.env.ALLOWED_NETWORKS)));
 
   // Login único do ambiente: tudo abaixo exige sessão (e-mail @gove.digital)
   const auth = createAuth({ db, ...authOptions });

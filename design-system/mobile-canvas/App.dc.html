@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Print Studio — Gove Design System</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3D0099;text-decoration:none}a:hover{color:#20133D}
+a:focus-visible,button:focus-visible{outline:2px solid #FFC72C;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; color: #2F3539; display: flex; flex-direction: column">
+
+<header style="position: relative; padding: 16px 20px 0; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<span aria-hidden="true" style="position: absolute; right: -50px; top: -60px; width: 190px; height: 190px; border-radius: 9999px; background: #FFF1C9"></span>
+<span aria-hidden="true" style="position: absolute; right: 90px; top: 20px; width: 54px; height: 54px; border-radius: 9999px; background: #3D0099"></span>
+<span aria-hidden="true" style="position: absolute; right: 30px; top: 104px; width: 20px; height: 20px; border-radius: 9999px; background: #5AC2CD"></span>
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between">
+<a href="Aplicacoes.dc.html" aria-label="Voltar para Aplicações" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #20133D">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</a>
+</div>
+<div style="position: relative; display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 26px; background: #3D0099; color: #FFFFFF; margin-top: 14px">
+<span style="width: 52px; height: 52px; margin-top: -40px; border-radius: 16px; background: #FFFFFF; color: #3D0099; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px rgba(32,19,61,0.18)">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"></path></svg>
+</span>
+<h1 style="margin: 0; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 24px">Print Studio</h1>
+<p style="margin: 0; font-size: 14px; color: #E9E1F7">PDFs de gráfica por município</p>
+<div style="display: flex; gap: 8px">
+<button type="button" onClick="{{toggleInfo}}" aria-expanded="{{infoOpen}}" aria-label="Sobre o app" style="width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(255,255,255,0.14); color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 11v5M12 8h.01"></path></svg>
+</button>
+<button type="button" aria-label="Recarregar" style="width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(255,255,255,0.14); color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"></path></svg>
+</button>
+<button type="button" aria-label="Tela cheia" style="width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(255,255,255,0.14); color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg>
+</button>
+</div>
+<a href="https://claude.ai/artifact/642QCjX1Tzjwn8VdWUBZyV" target="_blank" rel="noopener" style="min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FFC72C; color: #20133D; font-weight: 700; font-size: 14px">Abrir app completo</a>
+<sc-if value="{{infoOpen}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.12); font-size: 13px; line-height: 1.45">Vetores e textos em CMYK. No navegador, imagens saem em RGB — converta antes de imprimir.</p>
+</sc-if>
+</div>
+</header>
+
+<main style="flex: 1; overflow: auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+<div role="tablist" aria-label="Seções do Print Studio" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 9999px; background: #F4F4F4">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button type="button" role="tab" aria-selected="{{t.sel}}" aria-label="{{t.label}}" onClick="{{t.pick}}" style="min-height: 44px; border: 0; border-radius: 9999px; background: {{t.bg}}; color: {{t.fg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 600 10px Inter, sans-serif; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+{{t.short}}
+</button>
+</sc-for>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{pieces}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{p.on}}" onClick="{{p.pick}}" aria-label="{{p.name}}" style="min-height: 72px; border-radius: 18px; border: 2px solid {{p.border}}; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 600 12px Inter, sans-serif; color: #20133D; cursor: pointer">
+<span aria-hidden="true" style="width: {{p.w}}; height: {{p.h}}; border-radius: 3px; background: #128541"></span>
+{{p.short}}
+</button>
+</sc-for>
+</div>
+
+<div style="border-radius: 24px; background: #F4F4F4; padding: 16px; display: flex; justify-content: center">
+<div aria-hidden="true" style="width: 190px; height: 268px; border-radius: 6px; background: #128541; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 24px rgba(32,19,61,0.18)">
+<span style="font-family: Montserrat, sans-serif; font-weight: 800; font-size: 13px; line-height: 1.2; color: #FFFFFF">Serviços da Prefeitura agora também estão no WhatsApp</span>
+<span style="display: flex; gap: 6px"><span style="width: 22px; height: 22px; border-radius: 9999px; border: 1.5px solid #FFFFFF"></span><span style="width: 22px; height: 22px; border-radius: 9999px; border: 1.5px solid #FFFFFF"></span><span style="width: 22px; height: 22px; border-radius: 9999px; border: 1.5px solid #FFFFFF"></span><span style="width: 22px; height: 22px; border-radius: 9999px; border: 1.5px solid #FFFFFF"></span></span>
+<span style="flex: 1; border-radius: 14px 0 0 0; background: #FFFFFF; margin: 0 -14px -14px 30px; display: flex; align-items: center; justify-content: center"><span style="width: 56px; height: 56px; background: repeating-conic-gradient(#20133D 0 25%, #FFFFFF 0 50%) 0 0 / 9px 9px"></span></span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E7A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Ok"><path d="M20 6 9 17l-5-5"></path></svg>Sangria e área de segurança</p>
+<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Erro"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM15 9l-6 6M9 9l6 6"></path></svg>Logo da prefeitura ausente</p>
+</div>
+</main>
+
+<footer style="background: #3D0099; border-radius: 32px 32px 0 0; padding: 18px 20px 26px; display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="min-height: 52px; border: 0; border-radius: 9999px; background: #FFC72C; color: #20133D; font: 700 15px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Adicionar à fila</button>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'editor', info: false, pieces: { a4: true, f10: true, ad: false, a6: false } };
+  }
+  renderVals() {
+    const TABS = [
+      ['editor', 'Editor', 'Editor de layout', 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'],
+      ['mun', 'Cidades', 'Municípios', 'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6'],
+      ['fila', 'Fila', 'Fila de exportação', 'M4 6h16M4 12h16M4 18h10'],
+      ['logos', 'Logos', 'Logos fixos', 'M4 4h16v16H4zM4 15l4-4 4 4 3-3 5 5M15 8h.01'],
+    ];
+    const tabs = TABS.map(([id, short, label, d]) => {
+      const on = this.state.tab === id;
+      return { short, label, d, sel: on ? 'true' : 'false', bg: on ? '#3D0099' : 'transparent', fg: on ? '#FFFFFF' : '#5B6770', pick: () => this.setState({ tab: id }) };
+    });
+    const P = [['a4', 'Flyer A4', 'A4', '16px', '22px'], ['f10', 'Flyer 10×15 cm', '10×15', '14px', '21px'], ['ad', 'Adesivo 5×10 cm', '5×10', '9px', '18px'], ['a6', 'Display A6', 'A6', '14px', '20px']];
+    const pieces = P.map(([id, name, short, w, h]) => {
+      const on = !!this.state.pieces[id];
+      return { name, short, w, h, on: on ? 'true' : 'false', border: on ? '#3D0099' : '#E3D8F3', pick: () => this.setState({ pieces: { ...this.state.pieces, [id]: !on } }) };
+    });
+    return { tabs, pieces, infoOpen: this.state.info, toggleInfo: () => this.setState({ info: !this.state.info }) };
+  }
+}
+</script>
+</body>
+</html>

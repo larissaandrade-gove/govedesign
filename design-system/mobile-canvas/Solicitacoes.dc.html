@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Solicitações — Gove Design System</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3D0099;text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #FFC72C;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; color: #2F3539; display: flex; flex-direction: column">
+
+<header style="display: flex; align-items: center; gap: 4px; padding: 12px 12px 12px 8px; border-bottom: 1px solid #E3D8F3">
+<sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{back}}" aria-label="Voltar para as frentes" style="width: 44px; height: 44px; border: 0; background: transparent; color: #20133D; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</button>
+</sc-if>
+<h1 style="flex: 1; margin: 0 0 0 8px; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 22px; color: #20133D">{{heading}}</h1>
+<a href="Main.dc.html" aria-label="Fechar" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #5B6770">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+</header>
+
+<main style="flex: 1; overflow: auto; padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 12px">
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{fronts}}" as="f" hint-placeholder-count="4">
+<button type="button" onClick="{{f.pick}}" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; border: 2px solid #E3D8F3; background: #FFFFFF; text-align: left; cursor: pointer; font-family: Inter, sans-serif">
+<span style="display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 10px; background: #E3D8F3; color: #3D0099; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg>
+</span>
+<span style="font-weight: 600; font-size: 18px; color: #20133D">{{f.label}}</span>
+</span>
+<span style="font-size: 15px; line-height: 1.45; color: #2F3539">{{f.text}}</span>
+<span style="font-size: 13px; font-weight: 700; color: #3D0099">Entrega a partir de {{f.date}}</span>
+</button>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; padding: 12px; border-radius: 10px; background: #F1ECFA; font-size: 13px; color: #2F3539"><strong style="color: #20133D">Larissa Andrade</strong> · larissa.andrade@gove.digital</p>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #2F3539">Título *
+<input type="text" placeholder="Ex.: Kit de boas-vindas Itupeva" style="height: 48px; border-radius: 8px; border: 1px solid #E3D8F3; padding: 0 14px; font: 16px Inter, sans-serif; color: #20133D">
+</label>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Tipo de peça *
+<span style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{pieces}}" as="p" hint-placeholder-count="4">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="min-height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid {{p.border}}; background: {{p.bg}}; color: {{p.fg}}; font: 500 13px Inter, sans-serif; cursor: pointer">{{p.label}}</button>
+</sc-for>
+</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Formato *
+<span style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{formats}}" as="p" hint-placeholder-count="4">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="min-height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid {{p.border}}; background: {{p.bg}}; color: {{p.fg}}; font: 500 13px Inter, sans-serif; cursor: pointer">{{p.label}}</button>
+</sc-for>
+</span>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #2F3539">Descrição *
+<textarea rows="3" placeholder="Objetivo, público e onde será usado." style="border-radius: 8px; border: 1px solid #E3D8F3; padding: 12px 14px; font: 16px Inter, sans-serif; color: #20133D; resize: none"></textarea>
+<span style="font-size: 12px; color: #5B6770">mín. 50 caracteres</span>
+</label>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px">Prioridade *
+<span style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 8px; background: #EFE9F8">
+<sc-for list="{{priorities}}" as="p" hint-placeholder-count="2">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="min-height: 44px; border: 0; border-radius: 6px; background: {{p.bg}}; color: #20133D; font: 600 14px Inter, sans-serif; cursor: pointer">{{p.label}}</button>
+</sc-for>
+</span>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #2F3539">Entrega *
+<input type="date" style="height: 52px; border-radius: 8px; border: 1px solid #E3D8F3; padding: 0 10px; font: 15px Inter, sans-serif; color: #20133D">
+<span style="font-size: 12px; color: #5B6770">a partir de {{date}}</span>
+</label>
+</div>
+<button type="button" onClick="{{send}}" style="min-height: 52px; margin-top: 4px; border: 0; border-radius: 8px; background: #FFC72C; color: #20133D; font: 700 16px Inter, sans-serif; box-shadow: 0 6px 18px rgba(255,199,44,0.45); cursor: pointer">Enviar solicitação</button>
+</sc-if>
+
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 18px; color: #20133D">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E7A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM8 12l3 3 5-6"></path></svg>
+DS-7Q4K2M · {{label}}
+</p>
+<p style="margin: 0; font-size: 15px; color: #2F3539">Entrega a partir de {{date}}. RAR, e-mail e agenda atualizados.</p>
+<a href="Main.dc.html" style="min-height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #E3D8F3; font-weight: 600">Voltar ao início</a>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 'list', front: 'redesign', piece: '', format: '', priority: '' };
+  }
+  renderVals() {
+    // Previsão: dias úteis a partir de hoje (8 h por dia; normal 48 h, vídeo em dobro)
+    const fmt = (days) => {
+      const d = new Date();
+      let left = days;
+      while (left > 0) {
+        d.setDate(d.getDate() + 1);
+        if (d.getDay() !== 0 && d.getDay() !== 6) left--;
+      }
+      const wd = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getDay()];
+      return `${wd}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
+    const FRONTS = [
+      { id: 'redesign', label: 'Redesign', text: 'Ajuste de diagramação e cores de peças existentes. Envie a peça atual.', days: 6, pieces: ['Post', 'Carrossel', 'Banner', 'Folder'], formats: ['Post 1:1', 'Story 9:16', '16:9', 'A4'], d: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' },
+      { id: 'video', label: 'Edição de vídeo', text: 'Corte e edição de vídeos de eventos da Gove. Envie o link dos arquivos brutos.', days: 12, pieces: ['Aftermovie', 'Reels', 'Depoimento'], formats: ['16:9', 'Story 9:16', 'Post 1:1'], d: 'M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4zM4 11l16-4M4 11L3 7l15-4 1 4' },
+      { id: 'impressos', label: 'Documentação impressa', text: 'Arquivos para gráfica em formatos especiais ou estratégicos.', days: 6, pieces: ['Folder', 'Cartilha', 'Convite', 'Certificado'], formats: ['A4', 'A5', 'A3', '21×21 cm'], d: 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z' },
+      { id: 'brindes', label: 'Brindes e outros materiais', text: 'Marca aplicada em garrafas, mochilas, itens tech e afins. Envie o link de cada item.', days: 6, pieces: ['Garrafa', 'Mochila', 'Caneca', 'Camiseta'], formats: ['Área de gravação', '5×5 cm', '8×4 cm'], d: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z' },
+    ];
+    const s = this.state;
+    const front = FRONTS.find((f) => f.id === s.front);
+    const chip = (key) => (label) => {
+      const on = s[key] === label;
+      return { label, on: on ? 'true' : 'false', bg: on ? '#3D0099' : '#FFFFFF', fg: on ? '#FFFFFF' : '#2F3539', border: on ? '#3D0099' : '#E3D8F3', pick: () => this.setState({ [key]: label }) };
+    };
+    return {
+      heading: s.step === 'list' ? 'Nova solicitação' : s.step === 'form' ? front.label : 'Pedido aberto',
+      isList: s.step === 'list',
+      isForm: s.step === 'form',
+      isDone: s.step === 'done',
+      fronts: FRONTS.map((f) => ({ ...f, date: fmt(f.days), pick: () => this.setState({ step: 'form', front: f.id, piece: '', format: '', priority: '' }) })),
+      pieces: front.pieces.map(chip('piece')),
+      formats: front.formats.map(chip('format')),
+      priorities: [['alta', 'Alta'], ['normal', 'Normal']].map(([id, label]) => ({ label, on: s.priority === id ? 'true' : 'false', bg: s.priority === id ? '#FFFFFF' : 'transparent', pick: () => this.setState({ priority: id }) })),
+      date: fmt(s.priority === 'alta' ? front.days / 2 : front.days),
+      label: front.label,
+      back: () => this.setState({ step: 'list' }),
+      send: () => this.setState({ step: 'done' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

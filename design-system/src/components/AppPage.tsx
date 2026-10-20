@@ -72,12 +72,15 @@ export function AppPage({ appId }: { appId: string }) {
           <h1 id="app-title" className="mr-auto min-w-0 truncate font-display text-[20px] font-extrabold leading-tight sm:text-h3">
             {app.name}
           </h1>
-          <IconButton label={`Anterior: ${prev.name}`} href={appHref(prev.id)}>
-            <ChevronLeft className="size-5" aria-hidden />
-          </IconButton>
-          <IconButton label={`Próximo: ${next.name}`} href={appHref(next.id)}>
-            <ChevronRight className="size-5" aria-hidden />
-          </IconButton>
+          {/* No celular, a troca de app fica na aba Apps: sobra espaço para o nome */}
+          <span className="hidden sm:contents">
+            <IconButton label={`Anterior: ${prev.name}`} href={appHref(prev.id)}>
+              <ChevronLeft className="size-5" aria-hidden />
+            </IconButton>
+            <IconButton label={`Próximo: ${next.name}`} href={appHref(next.id)}>
+              <ChevronRight className="size-5" aria-hidden />
+            </IconButton>
+          </span>
           <span className="mx-1 hidden h-6 w-px bg-secondary sm:block" aria-hidden />
           <IconButton label="Sobre o app" onClick={() => setInfo((v) => !v)} pressed={info}>
             <Info className="size-5" aria-hidden />

@@ -62,3 +62,18 @@ test('primeiro acesso por código, depois e-mail + senha', async () => {
     assert.notEqual((await fetch(base + '/design-system/', { headers: { cookie: cookie2, accept: 'text/html' }, redirect: 'manual' })).status, 302);
   });
 });
+
+test('só pela VPN: fora das redes liberadas, 403 antes do login', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gove-vpn-'));
+  const make = (allowedNetworks) => createApp({ db: openDatabase(join(dir, `${allowedNetworks.length}.sqlite`)), storageDir: join(dir, 'audits'), allowedNetworks, authOptions: { secret: 'teste', mailer: { sendMail: async () => {} }, disabled: false } });
+  for (const [nets, status] of [['10.8.0.0/16', 403], ['10.8.0.0/16, 127.0.0.1', 200]]) {
+    const server = make(nets).listen(0);
+    try {
+      const r = await fetch(`http://127.0.0.1:${server.address().port}/login`, { headers: { accept: 'text/html' } });
+      assert.equal(r.status, status);
+      if (status === 403) assert.match(await r.text(), /Conecte-se à VPN Gove/);
+    } finally {
+      server.close();
+    }
+  }
+});

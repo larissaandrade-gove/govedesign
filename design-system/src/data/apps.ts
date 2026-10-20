@@ -11,6 +11,9 @@ import print2 from '../assets/apps/print-studio-2.webp';
 
 export type Shot = { src: string; caption: string };
 
+export const APP_TAGS = ['Marca', 'Mídia', 'Web', 'Impresso'] as const;
+export type AppTag = (typeof APP_TAGS)[number];
+
 export type GoveApp = {
   id: string;
   name: string;
@@ -29,6 +32,8 @@ export type GoveApp = {
   /** Como o app funciona dentro do design system (artefato). */
   embeddedNote: string;
   shots: Shot[];
+  /** Categoria para os filtros da lista de aplicações. */
+  tag: AppTag;
   /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash. */
   embed?: { file: string; hash?: string };
 };
@@ -37,6 +42,7 @@ export type GoveApp = {
 export const APPS: GoveApp[] = [
   {
     id: 'revisor',
+    tag: 'Marca',
     name: 'Revisor de identidade visual',
     route: '/revisor/',
     icon: ScanSearch,
@@ -55,6 +61,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'criativos',
+    tag: 'Mídia',
     name: 'Gerador de criativos',
     route: '/criativos',
     icon: Sparkles,
@@ -73,6 +80,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'follow-ups',
+    tag: 'Mídia',
     name: 'Gerador de follow-ups',
     route: '/criativos',
     icon: CalendarCheck,
@@ -89,6 +97,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'links',
+    tag: 'Web',
     name: 'Gove Links',
     route: '/links',
     icon: Link2,
@@ -104,6 +113,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'lp',
+    tag: 'Web',
     name: 'LP Builder',
     route: '/lp',
     icon: LayoutTemplate,
@@ -122,6 +132,7 @@ export const APPS: GoveApp[] = [
   },
   {
     id: 'print-studio',
+    tag: 'Impresso',
     name: 'Print Studio',
     route: '/print-studio/',
     icon: Printer,

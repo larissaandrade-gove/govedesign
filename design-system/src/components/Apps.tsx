@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { appHref } from '../lib/router';
-import { APPS } from '../data/apps';
+import { APPS, APP_TAGS, type AppTag } from '../data/apps';
 import { SectionHeader } from './SectionHeader';
 
 /** Aplicações: carrossel no computador; lista no celular. */
 export function Apps() {
   const track = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
+  const [tag, setTag] = useState<AppTag | null>(null);
+  const shown = tag ? APPS.filter((a) => a.tag === tag) : APPS;
 
   useEffect(() => {
     const el = track.current;
@@ -44,12 +46,27 @@ export function Apps() {
         </div>
       </div>
 
+      {/* Celular: filtros por categoria */}
+      <div role="group" aria-label="Filtrar aplicações" className="-mt-space-2 mb-space-2 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] lg:hidden">
+        {[null, ...APP_TAGS].map((t) => (
+          <button
+            key={t ?? 'todos'}
+            type="button"
+            aria-pressed={tag === t}
+            onClick={() => setTag(t)}
+            className={`min-h-11 shrink-0 rounded-full border px-space-2 text-caption font-semibold transition-colors ${tag === t ? 'border-primary bg-primary text-on-primary' : 'border-secondary text-text-primary'}`}
+          >
+            {t ?? 'Todos'}
+          </button>
+        ))}
+      </div>
+
       <ul
         ref={track}
         aria-label="Aplicações"
         className="flex flex-col gap-space-2 lg:-mx-1 lg:snap-x lg:snap-mandatory lg:flex-row lg:overflow-x-auto lg:px-1 lg:pb-space-2 lg:[scrollbar-width:thin]"
       >
-        {APPS.map(({ id, name, icon: Icon, tagline }) => (
+        {shown.map(({ id, name, icon: Icon, tagline }) => (
           <li key={id} className="lg:w-[280px] lg:shrink-0 lg:snap-start">
             <a
               href={appHref(id)}

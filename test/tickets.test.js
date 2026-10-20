@@ -120,7 +120,7 @@ test('linha do RAR, e-mail com solicitante e marcador, .ics no prazo', () => {
   assert.equal(row.Frente, 'Brindes e outros materiais');
   assert.equal(row['Atividades previstas'], '[DS-ABC234] Garrafas para o GF26 — Garrafa (Área de gravação 8×4 cm)');
   assert.equal(row.Prioridade, true);
-  assert.match(row['Resultado / Comentários'], /Alta urgência \(mín\. 24 h úteis\)/);
+  assert.match(row['Resultado / Comentários'], /Alta \(mín\. 24 h úteis\)/);
   assert.match(row['Resultado / Comentários'], /Produção: 8 h — seg 19\/10/);
   assert.match(row['Comentários gerais'], /Ana Souza \(ana\.souza@gove\.digital\)/);
 

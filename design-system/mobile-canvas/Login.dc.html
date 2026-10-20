@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Entrar — Gove Design System</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Montserrat:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3D0099;text-decoration:none}a:hover{color:#20133D}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #FFC72C;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; color: #2F3539; display: flex; flex-direction: column">
+
+<header style="position: relative; height: 380px; background: #3D0099; border-radius: 0 0 50% 50% / 0 0 80px 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; overflow: hidden">
+<span aria-hidden="true" style="position: absolute; left: -60px; top: -40px; width: 200px; height: 200px; border-radius: 9999px; border: 26px solid rgba(162,120,218,0.3)"></span>
+<span aria-hidden="true" style="position: absolute; right: 40px; top: 70px; width: 22px; height: 22px; border-radius: 9999px; background: #5AC2CD"></span>
+<span aria-hidden="true" style="position: absolute; right: -20px; bottom: 60px; width: 90px; height: 90px; border-radius: 9999px; background: rgba(255,199,44,0.85)"></span>
+<img src="/_blob/fc530f879f699d6fe98563c5000569f4" alt="Gove" style="position: relative; height: 54px; width: auto">
+<p style="position: relative; margin: 0; font-size: 15px; color: #E9E1F7">Design System</p>
+<span style="position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 9999px; background: rgba(255,255,255,0.14); font-size: 13px; font-weight: 600; color: #FFFFFF">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>VPN Gove conectada</span>
+</header>
+
+<main style="flex: 1; padding: 36px 28px 28px; display: flex; flex-direction: column; gap: 18px">
+<h1 style="margin: 0; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 26px; color: #20133D">{{title}}</h1>
+<p style="margin: -8px 0 0; font-size: 14px; color: #5B6770">{{hint}}</p>
+
+<sc-if value="{{isEmail}}" hint-placeholder-val="{{ true }}">
+<label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; color: #20133D">E-mail
+<input type="email" placeholder="nome@gove.digital" autocomplete="username" style="height: 52px; border-radius: 9999px; border: 2px solid #E3D8F3; padding: 0 20px; font: 16px Inter, sans-serif; color: #20133D">
+</label>
+</sc-if>
+<sc-if value="{{isCode}}" hint-placeholder-val="{{ false }}">
+<label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; color: #20133D">Código de 6 dígitos
+<input type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" style="height: 56px; border-radius: 9999px; border: 2px solid #E3D8F3; padding: 0 20px; font: 600 24px Inter, sans-serif; letter-spacing: 8px; text-align: center; color: #20133D">
+</label>
+</sc-if>
+<sc-if value="{{isPass}}" hint-placeholder-val="{{ false }}">
+<label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; color: #20133D">Nova senha
+<input type="password" autocomplete="new-password" style="height: 52px; border-radius: 9999px; border: 2px solid #E3D8F3; padding: 0 20px; font: 16px Inter, sans-serif">
+</label>
+</sc-if>
+
+<button type="button" onClick="{{next}}" style="margin-top: auto; min-height: 54px; border: 0; border-radius: 9999px; background: #FFC72C; color: #20133D; font: 700 16px Inter, sans-serif; box-shadow: 0 8px 20px rgba(255,199,44,0.45); cursor: pointer">{{cta}}</button>
+<sc-if value="{{showBack}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{back}}" style="min-height: 44px; border: 0; background: transparent; color: #3D0099; font: 600 14px Inter, sans-serif; cursor: pointer">Trocar e-mail</button>
+</sc-if>
+<sc-if value="{{isPass}}" hint-placeholder-val="{{ false }}">
+<a href="Main.dc.html" style="text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px">Ir para o início</a>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 0 };
+  }
+  renderVals() {
+    const s = this.state.step;
+    const STEPS = [
+      ['Entrar', 'Use seu e-mail @gove.digital.', 'Continuar'],
+      ['Confira seu e-mail', 'Enviamos um código de 6 dígitos.', 'Confirmar código'],
+      ['Crie sua senha', 'Pelo menos 10 caracteres.', 'Salvar e entrar'],
+    ];
+    const [title, hint, cta] = STEPS[s];
+    return {
+      title, hint, cta,
+      isEmail: s === 0, isCode: s === 1, isPass: s === 2, showBack: s === 1,
+      next: () => this.setState({ step: Math.min(2, s + 1) }),
+      back: () => this.setState({ step: 0 }),
+    };
+  }
+}
+</script>
+</body>
+</html>

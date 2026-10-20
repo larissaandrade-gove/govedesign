@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Ticket, Type } from 'lucide-react';
+import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Search, Ticket, Type } from 'lucide-react';
+import { groupOf, openSearch } from '../lib/useMobile';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
@@ -19,13 +20,13 @@ export const SECTIONS = [
   { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
 ];
 
-/** Abas do celular (padrão de barra de abas): poucas, com ícone e nome curto. */
+/** Abas do celular: Início, Apps, Buscar (centro), Cores e Guias — o mesmo do app mobile. */
 const TABS = [
-  { id: 'inicio', label: 'Início', icon: Home },
-  { id: 'aplicacoes', label: 'Apps', icon: AppWindow },
-  { id: 'cores', label: 'Tokens', icon: Palette, also: ['logomarca', 'tipografia'] },
-  { id: 'componentes', label: 'Guias', icon: BookOpenCheck, also: ['diretrizes'] },
-  { id: 'solicitacoes', label: 'Pedidos', icon: Ticket },
+  { id: 'inicio', label: 'Início', icon: Home, href: '#inicio' },
+  { id: 'aplicacoes', label: 'Apps', icon: AppWindow, href: '#aplicacoes' },
+  { id: 'buscar', label: 'Buscar', icon: Search, href: '' },
+  { id: 'cores', label: 'Cores', icon: Palette, href: '#cores' },
+  { id: 'guias', label: 'Guias', icon: BookOpenCheck, href: '#tipografia' },
 ];
 
 const RAIL_KEY = 'gove-rail';
@@ -94,7 +95,7 @@ function NavItem({ href, label, icon: Icon, on, open, small = false }: { href: s
 export function Sidebar({ view }: { view: View }) {
   const active = useActiveSection(view);
   const [open, toggle] = useRail();
-  const tabActive = TABS.find((t) => t.id === active || t.also?.includes(active) || (t.id === 'aplicacoes' && active.startsWith('app-')))?.id;
+  const tabActive = view.kind === 'app' ? 'aplicacoes' : groupOf(view.section);
 
   return (
     <>
@@ -161,15 +162,27 @@ export function Sidebar({ view }: { view: View }) {
       </header>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-secondary/70 bg-background/95 px-space-1 pt-1 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 items-center rounded-t-[28px] bg-background/95 px-space-1 pt-space-1 shadow-[0_-8px_24px_rgba(32,19,61,0.08)] backdrop-blur-md lg:hidden"
         style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
       >
-        {TABS.map(({ id, label, icon: Icon }) => {
+        {TABS.map(({ id, label, icon: Icon, href }) => {
+          if (id === 'buscar')
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={openSearch}
+                aria-label={label}
+                className="mx-auto -mt-7 flex size-14 rotate-45 items-center justify-center rounded-[18px] bg-accent text-on-accent shadow-glow-yellow"
+              >
+                <Icon className="size-6 -rotate-45" aria-hidden />
+              </button>
+            );
           const on = tabActive === id;
           return (
             <a
               key={id}
-              href={`#${id}`}
+              href={href}
               aria-current={on ? 'page' : undefined}
               className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors ${on ? 'text-highlight' : 'text-text-secondary'}`}
             >

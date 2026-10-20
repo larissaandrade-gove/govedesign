@@ -7,8 +7,6 @@ import {
   TICKET_TYPES,
   blockLabel,
   brDateFromIso,
-  effortHours,
-  leadHours,
   validateTicket,
   type TicketPriority,
   type TicketType,
@@ -105,18 +103,16 @@ function StatusChips({ t }: { t: StoredTicket }) {
   );
 }
 
-/** Prazos e produção de uma frente, em uma linha. */
-function Terms({ type }: { type: TicketType }) {
+const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+/** "qua, 22/10" */
+const shortDate = (iso: string) => `${WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()]}, ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+/** Previsão de entrega: a partir de quando a demanda pode ficar pronta. */
+function Forecast({ date }: { date: string | null | undefined }) {
   return (
-    <span className="flex flex-wrap gap-x-space-2 gap-y-1 text-caption font-medium text-highlight">
-      <span className="inline-flex items-center gap-1">
-        <Clock className="size-3.5" aria-hidden />
-        Alta urgência {leadHours(type.id, 'alta')} h · Normal {leadHours(type.id, 'normal')} h úteis
-      </span>
-      <span className="inline-flex items-center gap-1">
-        <CalendarClock className="size-3.5" aria-hidden />
-        Produção {effortHours(type.id)} h
-      </span>
+    <span className="inline-flex items-center gap-1 text-caption font-semibold text-highlight">
+      <Clock className="size-3.5" aria-hidden />
+      {date === undefined ? 'Calculando previsão…' : date ? `Entrega a partir de ${shortDate(date)}` : 'Sem data livre nas próximas semanas'}
     </span>
   );
 }
@@ -136,8 +132,7 @@ function RecentList({ list }: { list: StoredTicket[] }) {
               <span className="truncate text-body font-semibold text-text-primary">{t.title}</span>
               <span className="text-caption text-text-secondary">
                 {t.id} · entrega {brDateFromIso(t.dueDate)}
-                {t.priority === 'alta' ? ' · alta urgência' : ''}
-                {t.requesterName ? ` · ${t.requesterName}` : ''}
+                                {t.requesterName ? ` · ${t.requesterName}` : ''}
               </span>
               <StatusChips t={t} />
             </span>
@@ -165,6 +160,7 @@ export function Solicitacoes() {
   const [done, setDone] = useState<{ ticket: StoredTicket; notes: string[] } | null>(null);
   const [failure, setFailure] = useState('');
   const [list, setList] = useState<StoredTicket[]>([]);
+  const [forecast, setForecast] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     detectMode().then(async (m) => {
@@ -174,12 +170,12 @@ export function Solicitacoes() {
   }, []);
   useEffect(() => (mode ? watchTickets(mode, setList) : undefined), [mode]);
 
-  // Primeira entrega possível (prazo mínimo + agenda do design) ao escolher frente e prioridade
+  // Primeira entrega possível (prazo mínimo + agenda do design) para a frente escolhida
   useEffect(() => {
     setAvail(null);
-    if (!mode || !type || !form.priority) return;
+    if (!mode || !type) return;
     let alive = true;
-    availability(mode, type.id, form.priority).then((a) => alive && setAvail(a));
+    availability(mode, type.id, form.priority || 'normal').then((a) => alive && setAvail(a));
     return () => {
       alive = false;
     };
@@ -189,8 +185,18 @@ export function Solicitacoes() {
     setView(v);
     setFailure('');
     dialog.current?.showModal();
+    // Previsão de cada frente (prioridade normal, para não induzir a urgência)
+    if (mode && v === 'frentes')
+      for (const t of TICKET_TYPES) availability(mode, t.id, 'normal').then((a) => setForecast((f) => ({ ...f, [t.id]: a.earliest })));
   };
   const close = () => dialog.current?.close();
+
+  // Busca do celular e outros atalhos abrem o pop-up direto nas frentes
+  useEffect(() => {
+    const on = () => open('frentes');
+    window.addEventListener('gove:nova-solicitacao', on);
+    return () => window.removeEventListener('gove:nova-solicitacao', on);
+  });
 
   const pick = (t: TicketType) => {
     let manual = { requesterName: me?.name ?? '', requesterEmail: me?.email ?? '' };
@@ -291,7 +297,6 @@ export function Solicitacoes() {
           <div className="min-h-0 flex-1 overflow-y-auto px-space-2 py-space-3 sm:px-space-3" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
             {view === 'frentes' && (
               <div className="flex flex-col gap-space-2">
-                <p className="text-body text-text-secondary">Prazos em horas úteis (seg. a sex., 9h–18h). A produção é distribuída por igual na agenda do design, sem cruzar reuniões.</p>
                 <ul className="grid gap-space-2 sm:grid-cols-2">
                   {TICKET_TYPES.map((t) => {
                     const Icon = ICONS[t.id] ?? Gift;
@@ -309,8 +314,7 @@ export function Solicitacoes() {
                             <span className="text-body-large font-semibold text-text-primary">{t.label}</span>
                           </span>
                           <span className="text-body text-text-secondary">{t.detail}</span>
-                          <span className="text-caption text-text-secondary">Ex.: {t.pieceTypes.slice(0, 4).join(', ')}</span>
-                          <Terms type={t} />
+                          <Forecast date={forecast[t.id]} />
                         </button>
                       </li>
                     );
@@ -336,7 +340,6 @@ export function Solicitacoes() {
                       <span>Sem login identificado: preencha seu nome e e-mail.</span>
                     )}
                   </p>
-                  <Terms type={type} />
                 </div>
                 {!me?.email && (
                   <div className="grid gap-space-2 sm:grid-cols-2">
@@ -361,9 +364,9 @@ export function Solicitacoes() {
                     onChange={(e) => set('description', e.target.value)}
                     maxLength={2000}
                     rows={4}
-                    placeholder="Objetivo, público, onde será usado, referências."
+                    placeholder="Objetivo, público e onde será usado."
                     error={err('description')}
-                    hint={`${descLen} de no mínimo ${DESCRIPTION_MIN} caracteres`}
+                    hint={`${descLen}/${DESCRIPTION_MIN}`}
                   />
                 </div>
 
@@ -378,7 +381,6 @@ export function Solicitacoes() {
                         >
                           <input type="radio" name="priority" value={p.id} checked={form.priority === p.id} onChange={() => set('priority', p.id)} className="sr-only" />
                           <span className="text-body font-semibold">{p.label}</span>
-                          <span className="text-caption">mín. {leadHours(type.id, p.id)} h úteis</span>
                         </label>
                       ))}
                     </div>
@@ -391,17 +393,8 @@ export function Solicitacoes() {
                       min={minDate}
                       value={form.dueDate}
                       onChange={(e) => set('dueDate', e.target.value)}
-                      disabled={!form.priority}
                       error={err('dueDate')}
-                      hint={
-                        !form.priority
-                          ? 'Escolha a prioridade para ver a primeira data.'
-                          : !avail
-                            ? 'Consultando a agenda do design…'
-                            : avail.earliest
-                              ? `Primeira data: ${brDateFromIso(avail.earliest)} · agenda do design ${avail.calendar}`
-                              : 'Agenda do design sem espaço nos próximos dias: fale com o time.'
-                      }
+                      hint={!avail ? 'Calculando previsão…' : avail.earliest ? `Entrega a partir de ${shortDate(avail.earliest)}` : 'Sem data livre nas próximas semanas.'}
                     />
                   </div>
                 </div>
@@ -414,7 +407,7 @@ export function Solicitacoes() {
                     placeholder="https://… (um por linha)"
                     rows={2}
                     error={err('links')}
-                    hint={type.linkRequired ? 'O design consulta as especificações de cada item.' : 'Opcional.'}
+                    hint={type.linkRequired ? undefined : 'Opcional.'}
                   />
                 </div>
                 {type.fields.length > 0 && (

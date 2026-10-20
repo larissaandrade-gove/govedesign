@@ -29,7 +29,7 @@ export const LEAD_HOURS = { alta: 24, normal: 48 };
 export const EFFORT_HOURS = 8;
 
 export const TICKET_PRIORITIES = [
-  { id: 'alta', label: 'Alta urgência' },
+  { id: 'alta', label: 'Alta' },
   { id: 'normal', label: 'Normal' },
 ];
 
@@ -38,7 +38,7 @@ export const TICKET_TYPES = [
     id: 'redesign',
     label: 'Redesign',
     summary: 'Revisão de diagramação e cores de peças',
-    detail: 'Ajuste de peças que já existem: diagramação, hierarquia, cores e aplicação da marca conforme o Design System. Envie a peça atual e diga onde ela será usada.',
+    detail: 'Ajuste de diagramação e cores de peças existentes. Envie a peça atual.',
     factor: 1,
     pieceTypes: ['Post', 'Carrossel', 'Banner', 'Apresentação', 'Folder', 'E-mail marketing'],
     formats: ['Post 1:1', 'Post 4:5', 'Story 9:16', '16:9', 'A4'],
@@ -50,7 +50,7 @@ export const TICKET_TYPES = [
     id: 'video',
     label: 'Edição de vídeo',
     summary: 'Corte e edição de vídeos de eventos da empresa',
-    detail: 'Seleção de trechos, cortes, legendas, trilha e vinhetas da marca para vídeos de eventos da Gove. Leva o dobro do tempo de uma demanda normal.',
+    detail: 'Corte e edição de vídeos de eventos da Gove. Envie o link dos arquivos brutos.',
     factor: 2,
     pieceTypes: ['Aftermovie', 'Reels', 'Corte de palestra', 'Depoimento', 'Vídeo institucional'],
     formats: ['16:9', 'Story 9:16', 'Post 1:1', 'Post 4:5'],
@@ -65,7 +65,7 @@ export const TICKET_TYPES = [
     id: 'impressos',
     label: 'Documentação impressa',
     summary: 'Material para gráfica em formatos incomuns, customizados ou estratégicos',
-    detail: 'Arquivos fechados para gráfica (CMYK, sangria, marcas de corte) em formatos especiais: kits, cartilhas, convites, certificados e peças estratégicas.',
+    detail: 'Arquivos para gráfica em formatos especiais ou estratégicos.',
     factor: 1,
     pieceTypes: ['Folder', 'Flyer', 'Cartilha', 'Convite', 'Certificado', 'Crachá', 'Kit de boas-vindas'],
     formats: ['A4', 'A5', 'A3', '10×15 cm', '21×21 cm'],
@@ -80,7 +80,7 @@ export const TICKET_TYPES = [
     id: 'brindes',
     label: 'Brindes e outros materiais',
     summary: 'Garrafas, mochilas, itens tech e outros materiais além do papel',
-    detail: 'Aplicação da marca em objetos, com alinhamento visual e estratégico. O link de cada item é obrigatório para o design consultar área de impressão, cores e técnica.',
+    detail: 'Marca aplicada em garrafas, mochilas, itens tech e afins. Envie o link de cada item.',
     factor: 1,
     pieceTypes: ['Garrafa', 'Mochila', 'Caneca', 'Camiseta', 'Item tech', 'Ecobag'],
     formats: ['Área de gravação do fornecedor', '5×5 cm', '8×4 cm'],
