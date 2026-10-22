@@ -24,6 +24,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PaletteField, SchemePicker, TextColorField } from "./BBControls";
+import { useBBMode } from "@/lib/gove/bbMode";
+import {
+  BB_FONTS,
+  graphicColors,
+  hex6,
+  leafTextContext,
+  textContext,
+  type BBContext,
+  type BBScheme,
+} from "@/lib/gove/bb";
 
 interface Props {
   node: AnyNode | null;
@@ -36,6 +47,12 @@ interface Props {
   onMoveDown?: (() => void) | undefined;
   cursor?: PageCursor | undefined;
   onCursorChange?: ((patch: Partial<PageCursor>) => void) | undefined;
+  /** Identidade BB: fundo efetivo do contêiner do bloco selecionado. */
+  bbContainer?: BBContext | undefined;
+  /** Identidade BB: aplica um esquema à seção/linha (e recolore os blocos). */
+  onApplyScheme?: ((scheme: BBScheme | null) => void) | undefined;
+  /** Configurações da página (mostradas quando nada está selecionado). */
+  pageSettings?: React.ReactNode;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -79,6 +96,9 @@ function ColorField({
   onChange: (v: string) => void;
   warning?: string | null;
 }) {
+  const bb = useBBMode();
+  // Identidade BB: só as 12 cores da paleta, sem seletor livre.
+  if (bb) return <PaletteField label={label} value={value} onChange={onChange} />;
   return (
     <Field label={label}>
       <div className="flex flex-wrap gap-2">
@@ -182,19 +202,37 @@ function RadiusField({
   );
 }
 
-function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Partial<BoxProps>) => void }) {
+function BoxEditor({
+  box: raw,
+  onChange,
+  onScheme,
+  allowTransparent = false,
+  protectedText = false,
+}: {
+  box: BoxProps;
+  onChange: (patch: Partial<BoxProps>) => void;
+  onScheme?: ((scheme: BBScheme | null) => void) | undefined;
+  allowTransparent?: boolean;
+  protectedText?: boolean;
+}) {
   const box = normalizeBox(raw);
+  const bb = useBBMode();
+  // Identidade BB: sem degradê (as cores intermediárias saem da paleta).
+  const fills = bb
+    ? ([
+        ["solid", "Cor sólida"],
+        ["image", "Imagem"],
+      ] as const)
+    : ([
+        ["solid", "Cor sólida"],
+        ["gradient", "Degradê"],
+        ["image", "Imagem"],
+      ] as const);
   return (
     <>
       <Field label="Preenchimento do fundo">
-        <div className="grid grid-cols-3 gap-2">
-          {(
-            [
-              ["solid", "Cor sólida"],
-              ["gradient", "Degradê"],
-              ["image", "Imagem"],
-            ] as const
-          ).map(([value, label]) => (
+        <div className={`grid gap-2 ${bb ? "grid-cols-2" : "grid-cols-3"}`}>
+          {fills.map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -211,9 +249,21 @@ function BoxEditor({ box: raw, onChange }: { box: BoxProps; onChange: (patch: Pa
         </div>
       </Field>
 
-      <ColorField label="Cor de fundo" value={box.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+      {bb && onScheme ? (
+        <SchemePicker value={box.bgColor} onPick={onScheme} allowTransparent={allowTransparent} />
+      ) : (
+        <ColorField label="Cor de fundo" value={box.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+      )}
 
-      {box.fill === "gradient" ? (
+      {bb && box.fill === "image" ? (
+        <p className="rounded-lg bg-secondary px-3 py-2 text-xs">
+          {protectedText
+            ? "Textos sobre a foto ganham caixa de proteção Azul escuro + Branco (8,94:1). Para tirar a caixa, use sobreposição Azul escuro de 80% ou mais."
+            : "A sobreposição garante 4,5:1 para os textos sobre a foto."}
+        </p>
+      ) : null}
+
+      {!bb && box.fill === "gradient" ? (
         <>
           <Field label="Degradês da marca">
             <div className="grid grid-cols-2 gap-2">
@@ -377,6 +427,7 @@ function CursorEditor({
   cursor: PageCursor;
   onCursorChange: (patch: Partial<PageCursor>) => void;
 }) {
+  const bb = useBBMode();
   return (
     <div className="space-y-4 border-t border-border p-6">
       <h3 className="text-sm font-bold">Cursor do mouse</h3>
@@ -393,7 +444,7 @@ function CursorEditor({
       </Field>
       {cursor.mode !== "default" ? (
         <>
-          <Field label="Presets">
+          {bb ? null : <Field label="Presets">
             <div className="grid grid-cols-3 gap-2">
               {CURSOR_PRESETS.map((preset) => (
                 <button
@@ -410,7 +461,7 @@ function CursorEditor({
                 </button>
               ))}
             </div>
-          </Field>
+          </Field>}
           <Field label="URL da imagem ou GIF">
             <Input
               value={cursor.url}
@@ -482,10 +533,15 @@ export function PropertiesPanel({
   onMoveDown,
   cursor,
   onCursorChange,
+  bbContainer,
+  onApplyScheme,
+  pageSettings,
 }: Props) {
+  const bb = useBBMode();
   if (!node) {
     return (
       <div>
+        {pageSettings}
         <p className="p-6 text-sm text-muted-foreground">
           Selecione um elemento no canvas para editar suas propriedades.
         </p>
@@ -510,6 +566,13 @@ export function PropertiesPanel({
     contrast && !contrast.pass && contrast.ratio
       ? `Contraste ${contrast.ratio.toFixed(2)}:1 — abaixo do mínimo WCAG AA (${contrast.required}:1).`
       : null;
+
+  // Identidade BB: contexto do texto e cores de forma (>= 3:1) sobre o fundo do contêiner.
+  const leafNode = node.type !== "section" && node.type !== "row" ? node : null;
+  const bbCtx = bb && bbContainer && leafNode ? leafTextContext(leafNode, bbContainer) : null;
+  const containerBg =
+    bbContainer && bbContainer.solid ? bbContainer.samples[0] : undefined;
+  const shapeColors = containerBg ? graphicColors(containerBg) : undefined;
 
   return (
     <div className="space-y-6 p-6">
@@ -550,7 +613,13 @@ export function PropertiesPanel({
       </div>
 
       {node.type === "section" || node.type === "row" ? (
-        <BoxEditor box={node.box} onChange={(patch) => onChange({ box: { ...normalizeBox(node.box), ...patch } })} />
+        <BoxEditor
+          box={node.box}
+          onChange={(patch) => onChange({ box: { ...normalizeBox(node.box), ...patch } })}
+          onScheme={onApplyScheme}
+          allowTransparent={node.type === "row"}
+          protectedText={bbContainer?.protected ?? false}
+        />
       ) : null}
 
       {node.type === "row" ? (
@@ -606,14 +675,26 @@ export function PropertiesPanel({
               value={node.variant}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
-              {BUTTON_VARIANTS.map((v) => (
+              {BUTTON_VARIANTS.filter((v) => !bb || v.value !== "glass").map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}
                 </option>
               ))}
             </select>
           </Field>
-          <ColorField label="Cor do botão" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+          {bb ? (
+            node.variant === "text" ? null : (
+              <PaletteField
+                label={node.variant === "outline" ? "Cor da borda" : "Cor do botão"}
+                value={node.bgColor}
+                colors={shapeColors}
+                onChange={(v) => onChange({ bgColor: v })}
+                hint={shapeColors ? "Só cores com 3:1 ou mais sobre o fundo da seção." : undefined}
+              />
+            )
+          ) : (
+            <ColorField label="Cor do botão" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+          )}
           <RadiusField value={node.radius} onChange={(v) => onChange({ radius: v })} />
           <Field label="Animação">
             <select
@@ -634,7 +715,17 @@ export function PropertiesPanel({
       {textish ? (
         <>
           <Field label="Fonte">
-            <Input value="Montserrat (travada pelo design system)" readOnly aria-readonly />
+            <Input
+              value={
+                bb
+                  ? node.type === "text" && node.tag !== "p"
+                    ? `${BB_FONTS.title.family} (identidade BB)`
+                    : `${BB_FONTS.text.family} (identidade BB)`
+                  : "Montserrat (travada pelo design system)"
+              }
+              readOnly
+              aria-readonly
+            />
           </Field>
           <Field label="Peso">
             <div className="flex gap-2">
@@ -686,12 +777,21 @@ export function PropertiesPanel({
               aria-label="Tamanho customizado em px"
             />
           </Field>
-          <ColorField
-            label="Cor do texto"
-            value={(node as { color: string }).color}
-            onChange={(v) => onChange({ color: v })}
-            warning={contrastWarning}
-          />
+          {bbCtx ? (
+            <TextColorField
+              label="Cor do texto"
+              value={(node as { color: string }).color}
+              ctx={bbCtx}
+              onChange={(v) => onChange({ color: v })}
+            />
+          ) : (
+            <ColorField
+              label="Cor do texto"
+              value={(node as { color: string }).color}
+              onChange={(v) => onChange({ color: v })}
+              warning={contrastWarning}
+            />
+          )}
           <Field label="Alinhamento">
             <div className="flex gap-2">
               {(["left", "center", "right"] as const).map((align) => (
@@ -776,23 +876,42 @@ export function PropertiesPanel({
           <Field label="Ícone">
             <IconPicker value={node.icon} onChange={(icon) => onChange({ icon })} />
           </Field>
-          <ColorField label="Cor do ícone" value={node.iconColor} onChange={(v) => onChange({ iconColor: v })} />
+          {bb ? (
+            <PaletteField
+              label="Cor do ícone"
+              value={node.iconColor}
+              colors={graphicColors(node.bgColor)}
+              onChange={(v) => onChange({ iconColor: v })}
+              hint="Só cores com 3:1 ou mais sobre o fundo do card."
+            />
+          ) : (
+            <ColorField label="Cor do ícone" value={node.iconColor} onChange={(v) => onChange({ iconColor: v })} />
+          )}
           <Field label="Título">
             <Input value={node.title} onChange={(e) => onChange({ title: e.target.value })} />
           </Field>
           <Field label="Descrição">
             <Textarea rows={3} value={node.description} onChange={(e) => onChange({ description: e.target.value })} />
           </Field>
-          <ColorField
-            label="Cor do texto"
-            value={node.color}
-            onChange={(v) => onChange({ color: v })}
-            warning={
-              checkContrast(node.color, node.bgColor, node.size, false).pass
-                ? null
-                : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
-            }
-          />
+          {bb ? (
+            <TextColorField
+              label="Cor do texto"
+              value={node.color}
+              ctx={textContext([hex6(node.bgColor) ?? "#FFFFFF"])}
+              onChange={(v) => onChange({ color: v })}
+            />
+          ) : (
+            <ColorField
+              label="Cor do texto"
+              value={node.color}
+              onChange={(v) => onChange({ color: v })}
+              warning={
+                checkContrast(node.color, node.bgColor, node.size, false).pass
+                  ? null
+                  : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
+              }
+            />
+          )}
           <ColorField label="Cor de fundo" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
           <ColorField label="Cor da borda" value={node.borderColor} onChange={(v) => onChange({ borderColor: v })} />
           <StepSelect label="Espessura da borda" value={node.borderWidth} steps={[0, 1, 2, 3, 4]} onChange={(v) => onChange({ borderWidth: v })} />
@@ -884,34 +1003,49 @@ export function PropertiesPanel({
           <Field label="Texto quando encerrar">
             <Input value={node.expiredText} onChange={(e) => onChange({ expiredText: e.target.value })} />
           </Field>
-          <ColorField
-            label="Cor dos números"
-            value={node.color}
-            onChange={(v) => onChange({ color: v })}
-            warning={
-              checkContrast(node.color, node.bgColor, node.size, true).pass
-                ? null
-                : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
-            }
-          />
-          <ColorField
-            label="Cor dos rótulos"
-            value={node.accentColor}
-            onChange={(v) => onChange({ accentColor: v })}
-            warning={
-              checkContrast(node.accentColor, node.bgColor, 16, true).pass
-                ? null
-                : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
-            }
-          />
-          <ColorField label="Cor de fundo dos blocos" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+          {bbCtx ? (
+            <>
+              <TextColorField label="Cor dos números" value={node.color} ctx={bbCtx} onChange={(v) => onChange({ color: v })} />
+              <TextColorField label="Cor dos rótulos" value={node.accentColor} ctx={bbCtx} onChange={(v) => onChange({ accentColor: v })} />
+              <PaletteField
+                label="Cor de fundo dos blocos"
+                value={node.bgColor}
+                colors={shapeColors}
+                onChange={(v) => onChange({ bgColor: v })}
+              />
+            </>
+          ) : (
+            <>
+              <ColorField
+                label="Cor dos números"
+                value={node.color}
+                onChange={(v) => onChange({ color: v })}
+                warning={
+                  checkContrast(node.color, node.bgColor, node.size, true).pass
+                    ? null
+                    : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
+                }
+              />
+              <ColorField
+                label="Cor dos rótulos"
+                value={node.accentColor}
+                onChange={(v) => onChange({ accentColor: v })}
+                warning={
+                  checkContrast(node.accentColor, node.bgColor, 16, true).pass
+                    ? null
+                    : "Contraste abaixo do mínimo WCAG AA (4.5:1)."
+                }
+              />
+              <ColorField label="Cor de fundo dos blocos" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+            </>
+          )}
           <Field label="Estilo dos blocos">
             <select
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={node.variant ?? "filled"}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
-              {BUTTON_VARIANTS.map((v) => (
+              {BUTTON_VARIANTS.filter((v) => !bb || v.value !== "glass").map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}
                 </option>

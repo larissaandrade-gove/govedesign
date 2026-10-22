@@ -10,7 +10,8 @@
     "build:artifact": "npm --prefix artifact install && vite build --config artifact/vite.config.ts",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:bb": "node --test scripts/bb-check.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

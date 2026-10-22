@@ -8,7 +8,8 @@ import {
   makeSection,
   makeText,
 } from "./factories";
-import type { PageContent, SectionBlock } from "./types";
+import type { Identity, Leaf, PageContent, SectionBlock } from "./types";
+import { BB_COPY, BB_SCHEMES, applyScheme } from "./bb";
 
 export type HeroPresetId = "blank" | "centered" | "split" | "form";
 
@@ -59,9 +60,42 @@ export const HERO_PRESETS: { id: HeroPresetId; nome: string; descricao: string }
   { id: "blank", nome: "Começar em branco", descricao: "Uma seção vazia para montar do zero." },
 ];
 
-export function pageFromPreset(preset: HeroPresetId): PageContent {
+function govePreset(preset: HeroPresetId): PageContent {
   if (preset === "centered") return { version: 1, sections: [heroCentered()] };
   if (preset === "split") return { version: 1, sections: [heroSplit()] };
   if (preset === "form") return { version: 1, sections: [heroForm()] };
   return { version: 1, sections: [makeSection({ children: [makeRow(1)] })] };
+}
+
+/** Esquema BB e textos-modelo (voz BB) de cada preset. */
+const BB_PRESET: Record<HeroPresetId, { scheme: string; title: string; text: string }> = {
+  centered: { scheme: "capa", title: BB_COPY.heroTitle, text: BB_COPY.heroText },
+  split: { scheme: "claro", title: BB_COPY.splitTitle, text: BB_COPY.splitText },
+  form: { scheme: "profundo", title: BB_COPY.formTitle, text: BB_COPY.formText },
+  blank: { scheme: "claro", title: "", text: "" },
+};
+
+function bbPreset(preset: HeroPresetId): PageContent {
+  const page: PageContent = { ...govePreset(preset), identity: "bb" };
+  const cfg = BB_PRESET[preset];
+  const copy = (leaf: Leaf): Leaf =>
+    leaf.type === "text"
+      ? { ...leaf, content: leaf.tag === "p" ? cfg.text : cfg.title }
+      : leaf.type === "button"
+        ? { ...leaf, label: BB_COPY.button }
+        : leaf;
+  page.sections = page.sections.map((section) => ({
+    ...section,
+    children: section.children.map((row) => ({
+      ...row,
+      columns: row.columns.map((col) => ({ ...col, children: col.children.map(copy) })),
+    })),
+  }));
+  const scheme = BB_SCHEMES.find((s) => s.id === cfg.scheme) ?? BB_SCHEMES[0]!;
+  const first = page.sections[0];
+  return first ? applyScheme(page, first.id, scheme) : page;
+}
+
+export function pageFromPreset(preset: HeroPresetId, identity: Identity = "gove"): PageContent {
+  return identity === "bb" ? bbPreset(preset) : govePreset(preset);
 }

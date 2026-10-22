@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PresetThumb } from "@/components/gove/PresetThumb";
 import { AppBrand } from "@/components/gove/AppBrand";
+import { IdentityToggle } from "@/components/gove/BBControls";
+import type { Identity } from "@/lib/gove/types";
 import { useAuth } from "@/lib/gove/auth";
 
 export const Route = createFileRoute("/")({
@@ -45,15 +47,17 @@ function Dashboard() {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
   const [preset, setPreset] = useState<HeroPresetId>("centered");
+  const [identity, setIdentity] = useState<Identity>("gove");
 
   useEffect(() => {
     setPages(listPages());
   }, []);
 
   function handleCreate() {
-    const page = createPage(nome.trim() || "Nova Landing Page", pageFromPreset(preset));
+    const page = createPage(nome.trim() || "Nova Landing Page", pageFromPreset(preset, identity));
     setOpen(false);
     setNome("");
+    setIdentity("gove");
     navigate({ to: "/editor/$id", params: { id: page.id } });
   }
 
@@ -106,8 +110,17 @@ function Dashboard() {
                 className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-card py-3 pr-2 pl-5 shadow-sm"
               >
                 <div className="min-w-0">
-                  <h2 className="truncate text-base font-bold" title={page.nome}>
-                    {page.nome}
+                  <h2 className="flex items-center gap-2 text-base font-bold" title={page.nome}>
+                    <span className="truncate">{page.nome}</span>
+                    {page.conteudo?.identity === "bb" ? (
+                      <span
+                        className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold"
+                        style={{ backgroundColor: "#FCFC30", color: "#3333BD" }}
+                        title="Identidade Banco do Brasil"
+                      >
+                        BB
+                      </span>
+                    ) : null}
                   </h2>
                   <p
                     className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"
@@ -165,6 +178,8 @@ function Dashboard() {
               className="min-h-11"
             />
           </div>
+
+          <IdentityToggle value={identity} onChange={setIdentity} />
 
           <div className="grid gap-3 sm:grid-cols-2">
             {HERO_PRESETS.map((item) => (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, Download } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, Download, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,17 +20,23 @@ export function ExportDialog({
   code,
   nome,
   issues,
+  bbIssues,
+  onAutoFix,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   code: string;
   nome: string;
   issues: AuditIssue[];
+  /** Identidade BB: pendências que bloqueiam a exportação (sem "exportar mesmo assim"). */
+  bbIssues?: AuditIssue[] | undefined;
+  onAutoFix?: (() => void) | undefined;
 }) {
   const [copied, setCopied] = useState(false);
   const [override, setOverride] = useState(false);
   const errors = issues.filter((i) => i.severity === "error");
-  const blocked = errors.length > 0 && !override;
+  const bbBlocked = (bbIssues?.length ?? 0) > 0;
+  const blocked = bbBlocked || (errors.length > 0 && !override);
 
   async function copy() {
     try {
@@ -62,6 +68,34 @@ export function ExportDialog({
             Cole como elemento HTML na plataforma final. O snippet do RD Station é preservado.
           </DialogDescription>
         </DialogHeader>
+
+        {bbIssues ? (
+          bbBlocked ? (
+            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3">
+              <p className="flex items-center gap-2 text-sm font-bold text-destructive">
+                <AlertTriangle className="size-4" aria-hidden />
+                Identidade BB: {bbIssues.length} pendência(s) bloqueiam a exportação
+              </p>
+              <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-destructive">
+                {bbIssues.map((issue) => (
+                  <li key={issue.id}>
+                    <strong>{issue.rule}:</strong> {issue.message}
+                  </li>
+                ))}
+              </ul>
+              {onAutoFix ? (
+                <Button variant="cta" size="touch" className="mt-2" onClick={onAutoFix}>
+                  <Wand2 aria-hidden /> Corrigir automaticamente
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <p className="flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-3 text-sm font-semibold">
+              <CheckCircle2 className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+              Identidade BB aprovada: textos 4,5:1+, só cores da paleta, fontes BB embutidas.
+            </p>
+          )
+        ) : null}
 
         {errors.length > 0 ? (
           <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3">

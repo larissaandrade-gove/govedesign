@@ -9,20 +9,41 @@ import { embedUrl } from "@/lib/gove/video";
 import { countdownMsLeft, countdownUnits, pad } from "@/lib/gove/countdown";
 import type { CountdownBlock } from "@/lib/gove/types";
 import type { BoxProps, Leaf, PageContent, RowBlock, SectionBlock } from "@/lib/gove/types";
+import {
+  BB_PROTECTION,
+  isBB,
+  logoLayout,
+  needsProtection,
+  pageFonts,
+  rowSamples,
+  textContext,
+  type BBContext,
+  type PageFonts,
+} from "@/lib/gove/bb";
+import { BB_FONT_FACE_CSS } from "@/lib/gove/bbFonts";
 
-const shadowCss = (shadow: BoxProps["shadow"]) =>
-  shadow === "sm"
-    ? "0 2px 8px rgba(11,32,39,.08)"
+/** Identidade da página no canvas (fontes e, na BB, o fundo do contêiner). */
+interface Look {
+  bb: boolean;
+  fonts: PageFonts;
+  container?: BBContext;
+}
+
+const shadowCss = (shadow: BoxProps["shadow"], bb = false) => {
+  const c = bb ? "51,51,189" : "11,32,39";
+  return shadow === "sm"
+    ? `0 2px 8px rgba(${c},.08)`
     : shadow === "md"
-      ? "0 8px 24px rgba(11,32,39,.16)"
+      ? `0 8px 24px rgba(${c},.16)`
       : undefined;
+};
 
-function boxStyle(box: BoxProps): CSSProperties {
+function boxStyle(box: BoxProps, bb = false): CSSProperties {
   return {
     ...(backgroundStyle(box) as CSSProperties),
     borderRadius: box.radius || undefined,
     border: box.borderWidth ? `${box.borderWidth}px solid ${box.borderColor}` : undefined,
-    boxShadow: shadowCss(box.shadow),
+    boxShadow: shadowCss(box.shadow, bb),
     padding: `${box.paddingY}px ${box.paddingX}px`,
   };
 }
@@ -50,12 +71,30 @@ const outline = (active: boolean): CSSProperties =>
       }
     : {};
 
-function LeafView({
+function LeafView(props: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "mobile">) {
+  const { leaf, look } = props;
+  if (look.bb && look.container && needsProtection(leaf, look.container)) {
+    // Caixa de proteção BB: texto sobre foto vai num bloco Azul escuro.
+    return (
+      <div
+        className="bb-protecao"
+        style={{ backgroundColor: BB_PROTECTION.bg, padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}
+      >
+        <LeafBody {...props} />
+      </div>
+    );
+  }
+  return <LeafBody {...props} />;
+}
+
+function LeafBody({
   leaf,
+  look,
   selectedId,
   onSelect,
   onMove,
-}: { leaf: Leaf } & Omit<CanvasProps, "page" | "mobile">) {
+}: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "mobile">) {
+  const { fonts } = look;
   const selected = selectedId === leaf.id;
   const dnd = {
     draggable: true,
@@ -93,8 +132,12 @@ function LeafView({
         }}
         style={{
           ...common,
+          fontFamily: leaf.tag === "p" ? fonts.body : fonts.heading,
           fontSize: leaf.size,
-          fontWeight: leaf.weight === "bold" ? 700 : 400,
+          fontWeight:
+            leaf.tag === "p"
+              ? fonts.bodyWeight(leaf.weight === "bold")
+              : fonts.headingWeight(leaf.weight === "bold"),
           fontStyle: leaf.italic ? "italic" : "normal",
           color: leaf.color,
           textAlign: leaf.align,
@@ -122,9 +165,11 @@ function LeafView({
           style={{
             display: "inline-block",
             borderRadius: leaf.radius,
+            fontFamily: fonts.body,
             fontSize: leaf.size,
-            fontWeight: leaf.weight === "bold" ? 700 : 400,
+            fontWeight: fonts.bodyWeight(leaf.weight === "bold"),
             fontStyle: leaf.italic ? "italic" : "normal",
+            textDecoration: look.bb && leaf.variant === "text" ? "underline" : undefined,
             color: leaf.color,
             ...buttonReactStyle(leaf),
           }}
@@ -181,13 +226,14 @@ function LeafView({
           color: leaf.color,
           borderRadius: leaf.radius,
           border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined,
-          boxShadow: shadowCss(leaf.shadow),
+          boxShadow: shadowCss(leaf.shadow, look.bb),
           padding: leaf.padding,
           textAlign: leaf.align,
+          fontFamily: fonts.body,
         }}
       >
         <Icon size={28} color={leaf.iconColor} aria-hidden />
-        <h3 style={{ margin: "8px 0", fontSize: leaf.size + 4, fontWeight: 700 }}>{leaf.title}</h3>
+        <h3 style={{ margin: "8px 0", fontFamily: fonts.heading, fontSize: leaf.size + 4, fontWeight: 700 }}>{leaf.title}</h3>
         <p style={{ margin: 0, fontSize: leaf.size, lineHeight: 1.5 }}>{leaf.description}</p>
       </div>
     );
@@ -241,7 +287,7 @@ function LeafView({
         }}
         style={{ ...common, textAlign: leaf.align }}
       >
-        <CountdownView leaf={leaf} />
+        <CountdownView leaf={leaf} fonts={fonts} />
       </div>
     );
   }
@@ -267,7 +313,7 @@ function LeafView({
   );
 }
 
-function CountdownView({ leaf }: { leaf: CountdownBlock }) {
+function CountdownView({ leaf, fonts }: { leaf: CountdownBlock; fonts: PageFonts }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -282,7 +328,7 @@ function CountdownView({ leaf }: { leaf: CountdownBlock }) {
     );
   }
   return (
-    <span style={{ display: "inline-flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+    <span style={{ display: "inline-flex", gap: 12, flexWrap: "wrap", justifyContent: "center", fontFamily: fonts.body }}>
       {countdownUnits(leaf.mode, left).map((unit) => (
         <span
           key={unit.key}
@@ -297,7 +343,7 @@ function CountdownView({ leaf }: { leaf: CountdownBlock }) {
             display: "inline-block",
           }}
         >
-          <span style={{ display: "block", fontSize: leaf.size, fontWeight: 700, lineHeight: 1.1 }}>
+          <span style={{ display: "block", fontFamily: fonts.heading, fontSize: leaf.size, fontWeight: 700, lineHeight: 1.1 }}>
             {pad(unit.value)}
           </span>
           <span
@@ -318,7 +364,16 @@ function CountdownView({ leaf }: { leaf: CountdownBlock }) {
   );
 }
 
-function RowView({ row, selectedId, onSelect, mobile, onMove }: { row: RowBlock } & Omit<CanvasProps, "page">) {
+function RowView({
+  row,
+  section,
+  look: base,
+  selectedId,
+  onSelect,
+  mobile,
+  onMove,
+}: { row: RowBlock; section: SectionBlock; look: Look } & Omit<CanvasProps, "page">) {
+  const look: Look = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
   return (
     <div
       draggable
@@ -348,7 +403,7 @@ function RowView({ row, selectedId, onSelect, mobile, onMove }: { row: RowBlock 
         onSelect(row.id);
       }}
       style={{
-        ...boxStyle(row.box),
+        ...boxStyle(row.box, look.bb),
         ...outline(selectedId === row.id),
         display: "flex",
         flexDirection: mobile ? "column" : "row",
@@ -387,7 +442,7 @@ function RowView({ row, selectedId, onSelect, mobile, onMove }: { row: RowBlock 
         >
           {col.children.length ? (
             col.children.map((leaf) => (
-              <LeafView key={leaf.id} leaf={leaf} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
+              <LeafView key={leaf.id} leaf={leaf} look={look} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
             ))
           ) : (
             <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">
@@ -401,6 +456,10 @@ function RowView({ row, selectedId, onSelect, mobile, onMove }: { row: RowBlock 
 }
 
 export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasProps) {
+  const bb = isBB(page);
+  const look: Look = { bb, fonts: pageFonts(page.identity) };
+  const logo = bb && page.bbLogo?.src ? page.bbLogo : null;
+  const logoBox = logo ? logoLayout(logo) : null;
   const cursor = normalizeCursor(page.cursor);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const follower = cursor.mode === "follower" && !!cursor.url.trim();
@@ -408,7 +467,8 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
   return (
     <div
       className="gove-lp relative mx-auto w-full bg-white shadow-sm transition-all"
-      style={{ maxWidth: mobile ? 390 : 1120, fontFamily: "Montserrat, sans-serif" }}
+      data-identity={bb ? "bb" : undefined}
+      style={{ maxWidth: mobile ? 390 : 1120, fontFamily: bb ? look.fonts.body : "Montserrat, sans-serif" }}
       onMouseMove={
         follower
           ? (e) => {
@@ -419,7 +479,24 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
       }
       onMouseLeave={follower ? () => setPos(null) : undefined}
     >
-      <style>{`${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}`}</style>
+      <style>{`${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}${bb ? `\n${BB_FONT_FACE_CSS}` : ""}`}</style>
+      {logo && logoBox ? (
+        <header
+          className="bb-logo"
+          style={{
+            backgroundColor: logo.bg,
+            padding: `${logoBox.clear}px ${Math.max(logoBox.clear, mobile ? 16 : 24)}px`,
+            textAlign: logo.align,
+          }}
+        >
+          <img
+            src={logo.src}
+            alt="Banco do Brasil"
+            width={logoBox.width}
+            style={{ display: "inline-block", width: logoBox.width, maxWidth: "none", height: "auto", verticalAlign: "middle" }}
+          />
+        </header>
+      ) : null}
       {follower && pos ? (
         <div
           aria-hidden
@@ -439,7 +516,7 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
           className={bgAnimClass(section.box.animation)}
           onClick={() => onSelect(section.id)}
           style={{
-            ...boxStyle(section.box),
+            ...boxStyle(section.box, bb),
             ...outline(selectedId === section.id),
             cursor: cursor.mode !== "default" && cursor.url.trim() ? "inherit" : "pointer",
           }}
@@ -448,6 +525,8 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
             <RowView
               key={row.id}
               row={row}
+              section={section}
+              look={look}
               selectedId={selectedId}
               onSelect={onSelect}
               mobile={mobile}

@@ -13,6 +13,7 @@ import {
   PanelRight,
   RectangleHorizontal,
   Save,
+  Settings2,
   Smartphone,
   SquareStack,
   Timer,
@@ -57,7 +58,39 @@ import {
   siblingInfo,
   updateNode,
 } from "@/lib/gove/tree";
-import type { Leaf, PageContent } from "@/lib/gove/types";
+import type { Identity, Leaf, PageContent } from "@/lib/gove/types";
+import {
+  applyScheme,
+  bbAudit,
+  bbDefaults,
+  bbHarmonize,
+  containerContexts,
+  isBB,
+  rowSamples,
+  sectionSamples,
+  textContext,
+  type BBContext,
+} from "@/lib/gove/bb";
+import { BBMode } from "@/lib/gove/bbMode";
+import {
+  BBStatus,
+  IdentityToggle,
+  LogoSettings,
+  VoiceTips,
+} from "@/components/gove/BBControls";
+
+/** Identidade BB: toda alteração passa pelo ajuste automático (pares aprovados, paleta). */
+const finalize = (p: PageContent) => (isBB(p) ? bbHarmonize(p) : p);
+
+/** Fundo efetivo do item selecionado (contêiner do bloco, ou a própria seção/linha). */
+function bbContainerFor(page: PageContent, id: string | null): BBContext | undefined {
+  if (!id) return undefined;
+  for (const section of page.sections) {
+    if (section.id === id) return textContext(sectionSamples(section));
+    for (const row of section.children) if (row.id === id) return textContext(rowSamples(section, row));
+  }
+  return containerContexts(page).get(id);
+}
 
 export const Route = createFileRoute("/editor/$id")({
   head: () => ({
@@ -135,13 +168,14 @@ function EditorPage() {
     [page, selectedId],
   );
 
-  function insertLeaf(leaf: Leaf) {
+  function insertLeaf(raw: Leaf) {
     setPage((current) => {
       if (!current) return current;
+      const leaf = isBB(current) ? bbDefaults(raw) : raw;
       const columnId = firstColumnId(current, selectedId);
       if (!columnId) return current;
       setSelectedId(leaf.id);
-      return addLeaf(current, columnId, leaf);
+      return finalize(addLeaf(current, columnId, leaf));
     });
   }
 
@@ -162,7 +196,7 @@ function EditorPage() {
       if (!sectionId) return current;
       const row = makeRow(cols);
       setSelectedId(row.id);
-      return addRow(current, sectionId, row);
+      return finalize(addRow(current, sectionId, row));
     });
   }
 
@@ -174,13 +208,58 @@ function EditorPage() {
     );
   }
 
+  const bb = isBB(page);
   const code = exportHtml(page, nome);
+  const bbIssues = bb ? bbAudit(page) : [];
+  // Na identidade BB o contraste é checado pela regra BB (4,5:1 sem exceção, pior caso em fotos).
+  const issues = bb ? auditPage(page).filter((i) => i.rule !== "Contraste") : auditPage(page);
+  const autoFix = () => {
+    setPage((current) => (current ? bbHarmonize(current) : current));
+    toast.success("Página ajustada à identidade BB.");
+  };
+  const setIdentity = (identity: Identity) => {
+    if (identity === (page.identity ?? "gove")) return;
+    setPage((current) => {
+      if (!current) return current;
+      if (identity === "bb") return bbHarmonize({ ...current, identity: "bb" });
+      return { ...current, identity: "gove" };
+    });
+    toast.success(
+      identity === "bb"
+        ? "Identidade Banco do Brasil: cores, fontes e contraste ajustados."
+        : "Identidade GOVE: as cores atuais foram mantidas.",
+    );
+  };
+  const pageSettings = (
+    <div className="space-y-4 border-b border-border p-6">
+      <h2 className="text-[20px] font-bold">Página</h2>
+      <IdentityToggle value={page.identity ?? "gove"} onChange={setIdentity} />
+      {bb ? (
+        <>
+          <BBStatus issues={bbIssues} onAutoFix={autoFix} />
+          <LogoSettings
+            logo={page.bbLogo}
+            onChange={(bbLogo) =>
+              setPage((current) => {
+                if (!current) return current;
+                const next = { ...current };
+                if (bbLogo) next.bbLogo = bbLogo;
+                else delete next.bbLogo;
+                return finalize(next);
+              })
+            }
+          />
+          <VoiceTips />
+        </>
+      ) : null}
+    </div>
+  );
   const at = selectedId ? siblingInfo(page, selectedId) : null;
   const move = (dir: -1 | 1) =>
-    setPage((current) => (current && selectedId ? moveSibling(current, selectedId, dir) : current));
+    setPage((current) => (current && selectedId ? finalize(moveSibling(current, selectedId, dir)) : current));
 
   const blocks = [
-    { label: "Seção", icon: LayoutPanelTop, action: () => setPage((p) => (p ? addSection(p, makeSection({ children: [makeRow(1)] })) : p)) },
+    { label: "Seção", icon: LayoutPanelTop, action: () => setPage((p) => (p ? finalize(addSection(p, makeSection({ children: [makeRow(1)] }))) : p)) },
     { label: "Linha (1 col.)", icon: RectangleHorizontal, action: () => insertRow(1) },
     { label: "Linha (2 col.)", icon: Columns2, action: () => insertRow(2) },
     { label: "Linha (3 col.)", icon: Columns3, action: () => insertRow(3) },
@@ -247,6 +326,15 @@ function EditorPage() {
           {savedLabel}
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-1 min-[900px]:gap-2">
+          {bb ? (
+            <span
+              className="hidden rounded-md px-2 py-1 text-xs font-bold min-[600px]:inline"
+              style={{ backgroundColor: "#FCFC30", color: "#3333BD" }}
+              title="Identidade Banco do Brasil"
+            >
+              BB
+            </span>
+          ) : null}
           <Button
             variant="ghost"
             size="iconTouch"
@@ -287,6 +375,20 @@ function EditorPage() {
           aria-label="Biblioteca de blocos"
           className={`w-16 shrink-0 overflow-y-auto border-r border-border bg-card p-2 min-[900px]:w-56 min-[900px]:p-4`}
         >
+          {/* Configurações da página (identidade GOVE/BB, logomarca, cursor). */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedId(null);
+              if (window.matchMedia("(max-width: 899.98px)").matches) setPanelOpen(true);
+            }}
+            aria-label="Configurações da página"
+            title="Configurações da página"
+            className={`mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border text-left text-sm font-semibold transition-colors hover:bg-secondary min-[900px]:mb-4 min-[900px]:justify-start min-[900px]:px-3`}
+          >
+            <Settings2 className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+            <span className={`sr-only min-[900px]:not-sr-only`}>Página{bb ? " · BB" : ""}</span>
+          </button>
           <h2 className={`sr-only min-[900px]:not-sr-only min-[900px]:mb-3 min-[900px]:block text-xs font-bold tracking-wide uppercase text-muted-foreground`}>
             Biblioteca de blocos
           </h2>
@@ -320,9 +422,11 @@ function EditorPage() {
             onMove={(dragId, targetId, position, kind) =>
               setPage((current) =>
                 current
-                  ? kind === "row"
-                    ? moveRow(current, dragId, targetId, position)
-                    : moveLeaf(current, dragId, targetId, position)
+                  ? finalize(
+                      kind === "row"
+                        ? moveRow(current, dragId, targetId, position)
+                        : moveLeaf(current, dragId, targetId, position),
+                    )
                   : current,
               )
             }
@@ -354,9 +458,20 @@ function EditorPage() {
               <X aria-hidden />
             </Button>
           </div>
+          <BBMode.Provider value={bb}>
           <PropertiesPanel
             node={selectedNode}
             background={background}
+            pageSettings={pageSettings}
+            bbContainer={bb ? bbContainerFor(page, selectedId) : undefined}
+            onApplyScheme={
+              bb
+                ? (scheme) =>
+                    setPage((current) =>
+                      current && selectedId ? applyScheme(current, selectedId, scheme) : current,
+                    )
+                : undefined
+            }
             cursor={page.cursor}
             onCursorChange={(patch) =>
               setPage((current) =>
@@ -367,7 +482,7 @@ function EditorPage() {
             }
             onChange={(patch) =>
               setPage((current) =>
-                current && selectedId ? updateNode(current, selectedId, patch) : current,
+                current && selectedId ? finalize(updateNode(current, selectedId, patch)) : current,
               )
             }
             onDelete={() =>
@@ -382,10 +497,11 @@ function EditorPage() {
             onMoveDown={at && at.index < at.count - 1 ? () => move(1) : undefined}
             onColumns={(count) =>
               setPage((current) =>
-                current && selectedId ? setColumnCount(current, selectedId, count) : current,
+                current && selectedId ? finalize(setColumnCount(current, selectedId, count)) : current,
               )
             }
           />
+          </BBMode.Provider>
         </aside>
       </div>
 
@@ -394,7 +510,9 @@ function EditorPage() {
         onOpenChange={setExportOpen}
         code={code}
         nome={nome}
-        issues={auditPage(page)}
+        issues={issues}
+        bbIssues={bb ? bbIssues : undefined}
+        onAutoFix={bb ? autoFix : undefined}
       />
     </div>
   );

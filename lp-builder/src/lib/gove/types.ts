@@ -164,10 +164,29 @@ export interface SectionBlock {
   children: RowBlock[];
 }
 
+/** Identidade visual da página: GOVE (padrão) ou Banco do Brasil. */
+export type Identity = "gove" | "bb";
+
+/** Logomarca BB (arquivo oficial enviado pelo usuário; nunca recolorida). */
+export interface BBLogo {
+  src: string;
+  version: "horizontal" | "central" | "simbolo";
+  /** Largura em px (mínimos: horizontal 140, central 70, símbolo 25). */
+  width: number;
+  /** Largura / altura do arquivo (para a área de proteção x/2). */
+  aspect: number;
+  /** Fundo da faixa: Amarelo institucional, Azul institucional ou Branco. */
+  bg: string;
+  align: "left" | "center";
+}
+
 export interface PageContent {
   version: 1;
   sections: SectionBlock[];
   cursor?: PageCursor;
+  /** Ausente = "gove". */
+  identity?: Identity;
+  bbLogo?: BBLogo;
 }
 
 /** Cursor personalizado da página (ícone estático via CSS ou GIF/imagem que segue o mouse). */
