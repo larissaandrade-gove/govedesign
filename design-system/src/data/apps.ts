@@ -1,4 +1,4 @@
-import { CalendarCheck, LayoutTemplate, Link2, Printer, ScanSearch, Sparkles, type LucideIcon } from 'lucide-react';
+import { LayoutTemplate, Link2, Printer, ScanSearch, Sparkles, type LucideIcon } from 'lucide-react';
 import revisor1 from '../assets/apps/revisor-1.webp';
 import revisor2 from '../assets/apps/revisor-2.webp';
 import criativos1 from '../assets/apps/criativos-1.webp';
@@ -70,35 +70,18 @@ export const APPS: GoveApp[] = [
     name: 'Gerador de criativos',
     route: '/criativos',
     icon: Sparkles,
-    summary: 'Cria criativos de mídia paga em lote e no Studio ao vivo, com as travas do manual de marca aplicadas automaticamente.',
-    tagline: 'Peças de mídia paga em lote.',
-    features: ['8 diagramações', 'Material de especialista', 'Lote e Studio ao vivo', 'Vídeo de 15 s', 'Texto alternativo'],
+    summary: 'Mídia paga, eventos, atualizações de produto e Studio de cards num só lugar, nas identidades GOVE ou Banco do Brasil, com as travas de marca aplicadas.',
+    tagline: 'Mídia paga, eventos e atualizações.',
+    features: ['Mídia paga em lote', 'Eventos', 'Atualizações', 'Studio de cards', 'GOVE ou Banco do Brasil'],
     stack: ['TanStack Start', 'React', 'Canvas'],
     folder: 'criativos/',
     run: 'npm run criativos:install && npm run criativos:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui no navegador. Sem busca no Pexels: envie imagens do dispositivo. Vídeo em MP4 quando o navegador permite, senão WebM.',
+    embeddedNote: 'Roda aqui no navegador. Busca no Pexels pelo conector Pexels Gove; sem ele, envie imagens do dispositivo.',
     shots: [
       { src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' },
       { src: criativos2, caption: 'Gerador em lote: 8 variações por rodada.' },
     ],
-  },
-  {
-    id: 'follow-ups',
-    tag: 'Mídia',
-    name: 'Gerador de follow-ups',
-    route: '/criativos',
-    icon: CalendarCheck,
-    summary: 'Imagens 4:3 e 1:1 para atualizações de produto e confirmações de evento, com foto em moldura circular e a logomarca aplicada pela regra de contraste.',
-    tagline: 'Atualizações de produto e eventos.',
-    features: ['4:3 e 1:1', 'Atualização de produto', 'Confirmação de evento', 'Foto em moldura circular'],
-    stack: ['React', 'Canvas'],
-    folder: 'criativos/',
-    run: 'npm run criativos:install && npm run criativos:dev',
-    sameServer: false,
-    embeddedNote: 'Roda aqui no navegador, dentro do Gerador de criativos.',
-    shots: [],
-    embed: { file: 'criativos', hash: '#follow-ups' },
   },
   {
     id: 'links',

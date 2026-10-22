@@ -170,7 +170,8 @@ test('BB: todos os layouts × esquemas — só cores da paleta, todo texto ≥ 4
             if (typeof e[k] !== 'string') continue;
             const hex = COLORS[e[k]].hex;
             const preto = hex === BB.BB_PRETO && e.type === 'text' && e.bbBackdrop.every((b) => b === BB.BB_PALETTE.rosaEscuro);
-            assert.ok(PAL.has(hex) || preto, `${tag}: ${e.type}.${k} = ${e[k]} fora da paleta`);
+            const qr = e.type === 'qr' && e[k] === 'qrPreto'; // QR sempre #000000 sobre #FFFFFF
+            assert.ok(PAL.has(hex) || preto || qr, `${tag}: ${e.type}.${k} = ${e[k]} fora da paleta`);
             assert.equal(COLORS[e[k]].cmyk.length, 4);
           }
           if (e.type === 'text' && e.lines.length) {
@@ -185,6 +186,20 @@ test('BB: todos os layouts × esquemas — só cores da paleta, todo texto ≥ 4
         assert.ok(bbLogo && !bbLogo.missing, `${tag}: logomarca BB obrigatória`);
         assert.ok(bbLogo.w >= BB.BB_LOGO_RULES.minPrintMm[bbLogo.bbKind] - 0.05, `${tag}: BB ${bbLogo.w.toFixed(1)} mm`);
         assert.ok(BB.BB_LOGO_RULES.centralHorizontalBackgrounds.includes(BB.norm(bbLogo.bg)), `${tag}: fundo da logomarca BB`);
+      }
+    }
+  }
+});
+
+test('QR code sempre preto #000000 sobre branco #FFFFFF, em qualquer identidade', () => {
+  for (const identity of ['gove', 'bb']) {
+    for (const l of LAYOUTS) {
+      const r = buildLayout(l.id, identity === 'bb' ? bbInput({ assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: { width: 400, height: 400 } } }) : bbInput({ identity: 'gove' }), measure);
+      const els = walkAll(r);
+      for (const q of els.filter((e) => e.type === 'qr')) {
+        assert.equal(COLORS[q.color].hex, '#000000', `${identity}/${l.id}`);
+        const under = els.filter((e) => e.type === 'rect' && e.fill && e.x <= q.x && e.y <= q.y && e.x + e.w >= q.x + q.w && e.y + e.h >= q.y + q.h).pop();
+        assert.equal(COLORS[under.fill].hex, '#FFFFFF', `${identity}/${l.id}: fundo do QR`);
       }
     }
   }

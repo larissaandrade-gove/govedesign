@@ -121,7 +121,7 @@ export const SETTINGS = [
       minSizePx: 150,
       minModuleContrast: 7,
       // Padrão para QR codes gerados pelo revisor
-      generate: { dark: '#1A153A', light: '#FFFFFF', errorCorrectionLevel: 'M', margin: 4, width: 600 },
+      generate: { dark: '#000000', light: '#FFFFFF', errorCorrectionLevel: 'M', margin: 4, width: 600 },
     },
   },
   {

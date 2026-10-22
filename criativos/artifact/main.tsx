@@ -90,7 +90,13 @@ const FollowUpsRoute = FollowUpsRouteImport.update({
 const routeTree = rootRoute.addChildren([IndexRoute, StudioRoute, FollowUpsRoute]);
 
 /** Abre direto numa tela pelo hash (ex.: apps/criativos.html#follow-ups). */
-const HASH_ROUTES: Record<string, string> = { "follow-ups": "/follow-ups", studio: "/studio" };
+const HASH_ROUTES: Record<string, string> = {
+  "midia-paga": "/",
+  eventos: "/follow-ups?modelo=evento",
+  atualizacoes: "/follow-ups?modelo=atualizacao",
+  "follow-ups": "/follow-ups?modelo=atualizacao",
+  studio: "/studio",
+};
 function initialPath() {
   const key = window.location.hash.replace(/^#\/?/, "").toLowerCase();
   return HASH_ROUTES[key] ?? "/";

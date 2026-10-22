@@ -5,44 +5,52 @@
  */
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, LayoutGrid, Send, Wand2, type LucideIcon } from "lucide-react";
+import { CalendarCheck, ChevronDown, ListChecks, Megaphone, Wand2, type LucideIcon } from "lucide-react";
 
 import type { CreativeFormat } from "@/lib/creative/renderer";
 
 /** Rótulo visível a partir de 900px; abaixo disso fica só para leitores de tela. */
 export const RESPONSIVE_LABEL = "sr-only min-[900px]:not-sr-only";
 
-const NAV: { to: "/" | "/studio" | "/follow-ups"; label: string; icon: LucideIcon }[] = [
-  { to: "/", label: "Gerador em lote", icon: LayoutGrid },
-  { to: "/studio", label: "Studio", icon: Wand2 },
-  { to: "/follow-ups", label: "Follow-ups", icon: Send },
+/** Abas do gerador: cada função com nome e uma linha do que faz. */
+const TABS: { to: "/" | "/studio" | "/follow-ups"; modelo?: string; label: string; hint: string; icon: LucideIcon }[] = [
+  { to: "/", label: "Mídia paga", hint: "Anúncios em lote para redes", icon: Megaphone },
+  { to: "/follow-ups", modelo: "evento", label: "Eventos", hint: "Confirmação de presença com foto", icon: CalendarCheck },
+  { to: "/follow-ups", modelo: "atualizacao", label: "Atualizações", hint: "Novidades de produto", icon: ListChecks },
+  { to: "/studio", label: "Studio de cards", hint: "Um card por vez, layout livre", icon: Wand2 },
 ];
 
 export function AppHeader({ actions }: { actions?: ReactNode }) {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 pt-2 sm:px-6">
         <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-foreground">
           Criativos <span className="text-muted-foreground">GOVE</span>
         </h1>
-        <nav aria-label="Ferramentas" className="flex shrink-0 rounded-xl bg-muted p-1">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              title={label}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              activeOptions={{ exact: true }}
-              activeProps={{ className: "bg-primary text-primary-foreground shadow-sm" }}
-              inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
-            >
-              <Icon className="size-5 shrink-0" aria-hidden="true" />
-              <span className={RESPONSIVE_LABEL}>{label}</span>
-            </Link>
-          ))}
-        </nav>
         {actions}
       </div>
+      <nav aria-label="Funções do gerador" className="mx-auto max-w-7xl overflow-x-auto px-2 sm:px-4 [scrollbar-width:none]">
+        <ul className="flex min-w-max gap-1 py-1 sm:grid sm:min-w-0 sm:grid-cols-4">
+          {TABS.map(({ to, modelo, label, hint, icon: Icon }) => (
+            <li key={label}>
+              <Link
+                to={to}
+                search={(modelo ? { modelo } : {}) as never}
+                activeOptions={{ exact: true, includeSearch: Boolean(modelo) }}
+                className="flex min-h-11 items-center gap-2 rounded-lg border-b-2 px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                activeProps={{ className: "border-primary bg-primary/10 text-foreground", "aria-current": "page" }}
+                inactiveProps={{ className: "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground" }}
+              >
+                <Icon className="size-5 shrink-0" aria-hidden="true" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-sm font-semibold leading-tight">{label}</span>
+                  <span className="hidden truncate text-xs leading-tight text-muted-foreground min-[900px]:block">{hint}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   );
 }

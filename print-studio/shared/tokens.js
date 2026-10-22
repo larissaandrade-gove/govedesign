@@ -24,6 +24,8 @@ export const COLORS = {
   branco: { name: 'Branco', hex: '#FFFFFF', cmyk: [0, 0, 0, 0] },
   // Preto só K100 para textos pequenos/institucionais e módulos do QR (evita borrão de registro)
   preto: { name: 'Preto K100', hex: '#1D1D1B', cmyk: [0, 0, 0, 100] },
+  // QR code: sempre módulos pretos #000000 (K100) sobre branco #FFFFFF, em qualquer identidade
+  qrPreto: { name: 'Preto do QR code', hex: '#000000', cmyk: [0, 0, 0, 100] },
   // Preto rico apenas para blocos sólidos grandes (moldura do mockup)
   pretoRico: { name: 'Preto rico', hex: '#0B0C0C', cmyk: [60, 40, 40, 100] },
   // Fundo da tela do mockup quando ainda não há imagem

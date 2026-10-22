@@ -11,7 +11,7 @@ function matrix(text: string) {
   return { n, isDark: (r: number, c: number) => qr.isDark(r, c) };
 }
 
-/** SVG com fundo branco e módulos escuros (#20133D), legível por qualquer leitor. */
+/** SVG com fundo branco e módulos pretos (#000000), legível por qualquer leitor. */
 export function qrSvg(text: string, title = "QR Code"): string {
   const { n, isDark } = matrix(text);
   const size = n + MARGIN * 2;
@@ -25,7 +25,7 @@ export function qrSvg(text: string, title = "QR Code"): string {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" role="img" aria-label="${esc}">` +
     `<title>${esc}</title><rect width="${size}" height="${size}" fill="#FFFFFF"/>` +
-    `<path d="${d}" fill="#20133D"/></svg>`
+    `<path d="${d}" fill="#000000"/></svg>`
   );
 }
 
@@ -39,7 +39,7 @@ export function qrPng(text: string, pixels = 1024): Promise<Blob | null> {
   if (!ctx) return Promise.resolve(null);
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#20133D";
+  ctx.fillStyle = "#000000";
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       if (isDark(r, c)) ctx.fillRect((c + MARGIN) * scale, (r + MARGIN) * scale, scale, scale);

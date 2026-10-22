@@ -1,14 +1,12 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
-  CalendarCheck,
   Check,
   Circle,
   Download,
   ImagePlus,
-  ListChecks,
   ListOrdered,
   Plus,
   ShieldCheck,
@@ -81,11 +79,6 @@ export const Route = createFileRoute("/follow-ups")({
   component: Followups,
 });
 
-const MODELS: { key: FollowupModel; label: string; icon: LucideIcon }[] = [
-  { key: "product", label: "Atualização de produto", icon: ListChecks },
-  { key: "event", label: "Confirmação de evento", icon: CalendarCheck },
-];
-
 const MARKERS: { key: FollowupMarker; label: string; icon: LucideIcon }[] = [
   { key: "check", label: "Check", icon: Check },
   { key: "zap", label: "Raio", icon: Zap },
@@ -150,7 +143,9 @@ function Followups() {
   const isBB = identity === "bb";
   const { logo: bbLogo, upload: uploadBBLogo, clear: clearBBLogo } = useBBLogo();
   const [bbSchemeId, setBBSchemeId] = useState("capa");
-  const [model, setModel] = useState<FollowupModel>("product");
+  // Modelo vem da aba superior: Eventos (?modelo=evento) ou Atualizações
+  const search = useSearch({ strict: false }) as { modelo?: string };
+  const model: FollowupModel = search.modelo === "evento" ? "event" : "product";
   const [format, setFormat] = useState<FollowupFormat>("4x3");
   const [bgPreset, setBgPreset] = useState("deep");
   const [bgImage, setBgImage] = useState<{
@@ -335,32 +330,6 @@ function Followups() {
 
         <aside aria-label="Ajustes" className="order-2 space-y-3">
           <IdentitySwitch value={identity} onChange={changeIdentity} />
-          <div
-            role="group"
-            aria-label="Modelo"
-            className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
-          >
-            {MODELS.map((m) => {
-              const Icon = m.icon;
-              return (
-                <button
-                  key={m.key}
-                  type="button"
-                  aria-pressed={model === m.key}
-                  onClick={() => setModel(m.key)}
-                  className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-center text-sm leading-tight font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
-                    model === m.key
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="size-5 shrink-0" aria-hidden="true" />
-                  {m.label}
-                </button>
-              );
-            })}
-          </div>
-
           <Section
             icon={Type}
             title="Conteúdo"

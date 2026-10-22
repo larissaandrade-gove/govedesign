@@ -1,7 +1,10 @@
 // Geração de QR codes compatíveis com a identidade Gove (node-qrcode).
 // Regra fixa: módulos escuros sobre fundo BRANCO sólido, com zona de silêncio.
 import QRCode from 'qrcode';
-import { contrastRatio, deltaE, parseColor, round, toHex } from './color.js';
+import { parseColor, toHex } from './color.js';
+
+export const QR_DARK = '#000000';
+export const QR_LIGHT = '#FFFFFF';
 
 export function qrRules(tokens) {
   const cfg = tokens.settings.qrcode ?? {};
@@ -11,7 +14,7 @@ export function qrRules(tokens) {
     quietZoneModules: cfg.quietZoneModules ?? 4,
     minSizePx: cfg.minSizePx ?? 150,
     minModuleContrast: cfg.minModuleContrast ?? 7,
-    generate: { dark: '#1A153A', light: '#FFFFFF', errorCorrectionLevel: 'M', margin: 4, width: 600, ...cfg.generate },
+    generate: { errorCorrectionLevel: 'M', margin: 4, width: 600, ...cfg.generate, dark: QR_DARK, light: QR_LIGHT },
   };
 }
 
@@ -29,13 +32,14 @@ export function resolveQrOptions(tokens, requested = {}) {
   let margin = Number(requested.margin ?? g.margin);
   const ecl = ['L', 'M', 'Q', 'H'].includes(requested.errorCorrectionLevel) ? requested.errorCorrectionLevel : g.errorCorrectionLevel;
 
-  if (!parseColor(light) || deltaE(light, rules.backgroundHex) > rules.backgroundMaxDeltaE) {
-    adjustments.push(`Fundo ${light} substituído por ${rules.backgroundHex}: QR code sempre sobre branco sólido.`);
-    light = rules.backgroundHex;
+  // Regra fixa da Gove: QR code sempre com módulos pretos #000000 sobre branco #FFFFFF
+  if (String(light).toUpperCase() !== QR_LIGHT) {
+    if (requested.light) adjustments.push(`Fundo ${light} substituído por ${QR_LIGHT}: QR code sempre sobre branco.`);
+    light = QR_LIGHT;
   }
-  if (!parseColor(dark) || contrastRatio(dark, light) < rules.minModuleContrast) {
-    adjustments.push(`Cor dos módulos ${dark} tem contraste ${round(contrastRatio(dark, light) ?? 0)}:1; usando ${g.dark}.`);
-    dark = g.dark;
+  if (String(dark).toUpperCase() !== QR_DARK) {
+    if (requested.dark) adjustments.push(`Cor dos módulos ${dark} substituída por ${QR_DARK}: QR code sempre preto.`);
+    dark = QR_DARK;
   }
   if (!Number.isFinite(width) || width < rules.minSizePx) {
     adjustments.push(`Largura ajustada para o mínimo de ${rules.minSizePx} px.`);

@@ -662,8 +662,8 @@ function serviceCircles({ services, right, left, y, d, gap, s, color = 'branco' 
 function qrPlate({ x, y, qrMm, data, id = 'qr', label = 'QR code', r = 0, th = null }) {
   const plate = qrMm + 2 * QR_QUIET_MM;
   return block(id, label, [
-    { type: 'rect', x, y, w: plate, h: plate, fill: th ? th.qrPlate : 'branco', r },
-    { type: 'qr', x: x + QR_QUIET_MM, y: y + QR_QUIET_MM, w: qrMm, h: qrMm, data, color: th ? th.qr : 'preto' },
+    { type: 'rect', x, y, w: plate, h: plate, fill: 'branco', r }, // QR sempre sobre branco #FFFFFF
+    { type: 'qr', x: x + QR_QUIET_MM, y: y + QR_QUIET_MM, w: qrMm, h: qrMm, data, color: 'qrPreto' },
   ], { opaque: true });
 }
 
@@ -765,7 +765,8 @@ function generatedScreen({ sw, sh, input, measure, th = null }) {
   const cx = (sw - cw) / 2;
   const ch = pad + q + 2.5 * u + urlH + pad * 0.8;
   els.push({ type: 'rect', x: cx, y, w: cw, h: ch, fill: c.bg, stroke: c.line, lineWidth: 0.35 * u, r: 3 * u });
-  els.push({ type: 'qr', x: (sw - q) / 2, y: y + pad, w: q, h: q, data: whatsappLink(m.ddd, m.numero_whatsapp), color: th ? th.qr : 'preto', illustrative: true });
+  els.push({ type: 'rect', x: (sw - q) / 2 - 1.5 * u, y: y + pad - 1.5 * u, w: q + 3 * u, h: q + 3 * u, fill: 'branco' }); // QR sempre sobre branco
+  els.push({ type: 'qr', x: (sw - q) / 2, y: y + pad, w: q, h: q, data: whatsappLink(m.ddd, m.numero_whatsapp), color: 'qrPreto', illustrative: true });
   els.push(T({ id: 'm-url', role: 'mockup', text: url, x: cx + 2 * u, y: y + pad + q + 2.5 * u, w: cw - 4 * u, sizePt: urlPt, weight: 'regular', align: 'center', color: c.link, fit: 1.5 }));
 
   els.push(...foot);
@@ -1265,7 +1266,8 @@ export function bbChecks(r) {
   for (const { key, e, blockId } of paintedColors(r)) {
     const hex = COLORS[key]?.hex;
     const okPreto = hex === BB_PRETO && e.type === 'text' && (e.bbBackdrop ?? []).every((b) => b === BB_PALETTE.rosaEscuro);
-    if (!hex || (!BB_HEXES.has(hex) && !okPreto)) bad.set(key, blockId);
+    const okQr = e.type === 'qr' && key === 'qrPreto'; // regra GOVE: QR sempre preto sobre branco
+    if (!hex || (!BB_HEXES.has(hex) && !okPreto && !okQr)) bad.set(key, blockId);
   }
   for (const [key, blockId] of bad) add('error', 'bb-paleta', `Cor fora da paleta Banco do Brasil: ${COLORS[key]?.name ?? key}.`, blockId);
   if (!bad.size) add('ok', 'bb-paleta', 'Paleta BB ok — todas as cores impressas são da paleta oficial (CMYK do guia).');
