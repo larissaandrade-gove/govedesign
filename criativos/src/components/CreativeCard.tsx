@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { validateCreative, type ComplianceReport } from "@/lib/creative/brand";
 import { buildAltText } from "@/lib/creative/alt";
 import { renderCreative, type CreativeSpec } from "@/lib/creative/renderer";
+import { whenFontsReady } from "@/lib/creative/bb";
 
 type Props = {
   spec: CreativeSpec;
@@ -35,20 +36,27 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           subhead: spec.subhead,
           logo: result.logo,
           overlaps: result.overlaps,
+          identity: spec.identity,
+          bb: result.bb,
+          bbLogo: result.bbLogo,
         }),
       );
     };
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(draw).catch(draw);
-    } else {
-      draw();
-    }
+    // Fontes da identidade (BB: woff2 embutidas) carregadas antes de desenhar.
+    whenFontsReady(spec.identity).then(draw, draw);
     return () => {
       cancelled = true;
     };
   }, [spec]);
 
+  // Modo BB: peça que não passa na verificação (contraste/paleta) não é exportada.
+  const exportBlocked = spec.identity === "bb" && !!report && !report.pass;
+
   const download = () => {
+    if (exportBlocked || (spec.identity === "bb" && !report)) {
+      toast.error("Peça fora do manual BB: ajuste antes de exportar.");
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.toBlob((blob) => {
@@ -79,7 +87,11 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <div className="relative bg-muted">
-        <canvas ref={canvasRef} className="block h-auto w-full" />
+        <canvas
+          ref={canvasRef}
+          className="block h-auto w-full"
+          data-export-blocked={exportBlocked ? "true" : undefined}
+        />
       </div>
       <div className="flex items-center gap-1 p-2">
         <span className="flex min-w-0 flex-1 items-center pl-1">
@@ -102,6 +114,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           size="icon"
           variant="ghost"
           onClick={download}
+          disabled={exportBlocked}
           className={iconBtn}
           aria-label={`Baixar PNG do criativo ${index + 1}`}
           title="Baixar PNG"

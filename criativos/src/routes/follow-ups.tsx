@@ -26,6 +26,14 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { AppHeader, FormatChip, Section } from "@/components/AppChrome";
 import { LogoVariantPicker } from "@/components/LogoVariantPicker";
+import {
+  BBLogoSlot,
+  BBSchemePicker,
+  IdentitySwitch,
+  useBBLogo,
+  useIdentity,
+} from "@/components/IdentityControls";
+import { BB_LOGO_LABEL, bbScheme as findBBScheme, whenFontsReady, type Identity } from "@/lib/creative/bb";
 import { PexelsCredit, PexelsPicker } from "@/components/PexelsPicker";
 import type { PexelsPhoto } from "@/lib/pexels.functions";
 import { getGateStatus } from "@/lib/gate.functions";
@@ -108,8 +116,40 @@ const DEFAULT_EVENT: EventConfirmation = {
   photo: null,
 };
 
+/** Exemplos no tom de voz BB (curtos, imperativos, "você"/"juntos"). */
+const BB_PRODUCT: ProductUpdate = {
+  title: "Novidades para você atender melhor",
+  items: [
+    "Encontre cada demanda por secretaria",
+    "Baixe os relatórios do mês em PDF",
+    "Avise o cidadão pelo WhatsApp",
+    "Entre com a conta gov.br",
+  ],
+  marker: "check",
+  version: "v3.2 · outubro 2026",
+  cta: "Conheça as novidades",
+};
+
+const BB_EVENT: EventConfirmation = {
+  kicker: "Presença confirmada",
+  name: "Ana Souza",
+  event: "Encontro de Gestores Públicos: juntos por cidades mais simples",
+  date: "2026-11-12",
+  time: "19:00",
+  photo: null,
+};
+
+const COPY: Record<Identity, { product: ProductUpdate; event: EventConfirmation }> = {
+  gove: { product: DEFAULT_PRODUCT, event: DEFAULT_EVENT },
+  bb: { product: BB_PRODUCT, event: BB_EVENT },
+};
+
 function Followups() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [identity, setIdentity] = useIdentity();
+  const isBB = identity === "bb";
+  const { logo: bbLogo, upload: uploadBBLogo, clear: clearBBLogo } = useBBLogo();
+  const [bbSchemeId, setBBSchemeId] = useState("capa");
   const [model, setModel] = useState<FollowupModel>("product");
   const [format, setFormat] = useState<FollowupFormat>("4x3");
   const [bgPreset, setBgPreset] = useState("deep");
@@ -118,8 +158,22 @@ function Followups() {
     credit: PexelsPhoto | null;
   } | null>(null);
   const [photoCredit, setPhotoCredit] = useState<PexelsPhoto | null>(null);
-  const [product, setProduct] = useState<ProductUpdate>(DEFAULT_PRODUCT);
-  const [event, setEvent] = useState<EventConfirmation>(DEFAULT_EVENT);
+  const [product, setProduct] = useState<ProductUpdate>(() => COPY[identity].product);
+  const [event, setEvent] = useState<EventConfirmation>(() => COPY[identity].event);
+  /** Troca a identidade e os textos de exemplo que ainda não foram editados. */
+  const changeIdentity = (next: Identity) => {
+    if (next === identity) return;
+    const from = COPY[identity];
+    const to = COPY[next];
+    setProduct((p) => ({
+      ...p,
+      title: p.title === from.product.title ? to.product.title : p.title,
+      items:
+        JSON.stringify(p.items) === JSON.stringify(from.product.items) ? to.product.items : p.items,
+    }));
+    setEvent((e) => ({ ...e, event: e.event === from.event.event ? to.event.event : e.event }));
+    setIdentity(next);
+  };
   const [library, setLibrary] = useState<LogoLibrary | null>(null);
   const [logoVariants, setLogoVariants] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
   const [result, setResult] = useState<FollowupResult | null>(null);
@@ -148,14 +202,38 @@ function Followups() {
       logos: library,
       logoVariants,
       bgImage: bgImage?.img ?? null,
+      identity,
+      bbScheme: bbSchemeId,
+      bbLogo: bbLogo?.img ?? null,
     }),
-    [model, format, bgPreset, product, event, library, logoVariants, bgImage],
+    [
+      model,
+      format,
+      bgPreset,
+      product,
+      event,
+      library,
+      logoVariants,
+      bgImage,
+      identity,
+      bbSchemeId,
+      bbLogo,
+    ],
   );
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    setResult(renderFollowup(canvas, spec));
+    let alive = true;
+    const draw = () => {
+      const canvas = canvasRef.current;
+      if (!alive || !canvas) return;
+      setResult(renderFollowup(canvas, spec));
+    };
+    // BB: fontes BB embutidas carregadas antes de desenhar/exportar.
+    if (spec.identity === "bb") void whenFontsReady("bb").then(draw, draw);
+    else draw();
+    return () => {
+      alive = false;
+    };
   }, [spec, fontsReady]);
 
   const logoStatuses = useMemo(() => explainVariants(result?.logo?.bgLums ?? null), [result]);
@@ -256,6 +334,7 @@ function Followups() {
         </section>
 
         <aside aria-label="Ajustes" className="order-2 space-y-3">
+          <IdentitySwitch value={identity} onChange={changeIdentity} />
           <div
             role="group"
             aria-label="Modelo"
@@ -495,11 +574,18 @@ function Followups() {
           <Section
             icon={ImagePlus}
             title="Fundo"
-            summary={FOLLOWUP_BGS.find((p) => p.key === bgPreset)?.label}
+            summary={
+              isBB ? findBBScheme(bbSchemeId).label : FOLLOWUP_BGS.find((p) => p.key === bgPreset)?.label
+            }
             open={open.background}
             onToggle={() => toggleSection("background")}
           >
-            <div role="radiogroup" aria-label="Fundo" className="grid grid-cols-3 gap-2">
+            {isBB && <BBSchemePicker value={bbSchemeId} onChange={setBBSchemeId} />}
+            <div
+              role="radiogroup"
+              aria-label="Fundo"
+              className={`grid grid-cols-3 gap-2 ${isBB ? "hidden" : ""}`}
+            >
               {FOLLOWUP_BGS.map((p) => {
                 const active = bgPreset === p.key;
                 return (
@@ -525,9 +611,13 @@ function Followups() {
               })}
             </div>
             <p className="text-xs text-muted-foreground">
-              {bgImage
-                ? "Foto de fundo com sobreposição na cor acima (contraste ≥ 4,5:1 garantido)."
-                : "Opcional: foto de fundo, coberta pela cor acima para manter o contraste."}
+              {isBB
+                ? bgImage
+                  ? "Foto sem véu: cada texto usa a cor da paleta que passa 4,5:1 sobre ela, ou uma caixa Azul escuro."
+                  : "Opcional: foto de fundo. Cada texto é conferido contra a foto (4,5:1)."
+                : bgImage
+                  ? "Foto de fundo com sobreposição na cor acima (contraste ≥ 4,5:1 garantido)."
+                  : "Opcional: foto de fundo, coberta pela cor acima para manter o contraste."}
             </p>
             <div className="flex items-center gap-2">
               <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
@@ -573,10 +663,23 @@ function Followups() {
           <Section
             icon={BadgeCheck}
             title="Logomarca"
-            summary={LOGO_VARIANTS.find((v) => v.id === result?.logo?.variant)?.label}
+            summary={
+              isBB && result?.bbLogo
+                ? `BB ${BB_LOGO_LABEL[result.bbLogo.version]}`
+                : LOGO_VARIANTS.find((v) => v.id === result?.logo?.variant)?.label
+            }
             open={open.logo}
             onToggle={() => toggleSection("logo")}
           >
+            {isBB && (
+              <BBLogoSlot
+                logo={bbLogo}
+                onUpload={(f) => void uploadBBLogo(f)}
+                onClear={clearBBLogo}
+                warn={!!result?.bbLogo && !result.bbLogo.bgOk}
+              />
+            )}
+            {!(isBB && bbLogo) && (
             <LogoVariantPicker
               idPrefix="followup"
               enabled={logoVariants}
@@ -598,6 +701,7 @@ function Followups() {
                 })
               }
             />
+            )}
           </Section>
         </aside>
       </main>

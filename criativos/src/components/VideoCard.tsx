@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { validateCreative, type ComplianceReport } from "@/lib/creative/brand";
 import { renderCreative, type CreativeFormat, type CreativeSpec } from "@/lib/creative/renderer";
+import { whenFontsReady } from "@/lib/creative/bb";
 import {
   VIDEO_DURATION,
   VIDEO_FORMATS,
@@ -106,6 +107,9 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
         subhead: spec.subhead,
         logo: result.logo,
           overlaps: result.overlaps,
+        identity: spec.identity,
+        bb: result.bb,
+        bbLogo: result.bbLogo,
       }),
     );
   }, [spec, preview]);
@@ -119,6 +123,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
     setBusy(format);
     const id = toast.loading(`Gravando ${FORMAT_LABEL[format]} (15s)...`);
     try {
+      await whenFontsReady(spec.identity);
       const name = `gove-video-${index + 1}-${FORMAT_LABEL[format]}`;
       const blob = await renderMp4(spec, format, name, (r) =>
         toast.loading(`Gravando ${FORMAT_LABEL[format]} — ${Math.round(r * 100)}%`, { id }),

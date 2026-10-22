@@ -58,6 +58,9 @@ export const ACTION_VERBS = [
   "descubra",
 ];
 
+/** Verbos de ação aceitos a mais no tom de voz BB (imperativo, próximo). */
+export const BB_ACTION_VERBS = ["acesse", "simule", "comece", "conte", "faça", "venha", "abra", "cadastre", "participe", "veja"];
+
 export const BANNED_CTA_WORDS = ["compre", "garanta o seu", "aproveite agora", "compre agora"];
 
 export function hexToRgb(hex: string) {
@@ -110,7 +113,20 @@ export function validateCreative(spec: {
     { ok: boolean; minContrast: number; drawn: boolean; plate: string | null } | null | undefined;
   /** Pares de elementos que ainda se cruzam após o resolvedor de layout. */
   overlaps?: [string, string][] | undefined;
+  /** Identidade Banco do Brasil: verificação de contraste/paleta do renderer. */
+  identity?: "gove" | "bb" | undefined;
+  bb?:
+    | {
+        texts: { id: string; min: number; pass: boolean }[];
+        offPalette: string[];
+        fixed: number;
+        pass: boolean;
+      }
+    | null
+    | undefined;
+  bbLogo?: { drawn: boolean; minWidthOk: boolean; version: string } | null | undefined;
 }): ComplianceReport {
+  if (spec.identity === "bb") return validateBB(spec);
   const norm = (c: string) => c.toUpperCase();
   const paletteOk = spec.usedColors.every((c) => ALLOWED_COLORS.map(norm).includes(norm(c)));
   const pairOk = APPROVED_PAIRS.some(
@@ -143,5 +159,56 @@ export function validateCreative(spec: {
     { id: "length", label: "Headline ≤ 60 e subhead ≤ 90 caracteres", pass: lengthOk },
   ];
 
+  return { pass: checks.every((c) => c.pass), checks };
+}
+
+/** Checagens do modo Banco do Brasil (paleta BB, contraste ≥ 4,5:1 por texto, logomarca). */
+function validateBB(spec: Parameters<typeof validateCreative>[0]): ComplianceReport {
+  const audit = spec.bb;
+  const failing = audit?.texts.filter((t) => !t.pass) ?? [];
+  const ctaLower = spec.ctaText.toLowerCase();
+  const verbOk =
+    [...ACTION_VERBS, ...BB_ACTION_VERBS].some((v) => ctaLower.startsWith(v)) &&
+    !BANNED_CTA_WORDS.some((w) => ctaLower.includes(w));
+  const lengthOk = spec.headline.length <= MAX_HEADLINE && spec.subhead.length <= MAX_SUBHEAD;
+  const fmt = (n: number) => n.toFixed(2).replace(".", ",");
+  const worst = audit?.texts.length ? Math.min(...audit.texts.map((t) => t.min)) : null;
+  const bbLogo = spec.bbLogo;
+  const checks = [
+    {
+      id: "logo",
+      label: bbLogo?.drawn
+        ? bbLogo.minWidthOk
+          ? "Logomarca BB (arquivo oficial) aplicada sem alterações"
+          : "Logomarca BB abaixo da largura mínima digital"
+        : spec.logo?.drawn
+          ? `Logomarca GOVE com contraste ${spec.logo.minContrast.toFixed(1).replace(".", ",")}:1 (envie a logomarca BB para usá-la)`
+          : "Logomarca carregada",
+      pass: bbLogo?.drawn ? bbLogo.minWidthOk : spec.logoIsWordmark && !!spec.logo?.drawn && spec.logo.ok,
+    },
+    {
+      id: "overlap",
+      label: spec.overlaps?.length
+        ? `Sem sobreposição de elementos (${spec.overlaps.map(([a, b]) => `${a} × ${b}`).join(", ")})`
+        : "Sem sobreposição de elementos",
+      pass: !spec.overlaps?.length,
+    },
+    {
+      id: "palette",
+      label: audit?.offPalette.length
+        ? `Cores fora da paleta BB: ${audit.offPalette.join(", ")}`
+        : "Cores dentro da paleta BB",
+      pass: !!audit && !audit.offPalette.length,
+    },
+    {
+      id: "contrast",
+      label: failing.length
+        ? `Contraste < 4,5:1 em: ${failing.map((t) => t.id).join(", ")}`
+        : `Textos com contraste ≥ 4,5:1${worst != null ? ` (mín. ${fmt(worst)}:1)` : ""}${audit?.fixed ? ` · ${audit.fixed} com proteção` : ""}`,
+      pass: !!audit && !failing.length,
+    },
+    { id: "cta", label: "CTA com verbo de ação (sem linguagem de e-commerce)", pass: verbOk },
+    { id: "length", label: "Headline ≤ 60 e subhead ≤ 90 caracteres", pass: lengthOk },
+  ];
   return { pass: checks.every((c) => c.pass), checks };
 }

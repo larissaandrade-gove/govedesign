@@ -7,6 +7,9 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // A identidade Banco do Brasil (cores, fontes e regras) vem de ../brand/bb.js,
+  // fonte única compartilhada com os outros geradores: libera a pasta no dev server.
+  vite: { server: { fs: { allow: [".."] } } },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

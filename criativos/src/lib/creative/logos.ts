@@ -251,6 +251,8 @@ export function drawBrandLogo(
     scale?: number;
     allowed?: LogoVariantId[] | undefined;
     alpha?: number;
+    /** Cores possíveis da placa sólida (padrão: roxo noite e branco). */
+    plates?: string[] | undefined;
   },
 ): LogoRender {
   const { x, y, w, h, kind, scale = 1, allowed } = opts;
@@ -259,7 +261,7 @@ export function drawBrandLogo(
   let plate: string | null = null;
   if (!pick.ok) {
     // Placa discreta: testa as duas bases da marca e fica com a que fizer passar.
-    const plates = ["#20133D", "#FFFFFF"].map((c) => ({
+    const plates = (opts.plates ?? ["#20133D", "#FFFFFF"]).map((c) => ({
       c,
       p: pickLogoLum([luminance(c)], kind, { allowed }),
     }));

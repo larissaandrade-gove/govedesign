@@ -35,6 +35,20 @@ import {
   type LogoVariantId,
 } from "@/lib/creative/logos";
 import { LogoVariantPicker } from "@/components/LogoVariantPicker";
+import {
+  BBLogoSlot,
+  BBSchemePicker,
+  IdentitySwitch,
+  useBBLogo,
+  useIdentity,
+} from "@/components/IdentityControls";
+import {
+  BB_LOGO_LABEL,
+  bbScheme as findBBScheme,
+  whenFontsReady,
+  type BBLogoRender,
+  type Identity,
+} from "@/lib/creative/bb";
 import { ICONS } from "@/lib/creative/icons";
 import { buildAltText } from "@/lib/creative/alt";
 import { getGateStatus } from "@/lib/gate.functions";
@@ -214,8 +228,29 @@ const EXPORTS: { key: CreativeFormat; label: string; w: number; h: number }[] = 
   }),
 );
 
+/** Textos de exemplo por identidade (BB segue o tom de voz BB_VOICE). */
+const STUDIO_COPY: Record<Identity, { headline: string; subhead: string; cta: string; urgency: string }> = {
+  gove: {
+    headline: "O governo que age antes de você pedir",
+    subhead: "Centralize demandas do cidadão em um só painel e responda mais rápido.",
+    cta: "Agende uma demonstração",
+    urgency: "Vagas limitadas",
+  },
+  bb: {
+    headline: "Juntos, a gente simplifica a gestão pública",
+    subhead: "Reúna as demandas do cidadão em um só lugar e responda com agilidade.",
+    cta: "Agende uma conversa",
+    urgency: "Inscrições até sexta",
+  },
+};
+
 function Studio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [identity, setIdentity] = useIdentity();
+  const isBB = identity === "bb";
+  const { logo: bbLogo, upload: uploadBBLogo, clear: clearBBLogo } = useBBLogo();
+  const [bbSchemeId, setBBSchemeId] = useState("capa");
+  const [bbLogoResult, setBBLogoResult] = useState<BBLogoRender | null>(null);
   const [library, setLibrary] = useState<LogoLibrary | null>(null);
   const [logoVariants, setLogoVariants] = useState<LogoVariantId[]>(ALL_LOGO_VARIANTS);
   const [logoResult, setLogoResult] = useState<LogoRender | null>(null);
@@ -240,14 +275,23 @@ function Studio() {
     colors: false,
   });
 
-  const [headline, setHeadline] = useState("O governo que age antes de você pedir");
-  const [subhead, setSubhead] = useState(
-    "Centralize demandas do cidadão em um só painel e responda mais rápido.",
-  );
-  const [cta, setCta] = useState("Agende uma demonstração");
+  const [headline, setHeadline] = useState(() => STUDIO_COPY[identity].headline);
+  const [subhead, setSubhead] = useState(() => STUDIO_COPY[identity].subhead);
+  const [cta, setCta] = useState(() => STUDIO_COPY[identity].cta);
   const [badge, setBadge] = useState("Case Divinópolis");
   const [token, setToken] = useState("Divinópolis/MG");
-  const [urgency, setUrgency] = useState("Vagas limitadas");
+  const [urgency, setUrgency] = useState(() => STUDIO_COPY[identity].urgency);
+  /** Troca a identidade e os textos de exemplo que ainda não foram editados. */
+  const changeIdentity = (next: Identity) => {
+    if (next === identity) return;
+    const from = STUDIO_COPY[identity];
+    const to = STUDIO_COPY[next];
+    setHeadline((v) => (v === from.headline ? to.headline : v));
+    setSubhead((v) => (v === from.subhead ? to.subhead : v));
+    setCta((v) => (v === from.cta ? to.cta : v));
+    setUrgency((v) => (v === from.urgency ? to.urgency : v));
+    setIdentity(next);
+  };
   const [icon, setIcon] = useState("arrow");
   const [themeIcon, setThemeIcon] = useState("clock");
   const [cardColor, setCardColor] = useState<string>(PALETTE.purple3);
@@ -296,8 +340,14 @@ function Studio() {
       logos: library,
       logoVariants,
       expert: expert.enabled ? expert : null,
+      identity,
+      bbScheme: bbSchemeId,
+      bbLogo: bbLogo?.img ?? null,
     };
   }, [
+    identity,
+    bbSchemeId,
+    bbLogo,
     bg,
     exportFormat,
     layout,
@@ -325,6 +375,7 @@ function Studio() {
       if (!canvas) return;
       const result = renderCreative(canvas, spec);
       setLogoResult(result.logo);
+      setBBLogoResult(result.bbLogo ?? null);
       setReport(
         validateCreative({
           logoIsWordmark: true,
@@ -336,14 +387,21 @@ function Studio() {
           subhead: spec.subhead,
           logo: result.logo,
           overlaps: result.overlaps,
+          identity: spec.identity,
+          bb: result.bb,
+          bbLogo: result.bbLogo,
         }),
       );
     };
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      void document.fonts.ready.then(draw).catch(draw);
-    } else {
-      draw();
-    }
+    // Fontes da identidade (BB: woff2 embutidas) carregadas antes de desenhar.
+    let alive = true;
+    void whenFontsReady(spec.identity).then(
+      () => alive && draw(),
+      () => alive && draw(),
+    );
+    return () => {
+      alive = false;
+    };
   }, [spec]);
 
   const handleFiles = useCallback(async (files: FileList | File[] | null) => {
@@ -477,6 +535,7 @@ function Studio() {
 
         {/* Controles */}
         <aside aria-label="Ajustes" className="order-2 space-y-3">
+          <IdentitySwitch value={identity} onChange={changeIdentity} />
           <Section
             icon={Type}
             title="Textos"
@@ -615,15 +674,22 @@ function Studio() {
             summary={
               bg.kind === "upload"
                 ? "Imagem"
-                : BG_PRESETS.find((p) => bg.kind === "preset" && p.key === bg.key)?.label
+                : isBB
+                  ? findBBScheme(bbSchemeId).label
+                  : BG_PRESETS.find((p) => bg.kind === "preset" && p.key === bg.key)?.label
             }
             open={open.background}
             onToggle={() => toggleSection("background")}
           >
+            {isBB && (
+              <p className="text-xs text-muted-foreground">
+                No modo Banco do Brasil, sem foto, o fundo é a cor do esquema escolhido em Cores.
+              </p>
+            )}
             <div
               role="radiogroup"
               aria-label="Biblioteca de fundos"
-              className="grid grid-cols-4 gap-2"
+              className={`grid grid-cols-4 gap-2 ${isBB ? "hidden" : ""}`}
             >
               {BG_PRESETS.map((p) => {
                 const active = bg.kind === "preset" && bg.key === p.key;
@@ -772,10 +838,23 @@ function Studio() {
           <Section
             icon={BadgeCheck}
             title="Logomarca"
-            summary={LOGO_VARIANTS.find((v) => v.id === logoResult?.variant)?.label}
+            summary={
+              isBB && bbLogoResult
+                ? `BB ${BB_LOGO_LABEL[bbLogoResult.version]}`
+                : LOGO_VARIANTS.find((v) => v.id === logoResult?.variant)?.label
+            }
             open={open.logo}
             onToggle={() => toggleSection("logo")}
           >
+            {isBB && (
+              <BBLogoSlot
+                logo={bbLogo}
+                onUpload={(f) => void uploadBBLogo(f)}
+                onClear={clearBBLogo}
+                warn={!!bbLogoResult && !bbLogoResult.bgOk}
+              />
+            )}
+            {!(isBB && bbLogo) && (
             <LogoVariantPicker
               idPrefix="studio"
               enabled={logoVariants}
@@ -797,7 +876,8 @@ function Studio() {
                 })
               }
             />
-            {logoResult?.plate && (
+            )}
+            {logoResult?.plate && !(isBB && bbLogo) && (
               <p className="text-xs text-amber-700">
                 Nenhuma versão passa sobre este fundo: a logo vai sobre uma placa sólida.
               </p>
@@ -807,10 +887,16 @@ function Studio() {
           <Section
             icon={Palette}
             title="Cores"
+            summary={isBB ? findBBScheme(bbSchemeId).label : undefined}
             open={open.colors}
             onToggle={() => toggleSection("colors")}
           >
-            <div role="radiogroup" aria-label="Esquema cromático" className="space-y-1">
+            {isBB && <BBSchemePicker value={bbSchemeId} onChange={setBBSchemeId} />}
+            <div
+              role="radiogroup"
+              aria-label="Esquema cromático"
+              className={`space-y-1 ${isBB ? "hidden" : ""}`}
+            >
               {SCHEMES.map((s) => (
                 <button
                   key={s.key}
@@ -829,7 +915,11 @@ function Studio() {
                 </button>
               ))}
             </div>
-            <div role="radiogroup" aria-label="Roxo do card/painel" className="flex gap-2">
+            <div
+              role="radiogroup"
+              aria-label="Roxo do card/painel"
+              className={`flex gap-2 ${isBB ? "hidden" : ""}`}
+            >
               {[PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].map((c) => (
                 <button
                   key={c}

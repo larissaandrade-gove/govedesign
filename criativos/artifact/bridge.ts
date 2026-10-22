@@ -25,11 +25,16 @@ export async function saveDownload(blob: Blob, filename: string): Promise<SaveOu
 
 /** Junta todas as peças renderizadas (canvas) num único .zip de PNGs. */
 export async function downloadCanvasesZip(root: HTMLElement | null) {
-  const canvases = Array.from(root?.querySelectorAll("canvas") ?? []);
-  if (!canvases.length) {
+  const all = Array.from(root?.querySelectorAll("canvas") ?? []);
+  if (!all.length) {
     toast.error("Gere os criativos antes de baixar.");
     return;
   }
+  // Peças bloqueadas pela verificação de marca (modo BB) não são exportadas.
+  const canvases = all.filter((c) => c.dataset["exportBlocked"] !== "true");
+  if (canvases.length < all.length)
+    toast(`${all.length - canvases.length} peça(s) fora do manual ficaram de fora.`);
+  if (!canvases.length) return;
   const id = toast.loading("Preparando o arquivo .zip…");
   const files: { name: string; data: Uint8Array }[] = [];
   for (const [i, canvas] of canvases.entries()) {

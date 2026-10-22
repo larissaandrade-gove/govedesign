@@ -48,11 +48,21 @@ import {
   type LogoVariantId,
 } from "@/lib/creative/logos";
 import { LogoVariantPicker } from "@/components/LogoVariantPicker";
+import {
+  BBLogoSlot,
+  BBSchemeToggles,
+  IdentitySwitch,
+  bbLogoBgAllowed,
+  useBBLogo,
+  useIdentity,
+} from "@/components/IdentityControls";
+import { BB_COPY, BB_SCHEMES, bbLogoVersion, type Identity } from "@/lib/creative/bb";
 import { ICONS } from "@/lib/creative/icons";
 import { getGateStatus, signOut } from "@/lib/gate.functions";
 import { type PexelsPhoto } from "@/lib/pexels.functions";
 import { PexelsCredit, PexelsPicker, orientationFor } from "@/components/PexelsPicker";
 import {
+  BB_PANEL,
   BG_PRESETS,
   FORMATS,
   LAYOUTS,
@@ -164,12 +174,32 @@ function Index() {
     await router.navigate({ to: "/login", replace: true });
   }, [doSignOut, router]);
 
-  const [headlines, setHeadlines] = useState(DEFAULTS.headlines);
-  const [subheads, setSubheads] = useState(DEFAULTS.subheads);
-  const [ctas, setCtas] = useState(DEFAULTS.ctas);
-  const [badges, setBadges] = useState(DEFAULTS.badges);
-  const [tokens, setTokens] = useState(DEFAULTS.tokens);
-  const [urgencies, setUrgencies] = useState(DEFAULTS.urgencies);
+  // Identidade visual (GOVE padrão | Banco do Brasil), lembrada neste navegador.
+  const [identity, setIdentity] = useIdentity();
+  const isBB = identity === "bb";
+  const { logo: bbLogo, upload: uploadBBLogo, clear: clearBBLogo } = useBBLogo();
+  const [enabledBBSchemes, setEnabledBBSchemes] = useState<string[]>(BB_SCHEMES.map((s) => s.id));
+  const copyFor = (id: Identity) => (id === "bb" ? BB_COPY : DEFAULTS);
+  const [headlines, setHeadlines] = useState(() => copyFor(identity).headlines);
+  const [subheads, setSubheads] = useState(() => copyFor(identity).subheads);
+  const [ctas, setCtas] = useState(() => copyFor(identity).ctas);
+  const [badges, setBadges] = useState(() => copyFor(identity).badges);
+  const [tokens, setTokens] = useState(() => copyFor(identity).tokens);
+  const [urgencies, setUrgencies] = useState(() => copyFor(identity).urgencies);
+  /** Troca a identidade e os textos de exemplo que ainda não foram editados. */
+  const changeIdentity = (next: Identity) => {
+    if (next === identity) return;
+    const from = copyFor(identity);
+    const to = copyFor(next);
+    const swap = (cur: string, k: keyof typeof DEFAULTS) => (cur === from[k] ? to[k] : cur);
+    setHeadlines((v) => swap(v, "headlines"));
+    setSubheads((v) => swap(v, "subheads"));
+    setCtas((v) => swap(v, "ctas"));
+    setBadges((v) => swap(v, "badges"));
+    setTokens((v) => swap(v, "tokens"));
+    setUrgencies((v) => swap(v, "urgencies"));
+    setIdentity(next);
+  };
   const [useUrgency, setUseUrgency] = useState(true);
   const [useImage, setUseImage] = useState(false);
   const [backgrounds, setBackgrounds] = useState<
@@ -323,6 +353,20 @@ function Index() {
     });
   }, [useImage, backgrounds, enabledSchemes, enabledPresets]);
 
+  // Identidade, esquemas BB e logomarca BB se aplicam às peças já geradas.
+  useEffect(() => {
+    setSpecs((prev) => {
+      if (!prev.length) return prev;
+      const pool = enabledBBSchemes.length ? enabledBBSchemes : BB_SCHEMES.map((s) => s.id);
+      return prev.map((s, i) => ({
+        ...s,
+        identity,
+        bbScheme: s.bbScheme && pool.includes(s.bbScheme) ? s.bbScheme : pool[i % pool.length],
+        bbLogo: bbLogo?.img ?? null,
+      }));
+    });
+  }, [identity, enabledBBSchemes, bbLogo]);
+
   // Wordmarks habilitados / biblioteca carregada.
   useEffect(() => {
     setSpecs((prev) => (prev.length ? prev.map((s) => ({ ...s, ...pickLogoSet() })) : prev));
@@ -419,9 +463,15 @@ function Index() {
           : pick(enabledPresets.length ? enabledPresets : BG_PRESETS.map((p) => p.key)),
         ...pickLogoSet(),
         expert: expert.enabled ? expert : null,
+        identity,
+        bbScheme: pick(enabledBBSchemes.length ? enabledBBSchemes : BB_SCHEMES.map((s) => s.id)),
+        bbLogo: bbLogo?.img ?? null,
       };
     },
     [
+      identity,
+      enabledBBSchemes,
+      bbLogo,
       pools,
       format,
       enabledLayouts,
@@ -449,8 +499,12 @@ function Index() {
       toast.error("Selecione ao menos uma diagramação.");
       return;
     }
-    if (!enabledSchemes.length) {
+    if (!isBB && !enabledSchemes.length) {
       toast.error("Selecione ao menos um esquema de cores.");
+      return;
+    }
+    if (isBB && !enabledBBSchemes.length) {
+      toast.error("Selecione ao menos um esquema de cores BB.");
       return;
     }
     if (!enabledLogos.length) {
@@ -496,6 +550,13 @@ function Index() {
             ? undefined
             : pick(enabledPresets.length ? enabledPresets : BG_PRESETS.map((p) => p.key)),
           ...pickLogoSet(),
+          bbScheme: pick(
+            (enabledBBSchemes.length > 1
+              ? enabledBBSchemes.filter((id) => id !== s.bbScheme)
+              : enabledBBSchemes.length
+                ? enabledBBSchemes
+                : BB_SCHEMES.map((x) => x.id)),
+          ),
         };
       }),
     );
@@ -508,7 +569,10 @@ function Index() {
       toast.error("Preencha nome e sobrenome, cargo e foto do especialista.");
       return;
     }
-    const canvases = Array.from(gridRef.current?.querySelectorAll("canvas") ?? []);
+    // Peças bloqueadas pela verificação BB (contraste/paleta) ficam de fora.
+    const canvases = Array.from(gridRef.current?.querySelectorAll("canvas") ?? []).filter(
+      (c) => c.dataset["exportBlocked"] !== "true",
+    );
     if (!canvases.length) {
       toast.error("Gere os criativos antes de baixar.");
       return;
@@ -573,6 +637,20 @@ function Index() {
       return toggleIn(prev, id, on);
     });
 
+  /**
+   * Aviso da logomarca BB: as versões Central/Horizontal só vão sobre Amarelo,
+   * Azul institucional ou Branco. Avalia o que fica atrás da logo nas peças:
+   * fundo do esquema (ou o painel, nos layouts em que a logo fica sobre ele) e fotos.
+   */
+  const bbLogoWarn = useMemo(() => {
+    if (!isBB || !bbLogo || bbLogoVersion(bbLogo.img) === "simbolo") return false;
+    if (useImage) return true;
+    const overPanel = enabledLayouts.some((l) => l === "split-left" || l === "band-top");
+    return BB_SCHEMES.filter((s) => enabledBBSchemes.includes(s.id)).some(
+      (s) => !bbLogoBgAllowed(s.bg) || (overPanel && !bbLogoBgAllowed(BB_PANEL[s.id] ?? s.bg)),
+    );
+  }, [isBB, bbLogo, useImage, enabledLayouts, enabledBBSchemes]);
+
   const iconThemes = useMemo(() => Array.from(new Set(ICONS.map((i) => i.theme))), []);
 
   const size = formatSize(format);
@@ -604,6 +682,7 @@ function Index() {
       <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         <section className="grid gap-4 sm:gap-6 lg:grid-cols-[400px_1fr]">
           <div className="min-w-0 space-y-3">
+            <IdentitySwitch value={identity} onChange={changeIdentity} />
             <div
               role="group"
               aria-label="Tipo de saída"
@@ -832,6 +911,10 @@ function Index() {
                     label="Buscar imagens no Pexels"
                   />
                 </>
+              ) : isBB ? (
+                <p className="text-xs text-muted-foreground">
+                  No modo Banco do Brasil o fundo é a cor sólida do esquema escolhido em Cores.
+                </p>
               ) : (
                 <div role="group" aria-label="Fundos padrão" className="grid grid-cols-3 gap-2">
                   {BG_PRESETS.map((p) => {
@@ -866,11 +949,25 @@ function Index() {
             <Section
               icon={Palette}
               title="Cores"
-              summary={`${enabledSchemes.length}/${SCHEMES.length}`}
+              summary={
+                isBB
+                  ? `BB ${enabledBBSchemes.length}/${BB_SCHEMES.length}`
+                  : `${enabledSchemes.length}/${SCHEMES.length}`
+              }
               open={openSections.schemes}
               onToggle={() => toggleSection("schemes")}
             >
-              {SCHEMES.map((s) => (
+              {isBB && (
+                <BBSchemeToggles
+                  enabled={enabledBBSchemes}
+                  onToggle={(id, on) =>
+                    setEnabledBBSchemes((p) =>
+                      !on && p.length <= 1 ? p : toggleIn(p, id, on),
+                    )
+                  }
+                />
+              )}
+              {(isBB ? [] : SCHEMES).map((s) => (
                 <SettingRow key={s.key} htmlFor={`scheme-${s.key}`} label={s.label}>
                   <Switch
                     id={`scheme-${s.key}`}
@@ -892,12 +989,21 @@ function Index() {
               open={openSections.logos}
               onToggle={() => toggleSection("logos")}
             >
-              <LogoVariantPicker
-                idPrefix="lote"
-                enabled={enabledLogos}
-                statuses={logoStatuses}
-                onToggle={toggleLogo}
-              />
+              {isBB ? (
+                <BBLogoSlot
+                  logo={bbLogo}
+                  onUpload={(f) => void uploadBBLogo(f)}
+                  onClear={clearBBLogo}
+                  warn={bbLogoWarn}
+                />
+              ) : (
+                <LogoVariantPicker
+                  idPrefix="lote"
+                  enabled={enabledLogos}
+                  statuses={logoStatuses}
+                  onToggle={toggleLogo}
+                />
+              )}
             </Section>
 
             <Section

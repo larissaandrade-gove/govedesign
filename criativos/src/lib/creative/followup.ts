@@ -7,7 +7,32 @@
  * Tipografia: Montserrat nos títulos, Inter no corpo.
  */
 import { PALETTE } from "./brand";
-import { BG_PRESETS, findOverlaps, type BgPreset, type LayoutBox } from "./renderer";
+import {
+  BG_PRESETS,
+  findOverlaps,
+  withColorRecorder,
+  type BgPreset,
+  type ColorRecorder,
+  type LayoutBox,
+} from "./renderer";
+import {
+  BB_PALETTE,
+  BB_PROTECTION,
+  BB_TEXT_FONT,
+  BB_TITLE_FONT,
+  auditBB,
+  bbLogoSize,
+  bbScheme,
+  drawBBLogo,
+  pickShapeColor,
+  pickTextColor,
+  sampleHexes,
+  textOn,
+  type BBAudit,
+  type BBLogoRender,
+  type BBTextRecord,
+  type Identity,
+} from "./bb";
 import {
   contrast,
   drawBrandLogo,
@@ -83,6 +108,12 @@ export type FollowupSpec = {
   renderScale?: number | undefined;
   /** Foto de fundo (ex.: Pexels). Recebe sobreposição da cor do fundo escolhido. */
   bgImage?: HTMLImageElement | null | undefined;
+  /** Identidade visual: GOVE (padrão) ou Banco do Brasil. */
+  identity?: Identity | undefined;
+  /** Esquema BB (id de BB_SCHEMES) usado no modo Banco do Brasil. */
+  bbScheme?: string | undefined;
+  /** Arquivo oficial da logomarca BB (desenhado como enviado). */
+  bbLogo?: HTMLImageElement | null | undefined;
 };
 
 export type FollowupCheck = { id: string; label: string; pass: boolean };
@@ -92,10 +123,13 @@ export type FollowupResult = {
   logo: LogoRender | null;
   boxes: LayoutBox[];
   overlaps: [string, string][];
+  /** Modo BB: verificação de contraste e paleta. */
+  bb?: BBAudit | null;
+  bbLogo?: BBLogoRender | null;
 };
 
-const TITLE_FONT = "Montserrat, Archivo, 'Helvetica Neue', Arial, sans-serif";
-const BODY_FONT = "Inter, Archivo, 'Helvetica Neue', Arial, sans-serif";
+const GOVE_TITLE_FONT = "Montserrat, Archivo, 'Helvetica Neue', Arial, sans-serif";
+const GOVE_BODY_FONT = "Inter, Archivo, 'Helvetica Neue', Arial, sans-serif";
 const MIN_CONTRAST = 4.5;
 /** Pisos de legibilidade (px no canvas de 1080 de altura). */
 const MIN_TITLE = 44;
@@ -379,7 +413,10 @@ export function renderFollowup(canvas: HTMLCanvasElement, spec: FollowupSpec): F
   const { w, h } = followupSize(spec.format);
   let last: FollowupResult | null = null;
   for (const level of FOLLOWUP_LADDER) {
-    last = renderFollowupOnce(canvas, spec, level);
+    last =
+      spec.identity === "bb"
+        ? withColorRecorder(canvas, (rec) => renderFollowupOnce(canvas, spec, level, rec))
+        : renderFollowupOnce(canvas, spec, level);
     if (!last.overlaps.length) break;
   }
   void w;
@@ -391,6 +428,7 @@ function renderFollowupOnce(
   canvas: HTMLCanvasElement,
   spec: FollowupSpec,
   level: number,
+  recorder?: ColorRecorder,
 ): FollowupResult {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas 2D indisponível");
@@ -403,10 +441,30 @@ function renderFollowupOnce(
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
 
+  const bb = spec.identity === "bb" ? bbScheme(spec.bbScheme) : null;
+  const TITLE_FONT = bb ? BB_TITLE_FONT : GOVE_TITLE_FONT;
+  const BODY_FONT = bb ? BB_TEXT_FONT : GOVE_BODY_FONT;
   const preset = BG_PRESETS.find((p) => p.key === spec.bgPreset) ?? BG_PRESETS[0]!;
   const presetLight = themeFor(preset.colors).light;
   let t = themeFor(preset.colors);
-  if (spec.bgImage) {
+  if (bb) {
+    // BB: foto sem véu (nada fora da paleta) ou cor sólida do esquema; cada
+    // texto escolhe a cor pelos pixels reais sob ele (R1).
+    if (spec.bgImage) drawCoverImage(ctx, spec.bgImage, W, H);
+    else {
+      ctx.fillStyle = bb.bg;
+      ctx.fillRect(0, 0, W, H);
+    }
+    t = {
+      light: true,
+      title: bb.title,
+      body: bb.text,
+      meta: bb.text,
+      accent: bb.button,
+      onAccent: bb.buttonText,
+      bgs: [bb.bg],
+    };
+  } else if (spec.bgImage) {
     drawCoverImage(ctx, spec.bgImage, W, H);
     const extremes = overlayForText(ctx, W, H, RS, presetLight);
     t = themeFor(extremes, presetLight);
@@ -446,8 +504,55 @@ function renderFollowupOnce(
   let sizesOk = true;
   let omitted = 0;
   let logo: LogoRender | null = null;
+  let bbLogo: BBLogoRender | null = null;
+
+  type Box = { x: number; y: number; w: number; h: number };
+  const bbTexts: BBTextRecord[] = [];
+  const unionOf = (list: Box[]): Box => {
+    const x0 = Math.min(...list.map((b) => b.x));
+    const y0 = Math.min(...list.map((b) => b.y));
+    return {
+      x: x0,
+      y: y0,
+      w: Math.max(...list.map((b) => b.x + b.w)) - x0,
+      h: Math.max(...list.map((b) => b.y + b.h)) - y0,
+    };
+  };
+  /** BB (R1): cor do texto pelos pixels sob ele; sem par, proteção Azul escuro + Branco. */
+  const bbText = (id: string, list: Box[], preferred?: string, pad = 12): string => {
+    const u = unionOf(list);
+    const pick = pickTextColor(sampleHexes(ctx, u, RS), preferred);
+    if (pick.protect) {
+      ctx.save();
+      ctx.fillStyle = BB_PROTECTION.bg;
+      roundRect(ctx, u.x - pad, u.y - pad, u.w + pad * 2, u.h + pad * 2, pad + 6);
+      ctx.fill();
+      ctx.restore();
+    }
+    bbTexts.push({ id, color: pick.color, bgs: pick.bgs, protect: pick.protect });
+    return pick.color;
+  };
+  const bbShape = (b: Box, prefs: string[]) => pickShapeColor(sampleHexes(ctx, b, RS), prefs);
+  /** Cor do texto: GOVE usa o tema; BB amostra o fundo real. */
+  const textColor = (id: string, list: Box[], gove: string, preferred?: string) =>
+    bb ? bbText(id, list, preferred) : gove;
+
+  /** Tamanho da logo aplicada (BB oficial, quando enviada no modo BB; senão GOVE). */
+  const logoDims = (h: number) => {
+    if (bb && spec.bbLogo) return bbLogoSize(spec.bbLogo, h, W * 0.4);
+    const box = logoBox("logotipo", h);
+    const kind = kindForBox(box.w, box.h);
+    return kind === "logotipo" ? box : logoBox("simbolo", h);
+  };
 
   const drawLogo = (x: number, y: number, h: number) => {
+    if (bb && spec.bbLogo) {
+      // Logomarca BB como enviada (nunca recolorida); área de proteção = h/2.
+      bbLogo = drawBBLogo(ctx, spec.bbLogo, x, y, h, RS, W * 0.4);
+      const clear = bbLogo.h / 2;
+      reg("logo", x - clear, y - clear, bbLogo.w + clear * 2, bbLogo.h + clear * 2);
+      return { w: bbLogo.w, h: bbLogo.h };
+    }
     const box = logoBox("logotipo", h);
     const kind = kindForBox(box.w, box.h);
     const b = kind === "logotipo" ? box : logoBox("simbolo", h);
@@ -459,6 +564,7 @@ function renderFollowupOnce(
       kind,
       scale: RS,
       allowed: spec.logoVariants,
+      plates: bb ? [BB_PALETTE.azulEscuro, BB_PALETTE.branco] : undefined,
     });
     const pad = logo.plate ? Math.round(b.h * 0.28) : 0;
     reg("logo", x - pad, y - pad, b.w + pad * 2, b.h + pad * 2);
@@ -474,16 +580,17 @@ function renderFollowupOnce(
     if (p.version.trim() && !version) omitted++;
     if (version) {
       let vs = MIN_BODY;
-      ctx.font = `600 ${vs}px ${BODY_FONT}`;
+      const vw = bb ? 500 : 600;
+      ctx.font = `${vw} ${vs}px ${BODY_FONT}`;
       // Versão longa: reduz até caber ao lado do logo (sem passar do piso de leitura).
-      const room = W - M * 2 - lb.w - 32;
+      const room = W - M * 2 - lb.w - 32 - (bbLogo ? lb.h / 2 : 0);
       while (ctx.measureText(version).width > room && vs > 22) {
         vs -= 1;
-        ctx.font = `600 ${vs}px ${BODY_FONT}`;
+        ctx.font = `${vw} ${vs}px ${BODY_FONT}`;
       }
-      ctx.fillStyle = t.meta;
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
+      ctx.fillStyle = textColor("Versão/data", [ink(version, W - M, M + logoH / 2)], t.meta, bb?.text);
       ctx.fillText(version, W - M, M + logoH / 2);
       regUnion("versão", [ink(version, W - M, M + logoH / 2)]);
       ctx.textAlign = "left";
@@ -504,8 +611,14 @@ function renderFollowupOnce(
       MIN_TITLE,
     );
     if (title.clipped) fitsOk = false;
-    ctx.fillStyle = t.title;
     ctx.font = `800 ${title.size}px ${TITLE_FONT}`;
+    ctx.fillStyle = bb
+      ? bbText(
+          "Título",
+          title.lines.map((line, i) => ink(line, M, y + i * title.size * 1.12)),
+          bb.title,
+        )
+      : t.title;
     const tInk: { x: number; y: number; w: number; h: number }[] = [];
     for (const line of title.lines) {
       ctx.fillText(line, M, y);
@@ -515,7 +628,7 @@ function renderFollowupOnce(
     regUnion("título", tInk);
     textPairs.push(["Título", t.title, t.bgs]);
     y += 20;
-    ctx.fillStyle = t.accent;
+    ctx.fillStyle = bb ? bbShape({ x: M, y, w: 96, h: 8 }, [bb.accent, bb.button]) : t.accent;
     roundRect(ctx, M, y, 96, 8, 4);
     ctx.fill();
     reg("faixa", M, y, 96, 8);
@@ -565,31 +678,44 @@ function renderFollowupOnce(
       const lineH = size * 1.3;
       const cy = y + Math.max(icon, lineH) / 2;
       const cx = M + icon / 2;
+      const markerBox = { x: M, y: cy - icon / 2, w: icon, h: icon };
+      const markerFill = bb ? bbShape(markerBox, [bb.button, bb.accent]) : t.accent;
       if (p.marker === "dot") {
-        ctx.fillStyle = t.accent;
+        ctx.fillStyle = markerFill;
         ctx.beginPath();
         ctx.arc(cx, cy, icon * 0.18, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        ctx.fillStyle = t.accent;
+        ctx.fillStyle = markerFill;
         ctx.beginPath();
         ctx.arc(cx, cy, icon / 2, 0, Math.PI * 2);
         ctx.fill();
+        // Símbolo sobre o marcador: par aprovado com a cor do marcador.
+        const onMarker = bb ? textOn(markerFill, bb.buttonText) : t.onAccent;
         if (p.marker === "number") {
-          ctx.fillStyle = t.onAccent;
           ctx.font = `700 ${Math.round(icon * 0.5)}px ${TITLE_FONT}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
+          ctx.fillStyle = bb
+            ? bbText(`número ${i + 1}`, [ink(String(i + 1), cx, cy + 1)], onMarker)
+            : t.onAccent;
           ctx.fillText(String(i + 1), cx, cy + 1);
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
         } else {
-          glyph(ctx, p.marker, cx, cy, icon * 0.56, t.onAccent, 3);
+          glyph(ctx, p.marker, cx, cy, icon * 0.56, onMarker, 3);
         }
       }
       ctx.font = `500 ${size}px ${BODY_FONT}`;
-      ctx.fillStyle = t.body;
       ctx.textBaseline = "middle";
+      ctx.fillStyle = bb
+        ? bbText(
+            `Item ${i + 1}`,
+            l.lines.map((line, k) => ink(line, M + icon + 28, cy + k * lineH + 1)),
+            bb.text,
+            8,
+          )
+        : t.body;
       const rowInk = [{ x: M, y: cy - icon / 2, w: icon, h: icon }];
       l.lines.forEach((line, k) => {
         ctx.fillText(line, M + icon + 28, cy + k * lineH + 1);
@@ -607,16 +733,28 @@ function renderFollowupOnce(
       const tw = ctx.measureText(cta).width;
       const bw = Math.min(contentW, tw + ctaPadX * 2 + 44);
       const by = H - M - ctaH;
-      ctx.fillStyle = t.accent;
+      const ctaFill = bb ? bbShape({ x: M, y: by, w: bw, h: ctaH }, [bb.button]) : t.accent;
+      ctx.fillStyle = ctaFill;
       roundRect(ctx, M, by, bw, ctaH, ctaH / 2);
       ctx.fill();
       reg("cta", M, by, bw, ctaH);
-      ctx.fillStyle = t.onAccent;
       ctx.textBaseline = "middle";
+      const ctaInk = ink(cta, M + ctaPadX, by + ctaH / 2 + 1);
+      const ctaFg = bb
+        ? bbText(
+            "CTA",
+            [
+              { ...ctaInk, w: Math.min(ctaInk.w, bw - ctaPadX * 2 - 44) },
+              { x: M + bw - ctaPadX - 29, y: by + ctaH / 2 - 15, w: 30, h: 30 },
+            ],
+            bb.buttonText,
+          )
+        : t.onAccent;
+      ctx.fillStyle = ctaFg;
       ctx.fillText(cta, M + ctaPadX, by + ctaH / 2 + 1, bw - ctaPadX * 2 - 44);
       ctx.textBaseline = "top";
-      glyph(ctx, "arrow", M + bw - ctaPadX - 14, by + ctaH / 2, 30, t.onAccent, 2.6);
-      textPairs.push(["CTA", t.onAccent, [t.accent]]);
+      glyph(ctx, "arrow", M + bw - ctaPadX - 14, by + ctaH / 2, 30, ctaFg, 2.6);
+      textPairs.push(["CTA", ctaFg, [ctaFill]]);
     }
   } else {
     const e = spec.event;
@@ -665,12 +803,13 @@ function renderFollowupOnce(
     let y: number;
     if (square) {
       const logoH = 56;
-      const lb = logoBox("logotipo", logoH);
-      const stack = logoH + 48 + D + ring * 2 + 36 + blockH;
+      const lb = bb ? logoDims(logoH) : logoBox("logotipo", logoH);
+      const lh = Math.max(logoH, lb.h);
+      const stack = lh + 48 + D + ring * 2 + 36 + blockH;
       const top = Math.max(M - 16, (H - stack) / 2);
       drawLogo((W - lb.w) / 2, top, logoH);
       cx = W / 2;
-      cy = top + logoH + 48 + ring + D / 2;
+      cy = top + lh + 48 + ring + D / 2;
       textX = W / 2;
       align = "center";
       y = cy + D / 2 + ring + 36;
@@ -687,6 +826,13 @@ function renderFollowupOnce(
       y = Math.max(areaTop, areaTop + (areaH - blockH) / 2);
     }
 
+    // Moldura (anel) BB: cor da paleta com ≥ 3:1 contra o fundo ao redor da foto.
+    const ringColor = bb
+      ? bbShape(
+          { x: cx - D / 2 - ring, y: cy - D / 2 - ring, w: D + ring * 2, h: D + ring * 2 },
+          [bb.accent, bb.button],
+        )
+      : t.accent;
     // Moldura circular: foto (recorte central, sem distorção) ou placeholder neutro.
     ctx.save();
     ctx.beginPath();
@@ -710,12 +856,12 @@ function renderFollowupOnce(
         D,
       );
     } else {
-      ctx.fillStyle = PALETTE.supportLight;
+      ctx.fillStyle = bb ? BB_PALETTE.amareloClaro : PALETTE.supportLight;
       ctx.fillRect(cx - D / 2, cy - D / 2, D, D);
-      glyph(ctx, "user", cx, cy, D * 0.46, PALETTE.supportMid, 1.6);
+      glyph(ctx, "user", cx, cy, D * 0.46, bb ? BB_PALETTE.azulEscuro : PALETTE.supportMid, 1.6);
     }
     ctx.restore();
-    ctx.strokeStyle = t.accent;
+    ctx.strokeStyle = ringColor;
     ctx.lineWidth = ring;
     ctx.beginPath();
     ctx.arc(cx, cy, D / 2 + ring / 2, 0, Math.PI * 2);
@@ -725,7 +871,11 @@ function renderFollowupOnce(
     ctx.textAlign = align;
     if (kicker) {
       ctx.font = `700 ${kickerSize}px ${BODY_FONT}`;
-      const kc = t.light ? t.title : PALETTE.gold;
+      const kc = bb
+        ? bbText("Chamada", [ink(kicker.toUpperCase(), textX, y)], bb.accent)
+        : t.light
+          ? t.title
+          : PALETTE.gold;
       ctx.fillStyle = kc;
       ctx.fillText(kicker.toUpperCase(), textX, y, textW);
       regUnion("chamada", [ink(kicker.toUpperCase(), textX, y)]);
@@ -733,7 +883,13 @@ function renderFollowupOnce(
       y += kickerSize + 20;
     }
     ctx.font = `800 ${nameFit.size}px ${TITLE_FONT}`;
-    ctx.fillStyle = t.title;
+    ctx.fillStyle = bb
+      ? bbText(
+          "Nome",
+          nameFit.lines.map((line, i) => ink(line, textX, y + i * nameFit.size * 1.12)),
+          bb.title,
+        )
+      : t.title;
     const nInk: { x: number; y: number; w: number; h: number }[] = [];
     for (const line of nameFit.lines) {
       ctx.fillText(line, textX, y);
@@ -745,7 +901,13 @@ function renderFollowupOnce(
     if (eventFit.lines.length) {
       y += 16;
       ctx.font = `500 ${eventFit.size}px ${BODY_FONT}`;
-      ctx.fillStyle = t.body;
+      ctx.fillStyle = bb
+        ? bbText(
+            "Evento",
+            eventFit.lines.map((line, i) => ink(line, textX, y + i * eventFit.size * 1.3)),
+            bb.text,
+          )
+        : t.body;
       const eInk: { x: number; y: number; w: number; h: number }[] = [];
       for (const line of eventFit.lines) {
         ctx.fillText(line, textX, y);
@@ -761,17 +923,29 @@ function renderFollowupOnce(
       const tw = ctx.measureText(when).width;
       const pw = Math.min(textW, tw + 40 + 36 + 16);
       const px = align === "center" ? textX - pw / 2 : textX;
-      ctx.fillStyle = t.accent;
+      const pillFill = bb ? bbShape({ x: px, y, w: pw, h: pillH }, [bb.button]) : t.accent;
+      ctx.fillStyle = pillFill;
       roundRect(ctx, px, y, pw, pillH, pillH / 2);
       ctx.fill();
       reg("data", px, y, pw, pillH);
-      glyph(ctx, "calendar", px + 20 + 18, y + pillH / 2, 32, t.onAccent, 2.4);
-      ctx.fillStyle = t.onAccent;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
+      const wInk = ink(when, px + 20 + 36 + 16, y + pillH / 2 + 1);
+      const pillFg = bb
+        ? bbText(
+            "Data",
+            [
+              { ...wInk, w: Math.min(wInk.w, pw - 92) },
+              { x: px + 22, y: y + pillH / 2 - 16, w: 32, h: 32 },
+            ],
+            bb.buttonText,
+          )
+        : t.onAccent;
+      glyph(ctx, "calendar", px + 20 + 18, y + pillH / 2, 32, pillFg, 2.4);
+      ctx.fillStyle = pillFg;
       ctx.fillText(when, px + 20 + 36 + 16, y + pillH / 2 + 1, pw - 92);
       ctx.textBaseline = "top";
-      textPairs.push(["Data", t.onAccent, [t.accent]]);
+      textPairs.push(["Data", pillFg, [pillFill]]);
     }
     ctx.textAlign = "left";
     if (nameFit.size < MIN_TITLE || eventFit.size < MIN_BODY) sizesOk = false;
@@ -780,6 +954,29 @@ function renderFollowupOnce(
   const overlaps = findOverlaps(boxes, W, H);
 
   // Checagens de marca
+  const bbAudit = bb && recorder ? auditBB(bbTexts, recorder.colors) : null;
+  if (bbAudit && recorder!.alphas.some((a) => a < 1)) {
+    bbAudit.offPalette.push("opacidade < 100%");
+    bbAudit.pass = false;
+  }
+  if (bbAudit) {
+    const badBB = bbAudit.texts.filter((r) => !r.pass);
+    const worst = bbAudit.texts.length ? Math.min(...bbAudit.texts.map((r) => r.min)) : 0;
+    checks.push({
+      id: "contrast",
+      label: badBB.length
+        ? `Contraste < 4,5:1 em: ${badBB.map((b) => b.id).join(", ")}`
+        : `Textos com contraste ≥ 4,5:1 (mín. ${worst.toFixed(2).replace(".", ",")}:1)${bbAudit.fixed ? ` · ${bbAudit.fixed} com proteção` : ""}`,
+      pass: !badBB.length,
+    });
+    checks.push({
+      id: "palette",
+      label: bbAudit.offPalette.length
+        ? `Cores fora da paleta BB: ${bbAudit.offPalette.join(", ")}`
+        : "Cores dentro da paleta BB",
+      pass: !bbAudit.offPalette.length,
+    });
+  } else {
   const allowed = FOLLOWUP_TEXT_COLORS.map((c) => c.toUpperCase());
   const bad = textPairs.filter(
     ([, fg, bgs]) => Math.min(...bgs.map((b) => contrast(fg, b))) < MIN_CONTRAST,
@@ -796,6 +993,7 @@ function renderFollowupOnce(
     label: "Textos na paleta oficial",
     pass: textPairs.every(([, fg]) => allowed.includes(fg.toUpperCase())),
   });
+  }
   checks.push({
     id: "overlap",
     label: overlaps.length
@@ -815,10 +1013,20 @@ function renderFollowupOnce(
   });
   checks.push({ id: "size", label: "Tamanhos mínimos de leitura", pass: sizesOk });
   const lg = logo as LogoRender | null;
+  const bl = bbLogo as BBLogoRender | null;
+  if (bl) {
+    checks.push({
+      id: "logo",
+      label: bl.minWidthOk
+        ? "Logomarca BB (arquivo oficial) aplicada sem alterações"
+        : "Logomarca BB abaixo da largura mínima digital",
+      pass: bl.minWidthOk,
+    });
+  } else
   checks.push({
     id: "logo",
     label: lg?.drawn
-      ? `Logomarca oficial com contraste ${lg.minContrast.toFixed(1).replace(".", ",")}:1${lg.plate ? " (sobre placa)" : ""}`
+      ? `Logomarca ${bb ? "GOVE" : "oficial"} com contraste ${lg.minContrast.toFixed(1).replace(".", ",")}:1${lg.plate ? " (sobre placa)" : ""}`
       : "Logomarca oficial carregada",
     pass: !!lg?.drawn && lg.ok,
   });
@@ -829,5 +1037,13 @@ function renderFollowupOnce(
       pass: !!spec.event.photo,
     });
   }
-  return { checks, pass: checks.every((c) => c.pass), logo: lg, boxes, overlaps };
+  return {
+    checks,
+    pass: checks.every((c) => c.pass),
+    logo: lg,
+    boxes,
+    overlaps,
+    bb: bbAudit,
+    bbLogo: bl,
+  };
 }
