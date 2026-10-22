@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowUp, ChevronDown, GripVertical, ImageOff, ImagePlus, LayoutTemplate, ListPlus, Loader2, LocateFixed, MapPin, Move, MoveHorizontal,
-  MoveVertical, Phone, Plus, RotateCcw, Shapes, Smartphone, Trash2, Type, type LucideIcon,
+  MoveVertical, Palette, Phone, Plus, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,10 @@ import { CheckList } from '@/components/studio/CheckList';
 import { LayoutGlyph, layoutShort } from '@/components/studio/LayoutGlyph';
 import { api, type Check, type Imagem, type LogosFixos, type Municipio, type PieceOptions, type QueueItem } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand';
-import { DEFAULT_SERVICES, DEFAULT_TEXTS, LAYOUTS, MAX_SERVICES_RECOMMENDED, SERVICE_ICONS, TEXT_LABELS, buildLayout, formatPhone, measure } from '@/lib/studio';
+import {
+  BB_SCHEMES, DEFAULT_SERVICES, IDENTITIES, LAYOUTS, MAX_SERVICES_RECOMMENDED, SERVICE_ICONS, TEXT_LABELS, bbBlockingChecks, buildLayout, defaultTextsFor, formatPhone, measure,
+  type Identity,
+} from '@/lib/studio';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -64,6 +67,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   const [active, setActive] = useState<string>('flyer-a4');
   const [municipioId, setMunicipioId] = useState<number | null>(null);
   const [includeBB, setIncludeBB] = useState(false);
+  // Identidade visual das peças: GOVE (padrão) ou Banco do Brasil; persistida por município
+  const [identity, setIdentity] = useState<Identity>('gove');
+  const [bbScheme, setBbScheme] = useState<string>('capa');
   const [services, setServices] = useState<string[]>([...DEFAULT_SERVICES]);
   const [texts, setTexts] = useState<Record<string, Record<string, string>>>({});
   const [overrides, setOverrides] = useState<PieceOptions['overrides']>({});
@@ -80,14 +86,30 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   function chooseMunicipio(id: number | null) {
     setMunicipioId(id);
     const m = municipios.find((x) => x.id === id);
-    if (m) setIncludeBB(m.incluir_logo_banco_do_brasil);
+    if (m) {
+      setIncludeBB(m.incluir_logo_banco_do_brasil);
+      setIdentity(m.identidade === 'bb' ? 'bb' : 'gove');
+      setBbScheme(m.bb_esquema ?? 'capa');
+    }
   }
+
+  /** Troca a identidade/esquema e grava no município selecionado (vale para as próximas sessões). */
+  function chooseIdentity(next: Identity, scheme = bbScheme) {
+    setIdentity(next);
+    setBbScheme(scheme);
+    if (!municipio) return;
+    api.setIdentidade(municipio.id, next, scheme).then(onMunicipioSaved, (err: Error) => toast.error(err.message));
+  }
+  const bb = identity === 'bb';
+  const defaults = defaultTextsFor(identity);
 
   const input = useMemo(() => {
     if (!activeLayout) return null;
     return {
       municipio: municipio ?? { ddd: '', numero_whatsapp: '' },
-      includeBB,
+      identity,
+      bbScheme,
+      includeBB: bb || includeBB,
       services,
       texts: texts[activeLayout] ?? {},
       overrides: overrides[activeLayout] ?? {},
@@ -98,7 +120,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         prefeitura: municipio?.logo_largura ? { width: municipio.logo_largura, height: municipio.logo_altura } : null,
       },
     };
-  }, [activeLayout, municipio, includeBB, services, texts, overrides, mockup, mockMode, logosFixos]);
+  }, [activeLayout, municipio, identity, bbScheme, bb, includeBB, services, texts, overrides, mockup, mockMode, logosFixos]);
 
   const result = useMemo(() => (input && activeLayout ? buildLayout(activeLayout, input, measure) : null), [input, activeLayout]);
   const checks: Check[] = useMemo(() => {
@@ -158,13 +180,25 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   function addToQueue() {
     if (!municipio) return toast.error('Selecione um município antes de adicionar à fila.');
     if (!selected.length) return toast.error('Selecione ao menos um layout.');
+    if (bb && input) {
+      // Identidade BB: confere paleta, contraste (4,5:1 contra o fundo real) e tipografia de todas as peças
+      const blocking = LAYOUTS.filter((l: { id: string }) => selected.includes(l.id)).flatMap((l: { id: string; name: string }) =>
+        (bbBlockingChecks(buildLayout(l.id, { ...input, texts: texts[l.id] ?? {}, overrides: overrides[l.id] ?? {} }, measure).checks) as Check[]).map((c) => `${l.name}: ${c.message}`),
+      );
+      if (blocking.length) {
+        toast.error('Fora das regras da identidade Banco do Brasil', { description: blocking.slice(0, 3).join(' · ') });
+        return;
+      }
+    }
     onAddToQueue({
       key: `${Date.now()}-${municipio.id}`,
       municipioId: municipio.id,
       municipioNome: [municipio.nome_municipio, municipio.uf].filter(Boolean).join(' - '),
       layouts: LAYOUTS.map((l: { id: string }) => l.id).filter((id: string) => selected.includes(id)),
       options: {
-        includeBB,
+        identity,
+        bbScheme,
+        includeBB: bb || includeBB,
         services,
         texts,
         overrides,
@@ -175,7 +209,8 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   }
 
   const errors = checks.filter((c) => c.level === 'error').length;
-  const textKeys = activeLayout ? Object.keys(DEFAULT_TEXTS[activeLayout]) : [];
+  const textKeys = activeLayout ? Object.keys(defaults[activeLayout]) : [];
+  const bbLogoMissing = bb && !logosFixos.bb;
   const activeName = LAYOUTS.find((l: { id: string }) => l.id === activeLayout)?.name;
   type L = { id: string; name: string; trim: { w: number; h: number } };
 
@@ -183,6 +218,58 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     <div className="relative h-full min-h-0 overflow-y-auto lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
       {/* Painel de controles */}
       <aside className="border-b border-border bg-card/40 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r" aria-label="Configurações da peça">
+        <Section title="Identidade" icon={Palette}>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Identidade visual">
+            {(IDENTITIES as { id: Identity; label: string }[]).map((it) => (
+              <button
+                key={it.id}
+                type="button"
+                role="radio"
+                aria-checked={identity === it.id}
+                onClick={() => chooseIdentity(it.id)}
+                className={cn(
+                  'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors',
+                  identity === it.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
+          {bb && (
+            <>
+              <div className="grid grid-cols-6 gap-1.5" role="radiogroup" aria-label="Esquema de cores BB">
+                {BB_SCHEMES.map((sc: { id: string; label: string; bg: string; title: string; accent: string }) => (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={bbScheme === sc.id}
+                    aria-label={sc.label}
+                    title={sc.label}
+                    onClick={() => chooseIdentity('bb', sc.id)}
+                    style={{ background: sc.bg, color: sc.title }}
+                    className={cn(
+                      'flex min-h-11 items-center justify-center rounded-lg border-2 text-sm font-bold transition-shadow',
+                      bbScheme === sc.id ? 'border-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' : 'border-border',
+                    )}
+                  >
+                    Aa
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {BB_SCHEMES.find((sc: { id: string }) => sc.id === bbScheme)?.label} · paleta, fontes e CMYK do Banco do Brasil; textos sempre ≥ 4,5:1.
+              </p>
+              {bbLogoMissing && (
+                <p className="flex gap-1.5 text-xs font-medium text-warning" role="status">
+                  <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Envie a logomarca BB em “Logos fixos”: é obrigatória nesta identidade.
+                </p>
+              )}
+            </>
+          )}
+        </Section>
+
         <Section title="Layouts" icon={LayoutTemplate}>
           <div className="grid grid-cols-4 gap-2" role="group" aria-label="Layouts a gerar">
             {LAYOUTS.map((l: L) => {
@@ -243,8 +330,11 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
             </p>
           )}
           <div className="flex min-h-11 items-center justify-between gap-3 rounded-md border border-border px-3">
-            <Label htmlFor="bb" className="flex-1 cursor-pointer py-3 text-sm">Incluir logo Banco do Brasil</Label>
-            <Switch id="bb" checked={includeBB} onCheckedChange={setIncludeBB} />
+            <Label htmlFor="bb" className="flex-1 cursor-pointer py-3 text-sm">
+              Incluir logo Banco do Brasil
+              {bb && <span className="block text-xs font-normal text-muted-foreground">Obrigatório na identidade BB</span>}
+            </Label>
+            <Switch id="bb" checked={bb || includeBB} disabled={bb} onCheckedChange={setIncludeBB} />
           </div>
         </Section>
 
@@ -416,7 +506,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
                 <Textarea
                   id={`t-${key}`}
                   rows={2}
-                  value={texts[activeLayout]?.[key] ?? DEFAULT_TEXTS[activeLayout][key]}
+                  value={texts[activeLayout]?.[key] ?? defaults[activeLayout][key]}
                   onChange={(e) => setTexts((t) => ({ ...t, [activeLayout]: { ...t[activeLayout], [key]: e.target.value } }))}
                 />
               </div>

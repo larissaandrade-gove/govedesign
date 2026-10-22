@@ -52,7 +52,27 @@ export const COLORS = {
   // Cores da logomarca Gove (brand/logos.js)
   roxoGove: { name: 'Roxo Gove', hex: '#3E0099', cmyk: [94, 98, 0, 0] },
   amareloGove: { name: 'Amarelo Gove', hex: '#FEC526', cmyk: [0, 15, 92, 3] },
+
+  // ---- Identidade Banco do Brasil (brand/bb.js) ---------------------------------
+  // CMYK/Pantone oficiais do guia de cores BB (impressão). Só estas cores (e o
+  // Preto, apenas como texto sobre Rosa escuro) entram nas peças do modo BB.
+  bbAmareloInstitucional: { name: 'Amarelo institucional (BB) · Pantone 3945 C', hex: '#FCFC30', cmyk: [0, 0, 100, 0] },
+  bbAzulInstitucional: { name: 'Azul institucional (BB) · Pantone 2387 C', hex: '#465EFF', cmyk: [90, 40, 0, 0] },
+  bbAzulEscuro: { name: 'Azul escuro (BB) · Pantone 2736 C', hex: '#3333BD', cmyk: [90, 95, 0, 0] },
+  bbAzulClaro: { name: 'Azul claro (BB) · Pantone 292 C', hex: '#54DCFC', cmyk: [50, 0, 0, 0] },
+  bbVerdeEscuro: { name: 'Verde escuro (BB) · Pantone 3265 C', hex: '#00EBD0', cmyk: [70, 0, 40, 0] },
+  bbVerdeClaro: { name: 'Verde claro (BB) · Pantone 319 C', hex: '#83FFEA', cmyk: [40, 0, 20, 0] },
+  bbRoxoEscuro: { name: 'Roxo escuro (BB) · Pantone 2089 C', hex: '#735CC6', cmyk: [65, 70, 0, 0] },
+  bbRoxoClaro: { name: 'Roxo claro (BB) · Pantone 2645 C', hex: '#BDB6FF', cmyk: [25, 30, 0, 0] },
+  bbRosaEscuro: { name: 'Rosa escuro (BB) · Pantone 190 C', hex: '#FF6E91', cmyk: [0, 80, 20, 0] },
+  bbRosaClaro: { name: 'Rosa claro (BB) · Pantone 210 C', hex: '#FFA7D3', cmyk: [0, 40, 0, 0] },
+  bbBranco: { name: 'Branco (BB)', hex: '#FFFFFF', cmyk: [0, 0, 0, 0] },
+  bbAmareloClaro: { name: 'Amarelo claro (BB) · Pantone 100 C', hex: '#FFF7B5', cmyk: [0, 0, 25, 0] },
+  bbPreto: { name: 'Preto (BB, só texto sobre Rosa escuro)', hex: '#000000', cmyk: [0, 0, 0, 100] },
 };
+
+/** Chave de cor (COLORS) de cada HEX da paleta BB. */
+export const BB_COLOR_KEY = Object.fromEntries(Object.entries(COLORS).filter(([k]) => k.startsWith('bb')).map(([k, c]) => [c.hex, k]));
 
 /**
  * Fundo dos 4 layouts: gradiente suave a 135°, sem paradas intermediárias.
@@ -91,8 +111,38 @@ export const FONT_FILES = {
   semibold: 'Montserrat-SemiBold.ttf',
   bold: 'Montserrat-Bold.ttf',
   black: 'Montserrat-Black.ttf',
+  // Identidade Banco do Brasil: "BancoDoBrasil Titulos" (títulos) e "BancoDoBrasil
+  // Textos" (corpo), reduzidas ao latim (scripts/subset-fonts.sh). Nunca o "Alfabeto Especial".
+  bbTitulosMedium: 'BancoDoBrasilTitulos-Medium.ttf',
+  bbTitulosXBold: 'BancoDoBrasilTitulos-XBold.ttf',
+  bbTextosRegular: 'BancoDoBrasilTextos-Regular.ttf',
+  bbTextosMedium: 'BancoDoBrasilTextos-Medium.ttf',
+  bbTextosBold: 'BancoDoBrasilTextos-Bold.ttf',
 };
-export const FONT_WEIGHTS = { regular: 400, semibold: 600, bold: 700, black: 900 };
+export const FONT_WEIGHTS = { regular: 400, semibold: 600, bold: 700, black: 900, bbTitulosMedium: 500, bbTitulosXBold: 800, bbTextosRegular: 400, bbTextosMedium: 500, bbTextosBold: 700 };
+
+/** Família CSS de cada fonte (preview em canvas). */
+export const FONT_FAMILIES = {
+  regular: 'Montserrat Print',
+  semibold: 'Montserrat Print',
+  bold: 'Montserrat Print',
+  black: 'Montserrat Print',
+  bbTitulosMedium: 'BB Titulos Print',
+  bbTitulosXBold: 'BB Titulos Print',
+  bbTextosRegular: 'BB Textos Print',
+  bbTextosMedium: 'BB Textos Print',
+  bbTextosBold: 'BB Textos Print',
+};
+
+/** Peso genérico do layout → fonte BB (títulos: Titulos; demais textos: Textos). */
+export const BB_FONT_OF = {
+  title: { regular: 'bbTitulosMedium', semibold: 'bbTitulosMedium', bold: 'bbTitulosXBold', black: 'bbTitulosXBold' },
+  text: { regular: 'bbTextosRegular', semibold: 'bbTextosMedium', bold: 'bbTextosBold', black: 'bbTextosBold' },
+};
+
+/** Métricas verticais (hhea) das fontes BB: ascendente 0,93 em; descendente 0,195 em. */
+export const BB_ASCENT_EM = 0.93;
+export const BB_LINE_HEIGHT_EM = 1.135;
 
 /**
  * Escala tipográfica (Major Third, base 12pt) — valores do Flyer A4.

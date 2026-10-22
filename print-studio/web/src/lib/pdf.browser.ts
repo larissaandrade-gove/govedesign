@@ -114,7 +114,13 @@ function fileChecks(bytes: Uint8Array, L: any, images: { total: number; masks: n
 
   const fonts = (raw.match(/\/FontFile2/g) ?? []).length;
   const fontRefs = (raw.match(/\/Type \/Font\b/g) ?? []).length;
-  add(fonts > 0 && fonts * 2 >= fontRefs ? 'ok' : 'error', 'fontes', fonts > 0 ? `Fontes embutidas ok — ${fonts} variação(ões) da Montserrat.` : 'Nenhuma fonte embutida encontrada.');
+  add(fonts > 0 && fonts * 2 >= fontRefs ? 'ok' : 'error', 'fontes', fonts > 0 ? `Fontes embutidas ok — ${fonts} variação(ões) da ${L.identity === 'bb' ? 'BancoDoBrasil Titulos/Textos' : 'Montserrat'}.` : 'Nenhuma fonte embutida encontrada.');
+  if (L.identity === 'bb') {
+    // Identidade BB: só as fontes corporativas BB no arquivo (nunca Montserrat nem o "Alfabeto Especial")
+    const names = [...new Set((raw.match(/\/BaseFont \/[A-Z]{6}\+([\w-]+)/g) ?? []).map((m) => m.split('+')[1]))];
+    const off = names.filter((n) => !/^BancoDoBrasil(Titulos|Textos)-/.test(n));
+    add(off.length || !names.length ? 'error' : 'ok', 'bb-fontes', off.length ? `Fontes fora da tipografia BB no PDF: ${off.join(', ')}.` : `Tipografia BB embutida: ${names.join(', ')}.`);
+  }
 
   // No navegador as imagens saem em RGB; qualquer outro objeto RGB é erro.
   const rgbObjects = (raw.match(/\/DeviceRGB/g) ?? []).length;
@@ -127,8 +133,9 @@ function fileChecks(bytes: Uint8Array, L: any, images: { total: number; masks: n
     add('ok', 'cmyk', `Cores em CMYK ok — preenchimentos e textos em CMYK${marca}.`);
   }
 
-  const qrRatio = contrastRatio(COLOR_MAP.preto.hex, COLOR_MAP.branco.hex);
-  add(qrRatio >= 7 ? 'ok' : 'error', 'qr-contraste', `Contraste QR ok — módulos K100 sobre branco sólido (${qrRatio.toFixed(1)}:1), correção de erro H.`);
+  const bbQr = L.identity === 'bb';
+  const qrRatio = bbQr ? contrastRatio(COLOR_MAP.bbAzulEscuro.hex, COLOR_MAP.bbBranco.hex) : contrastRatio(COLOR_MAP.preto.hex, COLOR_MAP.branco.hex);
+  add(qrRatio >= 7 ? 'ok' : 'error', 'qr-contraste', `Contraste QR ok — módulos ${bbQr ? 'Azul escuro BB (C90 M95)' : 'K100'} sobre branco sólido (${qrRatio.toFixed(1)}:1), correção de erro H.`);
 
   const official = logoContrastCheck(L) as Omit<FileCheck, 'layout'> | null;
   let logo: Omit<FileCheck, 'layout'>;

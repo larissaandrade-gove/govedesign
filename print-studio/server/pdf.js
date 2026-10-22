@@ -103,7 +103,13 @@ function fileChecks(buffer, L, images, uploadedLogoContrasts) {
 
   const fonts = (raw.match(/\/FontFile2/g) ?? []).length;
   const fontRefs = (raw.match(/\/Type \/Font\b/g) ?? []).length;
-  add(fonts > 0 && fonts * 2 >= fontRefs ? 'ok' : 'error', 'fontes', fonts > 0 ? `Fontes embutidas ok — ${fonts} variação(ões) da Montserrat.` : 'Nenhuma fonte embutida encontrada.');
+  add(fonts > 0 && fonts * 2 >= fontRefs ? 'ok' : 'error', 'fontes', fonts > 0 ? `Fontes embutidas ok — ${fonts} variação(ões) da ${L.identity === 'bb' ? 'BancoDoBrasil Titulos/Textos' : 'Montserrat'}.` : 'Nenhuma fonte embutida encontrada.');
+  if (L.identity === 'bb') {
+    // Identidade BB: só as fontes corporativas BB no arquivo (nunca Montserrat nem o "Alfabeto Especial")
+    const names = [...new Set((raw.match(/\/BaseFont \/[A-Z]{6}\+([\w-]+)/g) ?? []).map((m) => m.split('+')[1]))];
+    const off = names.filter((n) => !/^BancoDoBrasil(Titulos|Textos)-/.test(n));
+    add(off.length || !names.length ? 'error' : 'ok', 'bb-fontes', off.length ? `Fontes fora da tipografia BB no PDF: ${off.join(', ')}.` : `Tipografia BB embutida: ${names.join(', ')}.`);
+  }
 
   const rgb = raw.includes('/DeviceRGB');
   const imgsOk = images.cmyk === images.total;
@@ -111,8 +117,9 @@ function fileChecks(buffer, L, images, uploadedLogoContrasts) {
     ? `Cores em CMYK ok — preenchimentos, textos e ${images.total} imagem(ns) em CMYK${images.masks ? `; logomarca Gove em ${images.masks} máscara(s) com cor CMYK da marca` : ''}.`
     : 'Há elementos em RGB no arquivo.');
 
-  const qrRatio = contrastRatio(COLORS.preto.hex, COLORS.branco.hex);
-  add(qrRatio >= 7 ? 'ok' : 'error', 'qr-contraste', `Contraste QR ok — módulos K100 sobre branco sólido (${qrRatio.toFixed(1)}:1), correção de erro H.`);
+  const bbQr = L.identity === 'bb';
+  const qrRatio = bbQr ? contrastRatio(COLORS.bbAzulEscuro.hex, COLORS.bbBranco.hex) : contrastRatio(COLORS.preto.hex, COLORS.branco.hex);
+  add(qrRatio >= 7 ? 'ok' : 'error', 'qr-contraste', `Contraste QR ok — módulos ${bbQr ? 'Azul escuro BB (C90 M95)' : 'K100'} sobre branco sólido (${qrRatio.toFixed(1)}:1), correção de erro H.`);
   out.push({ ...logoCheck(L, uploadedLogoContrasts), layout: L.layout.name });
   return out;
 }

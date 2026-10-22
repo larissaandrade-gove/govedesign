@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS municipios (
   incluir_logo_banco_do_brasil INTEGER NOT NULL DEFAULT 0,
   endereco                     TEXT,
   email                        TEXT,
+  identidade                   TEXT    NOT NULL DEFAULT 'gove',
+  bb_esquema                   TEXT    NOT NULL DEFAULT 'capa',
   logo_original                TEXT,
   logo_hires                   TEXT,
   logo_largura                 INTEGER,
@@ -61,7 +63,7 @@ export function openPrintDb(path = join(DATA_DIR, 'print-studio.sqlite')) {
 /** Migração segura: só acrescenta colunas que faltam (bases criadas antes dos campos novos). */
 function migrate(db) {
   const cols = new Set(db.prepare('PRAGMA table_info(municipios)').all().map((c) => c.name));
-  const add = { endereco: 'TEXT', email: 'TEXT' };
+  const add = { endereco: 'TEXT', email: 'TEXT', identidade: "TEXT NOT NULL DEFAULT 'gove'", bb_esquema: "TEXT NOT NULL DEFAULT 'capa'" };
   db.transaction(() => {
     for (const [c, type] of Object.entries(add)) if (!cols.has(c)) db.exec(`ALTER TABLE municipios ADD COLUMN ${c} ${type}`);
   })();
@@ -109,6 +111,14 @@ export function saveMunicipio(db, data, id = null) {
     )
     .run(row);
   return getMunicipio(db, Number(info.lastInsertRowid));
+}
+
+/** Identidade visual preferida do município (GOVE ou Banco do Brasil) e o esquema BB. */
+export function setMunicipioIdentidade(db, id, identidade, bbEsquema) {
+  db.prepare(
+    `UPDATE municipios SET identidade=?, bb_esquema=?, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`,
+  ).run(identidade, bbEsquema, id);
+  return getMunicipio(db, id);
 }
 
 export function setMunicipioLogo(db, id, logo) {

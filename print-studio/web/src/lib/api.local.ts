@@ -5,9 +5,9 @@
 // .zip gerados aqui mesmo.
 import { zipSync } from 'fflate';
 import { collection, deleteFile, fileUrl, getFile, putFile, saveFile, type Doc } from '../../../../artifact-runtime/index.ts';
-import { LAYOUTS, isEmail, onlyDigits, pdfFileName } from '../../../shared/layout.js';
+import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
-import { renderPiece } from '@/lib/pdf.browser';
+import { measure, renderPiece } from '@/lib/pdf.browser';
 import type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem } from './api';
 
 export type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PieceOptions, PreflightPeca, QueueItem } from './api';
@@ -93,7 +93,9 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
     const opts = item.options ?? ({} as QueueItem['options']);
     const [goveBlob, bbBlob, prefBlob, mockBlob] = await Promise.all([blob(gove?.file), blob(bb?.file), blob(doc.logo_file), blob(opts.mockup?.imageId)]);
     const mockDims = mockBlob ? await imageSize(mockBlob).catch(() => null) : null;
-    const includeBB = opts.includeBB ?? municipio.incluir_logo_banco_do_brasil;
+    const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
+    // Identidade BB: logomarca do Banco do Brasil obrigatória
+    const includeBB = identity === 'bb' || (opts.includeBB ?? municipio.incluir_logo_banco_do_brasil);
     const dims = (w?: number | null, h?: number | null, b?: Blob | null) => (w && h && b ? { width: w, height: h } : null);
 
     const extra: Check[] = [];
@@ -111,6 +113,8 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
         extra,
         input: {
           municipio,
+          identity,
+          bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
           includeBB,
           services: opts.services ?? [],
           texts: opts.texts?.[layoutId] ?? {},
@@ -169,6 +173,8 @@ export const api = {
       id: String(num),
       num,
       ...data,
+      identidade: prev?.identidade ?? 'gove',
+      bb_esquema: prev?.bb_esquema ?? 'capa',
       ...logo,
       data_criacao: prev?.data_criacao ?? now,
       data_atualizacao: now,
@@ -183,6 +189,16 @@ export const api = {
     if (!doc) throw new Error('Município não encontrado.');
     await municipiosCol.remove(doc.id);
     if (doc.logo_file) void deleteFile(doc.logo_file);
+  },
+
+  setIdentidade: async (id: number, identidade: 'gove' | 'bb', bb_esquema: string): Promise<Municipio> => {
+    await municipiosCol.ready;
+    const prev = municipioDoc(id);
+    if (!prev) throw new Error('Município não encontrado.');
+    const esquema = BB_SCHEMES.some((s: { id: string }) => s.id === bb_esquema) ? bb_esquema : 'capa';
+    const doc: MunicipioDoc = { ...prev, identidade: identidade === 'bb' ? 'bb' : 'gove', bb_esquema: esquema, data_atualizacao: new Date().toISOString() };
+    await municipiosCol.set(doc);
+    return toMunicipio(doc);
   },
 
   municipioLogoUrl: (m: Municipio) => urlOf(municipioDoc(m.id)?.logo_file),
@@ -242,7 +258,14 @@ export const api = {
 
   exportZip: async (items: QueueItem[]) => {
     const files: Record<string, Uint8Array> = {};
-    for (const p of await pieces(items)) {
+    const list = await pieces(items);
+    // Identidade BB: paleta, contraste 4,5:1 e tipografia são regra — sem exportar mesmo assim
+    for (const p of list) {
+      if (p.input.identity !== 'bb') continue;
+      const blocking = bbBlockingChecks((buildLayout(p.layoutId, p.input, measure) as { checks?: Check[] }).checks) as Check[];
+      if (blocking.length) throw new Error(`Identidade Banco do Brasil — ${p.municipio.nome_municipio}: ${blocking.map((c) => c.message).join(' ')}`);
+    }
+    for (const p of list) {
       const { bytes } = await renderPiece(p.layoutId, p.input, p.files);
       let name = pdfFileName(p.layoutId, p.municipio);
       for (let i = 2; files[name]; i++) name = name.replace(/(_\d+)?\.pdf$/, `_${i}.pdf`);

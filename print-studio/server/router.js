@@ -5,14 +5,14 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
-import { LAYOUTS, isEmail, onlyDigits, pdfFileName } from '../shared/layout.js';
+import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, onlyDigits, pdfFileName } from '../shared/layout.js';
 import { FONT_FILES } from '../shared/tokens.js';
 import {
   deleteMunicipio, getImagem, getLogosFixos, getMunicipio, listMunicipios, openPrintDb,
-  saveImagem, saveMunicipio, setLogoFixo, setMunicipioLogo,
+  saveImagem, saveMunicipio, setLogoFixo, setMunicipioIdentidade, setMunicipioLogo,
 } from './db.js';
 import { BRAND_DIR, ImageInputError, readStored, storeLogo, storeMockupImage } from './images.js';
-import { fontPath, renderPiece } from './pdf.js';
+import { fontPath, measure, renderPiece } from './pdf.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUNDLE = join(ROOT, 'web', 'bundle.html');
@@ -48,12 +48,16 @@ function pieceContext(db, item, layoutId) {
   const opts = item.options ?? {};
   const img = opts.mockup?.imageId ? getImagem(db, opts.mockup.imageId) : null;
   const mode = opts.mockup?.mode ?? (img ? 'upload' : 'generated');
-  const includeBB = opts.includeBB ?? municipio.incluir_logo_banco_do_brasil;
+  const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
+  // Identidade BB: logomarca do Banco do Brasil obrigatória
+  const includeBB = identity === 'bb' || (opts.includeBB ?? municipio.incluir_logo_banco_do_brasil);
   const dims = (w, h) => (w && h ? { width: w, height: h } : null);
   return {
     municipio,
     input: {
       municipio,
+      identity,
+      bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
       includeBB,
       services: opts.services ?? [],
       texts: opts.texts?.[layoutId] ?? {},
@@ -120,6 +124,14 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
   };
   router.post('/api/municipios', upload.single('logo'), saveHandler);
   router.put('/api/municipios/:id', upload.single('logo'), saveHandler);
+  // Identidade visual do município (persistida a cada troca no Editor)
+  router.put('/api/municipios/:id/identidade', express.json(), (req, res) => {
+    const id = Number(req.params.id);
+    if (!getMunicipio(db, id)) return res.status(404).json({ error: 'Município não encontrado.' });
+    const identidade = req.body?.identidade === 'bb' ? 'bb' : 'gove';
+    const esquema = BB_SCHEMES.some((s) => s.id === req.body?.bb_esquema) ? req.body.bb_esquema : 'capa';
+    res.json(setMunicipioIdentidade(db, id, identidade, esquema));
+  });
   router.delete('/api/municipios/:id', (req, res) => res.status(deleteMunicipio(db, Number(req.params.id)) ? 204 : 404).end());
   router.get('/api/municipios/:id/logo', (req, res) => {
     const m = getMunicipio(db, Number(req.params.id));
@@ -194,6 +206,12 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
   router.post('/api/export', async (req, res, next) => {
     try {
       const list = pieces(db, req.body?.items);
+      // Identidade BB: paleta, contraste 4,5:1 e tipografia são regra — sem exportar mesmo assim
+      for (const p of list) {
+        if (p.input.identity !== 'bb') continue;
+        const blocking = bbBlockingChecks(buildLayout(p.layoutId, p.input, measure).checks);
+        if (blocking.length) throw new InputError(`Identidade Banco do Brasil — ${p.municipio.nome_municipio}: ${blocking.map((c) => c.message).join(' ')}`);
+      }
       const zip = new ZipArchive({ zlib: { level: 6 } });
       const stamp = new Date().toISOString().slice(0, 10);
       res.attachment(`kit-boas-vindas_${stamp}.zip`);

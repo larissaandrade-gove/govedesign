@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Gera as versões reduzidas (latim) da Montserrat embutidas no build de artefato
+# Gera as versões reduzidas (latim) da Montserrat (e das fontes BB) embutidas no build de artefato
 # do Print Studio (print-studio/web/src/assets/fonts). Requer: pip install fonttools
 set -e
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,3 +13,16 @@ for w in Regular SemiBold Bold Black; do
 done
 cp "$DIR/server/fonts/OFL.txt" "$OUT/OFL.txt"
 ls -la "$OUT"
+
+# Identidade Banco do Brasil: BancoDoBrasil Titulos/Textos (TTF originais do BB, fora do repositório).
+# Uso: BB_FONTS_SRC="/caminho/fontes novas BB" sh scripts/subset-fonts.sh
+# Vão para server/fonts (PDF do servidor) e web/src/assets/fonts (preview e PDF do artefato).
+if [ -n "$BB_FONTS_SRC" ]; then
+  for n in Titulos-Medium Titulos-XBold Textos-Regular Textos-Medium Textos-Bold; do
+    pyftsubset "$BB_FONTS_SRC/BancoDoBrasil$n.ttf" \
+      --unicodes="U+0020-007E,U+00A0-017F,U+0192,U+02C6,U+02DA,U+02DC,U+2013-2014,U+2018-201E,U+2022,U+2026,U+20AC,U+2122" \
+      --layout-features='kern,liga,calt,ccmp,locl,mark,mkmk' --name-IDs='*' --notdef-outline \
+      --output-file="$DIR/server/fonts/BancoDoBrasil$n.ttf"
+    cp "$DIR/server/fonts/BancoDoBrasil$n.ttf" "$OUT/"
+  done
+fi

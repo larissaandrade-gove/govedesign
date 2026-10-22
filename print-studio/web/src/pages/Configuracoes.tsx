@@ -10,7 +10,7 @@ type Props = { logos: LogosFixos; onChanged: () => void };
 
 const ITEMS = [
   { chave: 'gove' as const, titulo: 'Logo da Gove', texto: 'Rodapé de todas as peças.' },
-  { chave: 'bb' as const, titulo: 'Logo do Banco do Brasil', texto: 'Quando "Incluir logo Banco do Brasil" estiver ativo.' },
+  { chave: 'bb' as const, titulo: 'Logo do Banco do Brasil', texto: 'Quando "Incluir logo Banco do Brasil" estiver ativo; obrigatório na identidade Banco do Brasil. Arquivo oficial, sem recolorir.' },
 ];
 
 export function Configuracoes({ logos, onChanged }: Props) {

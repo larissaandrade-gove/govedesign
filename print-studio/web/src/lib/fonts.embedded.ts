@@ -1,14 +1,21 @@
-// Montserrat embutida no build de artefato (sem servidor): versões reduzidas ao
+// Montserrat (e as fontes BB) embutidas no build de artefato (sem servidor): versões reduzidas ao
 // alfabeto latino (scripts/subset-fonts.sh). As mesmas bytes alimentam o preview
 // (FontFace) e o PDF (pdfkit), então a medição de texto é idêntica.
 import black from '@/assets/fonts/Montserrat-Black.ttf?inline';
 import bold from '@/assets/fonts/Montserrat-Bold.ttf?inline';
 import regular from '@/assets/fonts/Montserrat-Regular.ttf?inline';
 import semibold from '@/assets/fonts/Montserrat-SemiBold.ttf?inline';
+// Identidade Banco do Brasil: BancoDoBrasil Titulos/Textos (latim, mesmas bytes no preview e no PDF)
+import bbTextosBold from '@/assets/fonts/BancoDoBrasilTextos-Bold.ttf?inline';
+import bbTextosMedium from '@/assets/fonts/BancoDoBrasilTextos-Medium.ttf?inline';
+import bbTextosRegular from '@/assets/fonts/BancoDoBrasilTextos-Regular.ttf?inline';
+import bbTitulosMedium from '@/assets/fonts/BancoDoBrasilTitulos-Medium.ttf?inline';
+import bbTitulosXBold from '@/assets/fonts/BancoDoBrasilTitulos-XBold.ttf?inline';
+import type { FONT_FILES } from '../../../shared/tokens.js';
 
-export type FontWeight = 'regular' | 'semibold' | 'bold' | 'black';
+export type FontWeight = keyof typeof FONT_FILES;
 
-const DATA: Record<FontWeight, string> = { regular, semibold, bold, black };
+const DATA: Record<FontWeight, string> = { regular, semibold, bold, black, bbTitulosMedium, bbTitulosXBold, bbTextosRegular, bbTextosMedium, bbTextosBold };
 const cache = new Map<FontWeight, ArrayBuffer>();
 
 function decode(dataUrl: string): ArrayBuffer {

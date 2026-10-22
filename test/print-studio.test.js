@@ -130,3 +130,133 @@ test('PDF com logomarca oficial: máscara 1 bit em CMYK, sem RGB, checagem de co
   assert.ok(!raw.includes('/DeviceRGB'));
   assert.equal(report.find((c) => c.code === 'logo-contraste').level, 'ok');
 });
+
+// ------------------------------------------------ identidade Banco do Brasil
+const BB = await import('../brand/bb.js');
+const { BB_SCHEMES, bbChecks, bbBlockingChecks } = await import('../print-studio/shared/layout.js');
+const bbLogos = { central: { width: 1000, height: 700 }, simbolo: { width: 600, height: 600 }, horizontal: { width: 1800, height: 500 } };
+const bbInput = (extra = {}) => input({ identity: 'bb', bbScheme: 'capa', includeBB: false, services: ['saude', 'financas', 'transito', 'meio-ambiente'], mockup: { mode: 'generated' }, municipio: { ...municipio, endereco: 'Av. Brasil, 100', email: 'contato@x.gov.br' }, assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos.central }, ...extra });
+const walkAll = (r) => {
+  const out = [];
+  const walk = (els) => els.forEach((e) => (out.push(e), e.type === 'group' && walk(e.children)));
+  r.blocks.forEach((b) => walk(b.elements));
+  return out;
+};
+const PAL = new Set(Object.values(BB.BB_PALETTE));
+
+test('identidade GOVE é o padrão: sem "identity" ou com "gove" a peça sai idêntica', () => {
+  for (const l of LAYOUTS) {
+    const a = buildLayout(l.id, input(), measure);
+    const b = buildLayout(l.id, input({ identity: 'gove', bbScheme: 'roxo' }), measure);
+    assert.deepEqual(JSON.parse(JSON.stringify(b)), JSON.parse(JSON.stringify(a)), l.id);
+    assert.ok(walkAll(a).some((e) => e.type === 'gradient'), `${l.id}: GOVE mantém o degradê`);
+  }
+});
+
+test('BB: todos os layouts × esquemas — só cores da paleta, todo texto ≥ 4,5:1 contra o fundo real, fontes BB, sem erros', () => {
+  for (const kind of ['central', 'simbolo']) {
+    for (const sc of BB_SCHEMES) {
+      for (const l of LAYOUTS) {
+        const r = buildLayout(l.id, bbInput({ bbScheme: sc.id, assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos[kind] } }), measure);
+        const tag = `${kind}/${sc.id}/${l.id}`;
+        assert.equal(r.identity, 'bb');
+        assert.deepEqual(r.checks.filter((c) => c.level === 'error'), [], tag);
+        const els = walkAll(r);
+        assert.ok(!els.some((e) => e.type === 'gradient'), `${tag}: sem degradê`);
+        assert.ok(!els.some((e) => e.opacity != null && e.opacity < 1), `${tag}: sem transparência`);
+        for (const e of els) {
+          if (e.type === 'logo') continue;
+          for (const k of ['fill', 'stroke', 'color']) {
+            if (typeof e[k] !== 'string') continue;
+            const hex = COLORS[e[k]].hex;
+            const preto = hex === BB.BB_PRETO && e.type === 'text' && e.bbBackdrop.every((b) => b === BB.BB_PALETTE.rosaEscuro);
+            assert.ok(PAL.has(hex) || preto, `${tag}: ${e.type}.${k} = ${e[k]} fora da paleta`);
+            assert.equal(COLORS[e[k]].cmyk.length, 4);
+          }
+          if (e.type === 'text' && e.lines.length) {
+            assert.ok(e.bbBackdrop.length && !e.bbBackdrop.includes('imagem'), `${tag}: fundo de "${e.lines[0].text}"`);
+            const min = Math.min(...e.bbBackdrop.map((b) => BB.contrast(COLORS[e.color].hex, b)));
+            assert.ok(min >= 4.5, `${tag}: "${e.lines[0].text}" ${min.toFixed(2)}:1`);
+            assert.match(e.weight, /^bb(Titulos|Textos)/, `${tag}: fonte de "${e.lines[0].text}"`);
+            for (const ln of e.lines) for (const run of ln.runs) assert.match(run.weight, /^bb(Titulos|Textos)/);
+          }
+        }
+        const bbLogo = els.find((e) => e.type === 'logo' && e.which === 'bb');
+        assert.ok(bbLogo && !bbLogo.missing, `${tag}: logomarca BB obrigatória`);
+        assert.ok(bbLogo.w >= BB.BB_LOGO_RULES.minPrintMm[bbLogo.bbKind] - 0.05, `${tag}: BB ${bbLogo.w.toFixed(1)} mm`);
+        assert.ok(BB.BB_LOGO_RULES.centralHorizontalBackgrounds.includes(BB.norm(bbLogo.bg)), `${tag}: fundo da logomarca BB`);
+      }
+    }
+  }
+});
+
+test('BB: CMYK oficial do guia em cada cor da paleta', () => {
+  const guia = { '#FCFC30': [0, 0, 100, 0], '#465EFF': [90, 40, 0, 0], '#3333BD': [90, 95, 0, 0], '#54DCFC': [50, 0, 0, 0], '#00EBD0': [70, 0, 40, 0], '#83FFEA': [40, 0, 20, 0], '#735CC6': [65, 70, 0, 0], '#BDB6FF': [25, 30, 0, 0], '#FF6E91': [0, 80, 20, 0], '#FFA7D3': [0, 40, 0, 0], '#FFFFFF': [0, 0, 0, 0], '#FFF7B5': [0, 0, 25, 0] };
+  for (const [hex, cmyk] of Object.entries(guia)) {
+    const key = Object.keys(COLORS).find((k) => k.startsWith('bb') && COLORS[k].hex === hex);
+    assert.ok(key, hex);
+    assert.deepEqual(COLORS[key].cmyk, cmyk, hex);
+  }
+});
+
+test('BB: logomarca obrigatória, mínimo de impressão e área de proteção', () => {
+  const sem = buildLayout('flyer-a4', bbInput({ assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: null } }), measure);
+  assert.ok(sem.checks.some((c) => c.code === 'logo-bb' && c.level === 'error'));
+  // horizontal (mín. 40 mm) não cabe no adesivo de 50 mm: erro claro, sugerindo a versão central
+  const hz = buildLayout('adesivo-5x10', bbInput({ assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos.horizontal } }), measure);
+  assert.ok(hz.checks.some((c) => c.code === 'bb-logo-min' && /central/.test(c.message)));
+  // texto arrastado para perto da logomarca BB invade a área de proteção
+  const r = buildLayout('display-a6', bbInput({ overrides: { h3: { dx: 0, dy: 30 } } }), measure);
+  assert.ok(r.checks.some((c) => c.code === 'bb-logo-protecao' || c.code === 'sobreposicao'));
+});
+
+test('BB: texto arrastado para outro fundo é corrigido sozinho (cor aprovada ou proteção Azul escuro)', () => {
+  // esquema Azul: h4a (Azul escuro no painel Branco) arrastado para cima, metade sobre o Azul institucional
+  const r = buildLayout('flyer-a4', bbInput({ bbScheme: 'azul', overrides: { h4a: { dx: 0, dy: -12 } } }), measure);
+  assert.ok(r.bbFixes.length > 0);
+  assert.ok(r.checks.some((c) => c.code === 'bb-ajuste'));
+  assert.deepEqual(bbBlockingChecks(r.checks), []);
+  const h4a = walkAll(r).find((e) => e.id === 'h4a');
+  assert.ok(Math.min(...h4a.bbBackdrop.map((b) => BB.contrast(COLORS[h4a.color].hex, b))) >= 4.5);
+});
+
+test('BB: cor fora da paleta é detectada e bloqueia a exportação', () => {
+  const r = buildLayout('adesivo-5x10', bbInput(), measure);
+  r.blocks.find((b) => b.id === 'qr').elements[0].fill = 'whatsapp';
+  const bad = bbBlockingChecks(bbChecks(r));
+  assert.ok(bad.some((c) => c.code === 'bb-paleta'));
+});
+
+test('BB: PDF com fontes BancoDoBrasil embutidas (sem Montserrat), só CMYK', async () => {
+  for (const l of LAYOUTS) {
+    const ctx = { input: bbInput({ assets: { gove: { official: true }, prefeitura: null, bb: bbLogos.central } }), files: { logos: {}, mockupFile: null } };
+    const { buffer, report, layout } = await renderPiece(l.id, ctx);
+    const raw = buffer.toString('latin1');
+    const fonts = [...new Set((raw.match(/\/BaseFont \/[A-Z]{6}\+[\w-]+/g) ?? []).map((m) => m.split('+')[1]))];
+    assert.ok(fonts.length >= 2, `${l.id}: ${fonts}`);
+    assert.ok(fonts.every((f) => /^BancoDoBrasil(Titulos|Textos)-/.test(f)), `${l.id}: ${fonts}`);
+    assert.ok(fonts.some((f) => f.startsWith('BancoDoBrasilTitulos')), `${l.id}: títulos em BB Titulos (${fonts})`);
+    // o adesivo só tem título; os demais têm textos de apoio em BB Textos
+    if (l.id !== 'adesivo-5x10') assert.ok(fonts.some((f) => f.startsWith('BancoDoBrasilTextos')), `${l.id}: ${fonts}`);
+    assert.ok(raw.includes('/FontFile2'));
+    assert.ok(!raw.includes('/DeviceRGB'));
+    assert.equal(report.find((c) => c.code === 'bb-fontes').level, 'ok');
+    assert.equal(report.find((c) => c.code === 'fontes').level, 'ok');
+    // só falta o logo da prefeitura (não enviado neste teste)
+    assert.deepEqual(layout.checks.filter((c) => c.level === 'error').map((c) => c.code), ['logo-prefeitura']);
+  }
+});
+
+test('banco: identidade e esquema BB persistidos por município (com migração)', () => {
+  const db = openPrintDb(':memory:');
+  const m = saveMunicipio(db, { ...municipio });
+  assert.equal(m.identidade, 'gove');
+  assert.equal(m.bb_esquema, 'capa');
+  return import('../print-studio/server/db.js').then(({ setMunicipioIdentidade }) => {
+    const n = setMunicipioIdentidade(db, m.id, 'bb', 'roxo');
+    assert.equal(n.identidade, 'bb');
+    assert.equal(n.bb_esquema, 'roxo');
+    // editar o cadastro não perde a identidade
+    assert.equal(saveMunicipio(db, { ...municipio, nome_municipio: 'São Carlos 2' }, m.id).identidade, 'bb');
+  });
+});

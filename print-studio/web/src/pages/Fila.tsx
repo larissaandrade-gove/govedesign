@@ -105,7 +105,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                     </span>
                   ))}
                   <span>
-                    {q.options.includeBB ? '· com Banco do Brasil ' : ''}· {q.options.services.length} ícone(s)
+                    {q.options.identity === 'bb' ? '· identidade Banco do Brasil ' : q.options.includeBB ? '· com Banco do Brasil ' : ''}· {q.options.services.length} ícone(s)
                   </span>
                 </div>
               </div>

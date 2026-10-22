@@ -12,9 +12,14 @@
 // branco com canto arredondado, faixa verde com o número, QR e logos à direita,
 // celular inclinado com a tela gerada para o município.
 import { LOGOS, LOGO_MIN_CONTRAST, kindForBox, pickLogo } from '../../brand/logos.js';
+import { BB_LOGO_RULES, BB_NAMES, BB_PALETTE, BB_PRETO, BB_SCHEMES, BB_TEXT_ON, MIN_TEXT, contrast as bbContrast, graphicColors, norm as bbNorm, textOn, textOnSamples } from '../../brand/bb.js';
 import { SERVICE_ICONS, UI_ICONS, WHATSAPP_GLYPH, WHATSAPP_OUTLINE } from './icons.js';
 import {
   BACKGROUND,
+  BB_ASCENT_EM,
+  BB_COLOR_KEY,
+  BB_FONT_OF,
+  BB_LINE_HEIGHT_EM,
   BLEED_MM,
   COLORS,
   IMAGE_MIN_DPI,
@@ -57,6 +62,36 @@ export const DEFAULT_TEXTS = {
   },
 };
 
+/**
+ * Identidade Banco do Brasil: textos padrão no tom de voz BB (BB_VOICE) —
+ * frases curtas, imperativas, humanas e encorajadoras.
+ */
+const BB_FLYER_TEXTS = {
+  h1: '**Fale com a Prefeitura**\npelo **WhatsApp**',
+  h4a: 'Aponte a câmera para o\n**QR code** ou **salve o número**',
+  h4b: 'Mande um “Oi”\ne **escolha o serviço!**',
+};
+export const BB_DEFAULT_TEXTS = {
+  'flyer-a4': { ...BB_FLYER_TEXTS },
+  'flyer-10x15': { ...BB_FLYER_TEXTS },
+  'adesivo-5x10': { h1: '**Fale com a**\n**prefeitura**\nno WhatsApp' },
+  'display-a6': {
+    h1: 'Fale com a\nPrefeitura',
+    h1b: 'pelo\nWhatsApp',
+    h3: 'Aponte a\ncâmera para o\n**QR code**\ne comece\nagora',
+  },
+};
+
+/** Identidades visuais das peças. GOVE é o padrão. */
+export const IDENTITIES = [
+  { id: 'gove', label: 'GOVE' },
+  { id: 'bb', label: 'Banco do Brasil' },
+];
+export { BB_SCHEMES };
+export const isBBInput = (input) => input?.identity === 'bb';
+/** Textos padrão da identidade escolhida. */
+export const defaultTextsFor = (identity) => (identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
+
 export const TEXT_LABELS = {
   h1: 'Título principal (H1)',
   h1b: 'Título — continuação em branco (H1)',
@@ -72,6 +107,13 @@ export const MOCKUP_TEXTS = {
   card: "Salve o número e mande um 'Oi'",
   h4: 'Ou aponte a câmera para o QR Code:',
   button: 'Adicionar aos contatos',
+};
+const BB_MOCKUP_TEXTS = {
+  h1: 'Fale com a Prefeitura pelo WhatsApp',
+  h2: 'Escolha o serviço e resolva sem sair de casa.',
+  card: "Salve o número e mande um 'Oi'",
+  h4: 'Ou aponte a câmera para o QR code:',
+  button: 'Salvar nos contatos',
 };
 
 /** Serviços padrão (referências): Saúde, Finanças, Trânsito, Meio Ambiente. */
@@ -117,6 +159,76 @@ const BOLD_OF = { regular: 'bold', semibold: 'bold', bold: 'black', black: 'blac
 const RANK = { regular: 0, semibold: 1, bold: 2, black: 3 };
 const mmToPtSize = (mm) => mm / ptToMm(1);
 
+// ------------------------------------------------------------- identidade BB
+
+const bbKey = (hex) => {
+  const k = BB_COLOR_KEY[bbNorm(hex)];
+  if (!k) throw new Error(`Cor fora da paleta BB: ${hex}`);
+  return k;
+};
+
+/**
+ * Tema da identidade Banco do Brasil: cada papel de cor da peça vira uma chave
+ * de COLORS da paleta BB, escolhida pelos pares aprovados (BB_TEXT_ON) para o
+ * fundo onde é aplicada. Fundos sólidos (sem degradê nem transparência: toda
+ * cor impressa é uma cor da paleta, com o CMYK oficial).
+ */
+export function bbTheme(schemeId) {
+  const s = BB_SCHEMES.find((x) => x.id === schemeId) ?? BB_SCHEMES[0];
+  const P = BB_PALETTE;
+  const on = (bg, pref) => bbKey(textOn(bg, pref));
+  // formas e ícones: ≥ 3:1 com o fundo (prefere a cor do título)
+  const graphic = (bg, pref) => bbKey(pref && bbContrast(pref, bg) >= 3 ? pref : graphicColors(bg)[0]);
+  const panel = P.branco;
+  const bar = bbContrast(s.button, panel) >= 3 ? s.button : P.azulEscuro;
+  const header = P.azulInstitucional;
+  return {
+    bb: true,
+    scheme: s,
+    bg: bbKey(s.bg),
+    bgHex: s.bg,
+    title: on(s.bg, s.title),
+    text: on(s.bg, s.text),
+    accent: on(s.bg, s.accent),
+    icon: graphic(s.bg, s.title),
+    // painel e faixa dos logos: Branco (fundo permitido para a logomarca BB central/horizontal)
+    panel: bbKey(panel),
+    panelHex: panel,
+    panelText: on(panel, s.text),
+    bar: bbKey(bar),
+    barHex: bar,
+    barText: on(bar, bar === s.button ? s.buttonText : P.amareloInstitucional),
+    qrPlate: bbKey(P.branco),
+    qr: on(P.branco, P.azulEscuro), // módulos Azul escuro sobre Branco (8,9:1)
+    footer: bbKey(P.branco),
+    footerHex: P.branco,
+    phone: { frame: bbKey(P.azulInstitucional), bezel: bbKey(P.azulEscuro), empty: bbKey(P.amareloClaro) },
+    screen: {
+      bg: bbKey(P.branco),
+      bgHex: P.branco,
+      header: bbKey(header),
+      headerHex: header,
+      headerText: on(header, P.branco),
+      chip: bbKey(P.branco),
+      title: on(P.branco, P.azulEscuro),
+      body: on(P.branco, P.roxoEscuro),
+      circle: bbKey(P.azulInstitucional),
+      circleIcon: on(P.azulInstitucional, P.branco),
+      card: bbKey(P.azulEscuro),
+      cardHex: P.azulEscuro,
+      cardText: on(P.azulEscuro, P.branco),
+      line: bbKey(P.roxoClaro),
+      link: on(P.branco, P.azulInstitucional),
+      button: bbKey(P.azulEscuro),
+      buttonHex: P.azulEscuro,
+      buttonText: on(P.azulEscuro, P.amareloInstitucional),
+    },
+  };
+}
+
+/** Tema da peça: null = GOVE (desenho original, sem nenhuma mudança). */
+const themeOf = (input) => (isBBInput(input) ? bbTheme(input.bbScheme) : null);
+
 /** "a **b c** d\ne" → linhas forçadas de palavras { text, bold }. */
 function parseRich(text) {
   return String(text ?? '')
@@ -141,9 +253,15 @@ function parseRich(text) {
  * forçada precisar quebrar (piso `fit` em pt).
  */
 function textBlock(o) {
-  const { id, role, text, x, y, w, weight = 'regular', align = 'left', measure } = o;
-  const leading = o.leading ?? LINE_HEIGHT_EM;
-  const boldW = o.boldWeight ?? BOLD_OF[weight];
+  const { id, role, text, x, y, w, align = 'left', measure } = o;
+  const bb = !!o.th?.bb;
+  // Identidade BB: títulos em "BancoDoBrasil Titulos", demais em "BancoDoBrasil Textos"
+  const fam = bb ? BB_FONT_OF[o.family ?? 'text'] : null;
+  const weight = bb ? fam[o.weight ?? 'regular'] : o.weight ?? 'regular';
+  const boldW = bb ? fam[o.boldWeight ?? BOLD_OF[o.weight ?? 'regular']] : o.boldWeight ?? BOLD_OF[weight];
+  const ascEm = bb ? BB_ASCENT_EM : ASCENT_EM;
+  const lineEm = bb ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM;
+  const leading = o.leading ?? lineEm;
   const forced = parseRich(text);
   const layoutAt = (sizePt) => {
     const lines = [];
@@ -197,11 +315,11 @@ function textBlock(o) {
     }
     const lw = cx;
     const lx = align === 'center' ? x + (w - lw) / 2 : align === 'right' ? x + w - lw : x;
-    return { text: runs.map((r) => r.text).join(' '), x: lx, baseline: y + i * lh + sizeMm * ASCENT_EM, width: lw, runs };
+    return { text: runs.map((r) => r.text).join(' '), x: lx, baseline: y + i * lh + sizeMm * ascEm, width: lw, runs };
   });
-  const h = lines.length ? (lines.length - 1) * lh + sizeMm * LINE_HEIGHT_EM : 0;
+  const h = lines.length ? (lines.length - 1) * lh + sizeMm * lineEm : 0;
   // texto "grande" só se todos os trechos forem negrito (regra WCAG adotada no projeto)
-  const lightest = [...weights].sort((a, b) => RANK[a] - RANK[b])[0] ?? weight;
+  const lightest = bb ? weight : [...weights].sort((a, b) => RANK[a] - RANK[b])[0] ?? weight;
   const el = {
     type: 'text',
     id,
@@ -209,7 +327,8 @@ function textBlock(o) {
     weight,
     size,
     color: o.color ?? 'branco',
-    minContrast: minContrastFor(size, lightest),
+    // BB: 4,5:1 para todo texto, sem exceção para texto grande
+    minContrast: bb ? MIN_TEXT : minContrastFor(size, lightest),
     lines,
     x,
     y,
@@ -217,6 +336,7 @@ function textBlock(o) {
     h,
   };
   if (o.illustrative) el.illustrative = true;
+  if (bb) el.metrics = { asc: ascEm, line: lineEm };
   if (o.onGradient) {
     el.onGradient = true;
     el.fixedColor = !!o.color;
@@ -239,6 +359,15 @@ const bboxOf = (els) => {
   const top = Math.min(...ys);
   return { x: left, y: top, w: Math.max(...els.map((e) => e.x + e.w)) - left, h: Math.max(...els.map((e) => e.y + e.h)) - top };
 };
+
+/** Interseção de dois retângulos (null se não se tocam). */
+function clipBox(a, b) {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  const w = Math.min(a.x + a.w, b.x + b.w) - x;
+  const h = Math.min(a.y + a.h, b.y + b.h) - y;
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
+}
 
 const rectPoly = (b) => [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
 
@@ -304,7 +433,9 @@ function sampleBackground(bg, x, y) {
 
 function lineBoxes(e) {
   const s = ptToMm(e.size);
-  return e.lines.map((l) => ({ x: l.x, y: l.baseline - s * ASCENT_EM, w: l.width, h: s * LINE_HEIGHT_EM }));
+  const asc = e.metrics?.asc ?? ASCENT_EM;
+  const line = e.metrics?.line ?? LINE_HEIGHT_EM;
+  return e.lines.map((l) => ({ x: l.x, y: l.baseline - s * asc, w: l.width, h: s * line }));
 }
 
 // ------------------------------------------------------------- logos
@@ -385,9 +516,132 @@ function logosColumn({ x, y, w, h, gap, assets, includeBB, heights }) {
   return block('logos', 'Logos', els, { bbox: { x, y, w, h: used } });
 }
 
+// ------------------------------------------------- logos na identidade BB
+
+/** Versão da logomarca BB enviada, pela proporção do arquivo (símbolo, central ou horizontal). */
+export function bbLogoKind(asset) {
+  const a = asset?.width && asset?.height ? asset.width / asset.height : 1.5;
+  return a < 1.25 ? 'simbolo' : a < 2.4 ? 'central' : 'horizontal';
+}
+
+/**
+ * Tamanho da logomarca BB: nunca abaixo do mínimo de impressão da versão
+ * (10 mm símbolo, 25 mm central, 40 mm horizontal — largura), limitado a `maxW`.
+ * Área de proteção: metade da altura da logomarca em todos os lados.
+ */
+function bbLogoSize(asset, prefH, maxW) {
+  const kind = bbLogoKind(asset);
+  const aspect = asset?.width && asset?.height ? asset.width / asset.height : 1.5;
+  const minW = BB_LOGO_RULES.minPrintMm[kind];
+  const w = Math.min(maxW, Math.max(minW, prefH * aspect));
+  const h = w / aspect;
+  // +0,2 mm de folga sobre a área de proteção (arredondamentos)
+  return { kind, aspect, minW, w, h, clear: h * BB_LOGO_RULES.clearSpace, sep: h * BB_LOGO_RULES.clearSpace + 0.2 };
+}
+
+function bbLogoElement(asset, slot, bgHex, size) {
+  const el = logoElement('bb', asset, slot, bgHex, 'right');
+  return { ...el, bbKind: size.kind, minW: size.minW, clear: size.clear };
+}
+
+/**
+ * Logos em linha na identidade BB (adesivo e display), ancorados embaixo em `bottom`:
+ * parceiros (prefeitura, Gove) e a logomarca BB à direita — ou abaixo, centralizada,
+ * quando a largura não comporta a BB no tamanho mínimo com a área de proteção.
+ */
+function logosRowBB({ x, bottom, w, ph, gap, assets, rel, bgHex }) {
+  const size = bbLogoSize(assets?.bb, ph * rel.bb, w);
+  const partners = ['prefeitura', 'gove'];
+  let hs = partners.map((k) => ph * rel[k]);
+  let ws = partners.map((k, i) => naturalWidth(k, assets?.[k], hs[i]));
+  const partnersW = () => ws.reduce((a, b) => a + b, 0) + gap;
+  const inline = partnersW() + Math.max(gap, size.sep) + size.w <= w;
+  const els = [];
+  let top;
+  if (inline) {
+    const H = Math.max(ph, size.h);
+    top = bottom - H;
+    let cx = x + (w - (partnersW() + Math.max(gap, size.sep) + size.w)) / 2;
+    partners.forEach((k, i) => {
+      els.push(logoElement(k, assets?.[k], { x: cx, y: top + (H - hs[i]) / 2, w: ws[i], h: hs[i] }, bgHex));
+      cx += ws[i] + gap;
+    });
+    cx += Math.max(gap, size.sep) - gap;
+    els.push(bbLogoElement(assets?.bb, { x: cx, y: top + (H - size.h) / 2, w: size.w, h: size.h }, bgHex, size));
+  } else {
+    if (partnersW() > w) {
+      const k = (w - gap) / (partnersW() - gap);
+      ws = ws.map((v) => v * k);
+      hs = hs.map((v) => v * k);
+    }
+    const rowH = Math.max(...hs);
+    const H = rowH + Math.max(gap, size.sep) + size.h;
+    top = bottom - H;
+    let cx = x + (w - partnersW()) / 2;
+    partners.forEach((k, i) => {
+      els.push(logoElement(k, assets?.[k], { x: cx, y: top + (rowH - hs[i]) / 2, w: ws[i], h: hs[i] }, bgHex));
+      cx += ws[i] + gap;
+    });
+    els.push(bbLogoElement(assets?.bb, { x: x + (w - size.w) / 2, y: bottom - size.h, w: size.w, h: size.h }, bgHex, size));
+  }
+  return block('logos', 'Logos', els, { bbox: { x, y: top, w, h: bottom - top } });
+}
+
+/**
+ * Parceiros nos flyers BB: empilhados (prefeitura sobre Gove) quando a coluna é
+ * larga; numa linha só quando é estreita (10x15), para sobrar altura para a BB.
+ */
+function partnersBB({ assets, heights, gap, w }) {
+  if (w >= 40) return { stacked: true, h: heights.prefeitura + gap + heights.gove };
+  const rh = heights.gove;
+  const hs = [rh, rh * 0.8];
+  const ws = [naturalWidth('prefeitura', assets?.prefeitura, hs[0]), naturalWidth('gove', assets?.gove, hs[1])];
+  const k = Math.min(1, (w - gap) / (ws[0] + ws[1]));
+  return { stacked: false, h: rh * k, hs: hs.map((v) => v * k), ws: ws.map((v) => v * k) };
+}
+
+/** Logos à direita nos flyers BB: parceiros e, abaixo (fora da área de proteção), a logomarca BB. */
+function logosColumnBB({ x, y, w, h, gap, assets, heights, bgHex, maxW }) {
+  const size = bbLogoSize(assets?.bb, heights.bb, Math.max(w, maxW));
+  const sep = Math.max(gap, size.sep);
+  const pt = partnersBB({ assets, heights, gap, w });
+  const els = [];
+  let py = y;
+  if (pt.stacked) {
+    let hp = heights.prefeitura;
+    let hg = heights.gove;
+    const room = h - size.h - sep - gap;
+    if (hp + hg > room) {
+      const k = Math.max(0.35, room / (hp + hg));
+      hp *= k;
+      hg *= k;
+    }
+    els.push(logoElement('prefeitura', assets?.prefeitura, { x, y, w, h: hp }, bgHex, 'right'));
+    els.push(logoElement('gove', assets?.gove, { x, y: y + hp + gap, w, h: hg }, bgHex, 'right'));
+    py = y + hp + gap + hg;
+  } else {
+    let cx = x + w - (pt.ws[0] + gap + pt.ws[1]);
+    ['prefeitura', 'gove'].forEach((k, i) => {
+      els.push(logoElement(k, assets?.[k], { x: cx, y: y + (pt.h - pt.hs[i]) / 2, w: pt.ws[i], h: pt.hs[i] }, bgHex));
+      cx += pt.ws[i] + gap;
+    });
+    py = y + pt.h;
+  }
+  const by = py + sep;
+  els.push(bbLogoElement(assets?.bb, { x: x + w - size.w, y: by, w: size.w, h: size.h }, bgHex, size));
+  const left = Math.min(x, x + w - size.w);
+  return block('logos', 'Logos', els, { bbox: { x: left, y, w: x + w - left, h: by + size.h - y } });
+}
+
+/** Altura total da coluna de logos BB (para reservar espaço abaixo do QR). */
+function logosColumnBBNeed({ assets, heights, gap, w, maxW }) {
+  const size = bbLogoSize(assets?.bb, heights.bb, Math.max(w, maxW));
+  return partnersBB({ assets, heights, gap, w }).h + Math.max(gap, size.sep) + size.h;
+}
+
 // ------------------------------------------------------------- blocos
 
-function serviceCircles({ services, right, left, y, d, gap, s }) {
+function serviceCircles({ services, right, left, y, d, gap, s, color = 'branco' }) {
   const list = services.map((id) => SERVICE_ICONS.find((i) => i.id === id)).filter(Boolean);
   if (!list.length) return null;
   const n = list.length;
@@ -398,52 +652,57 @@ function serviceCircles({ services, right, left, y, d, gap, s }) {
   const els = [];
   list.forEach((svc, i) => {
     const cx = right - (n - i) * D - (n - 1 - i) * G;
-    els.push({ type: 'circle', x: cx, y, w: D, h: D, stroke: 'branco', lineWidth: 0.55 * s });
+    els.push({ type: 'circle', x: cx, y, w: D, h: D, stroke: color, lineWidth: 0.55 * s });
     const ic = D * 0.56;
-    els.push({ type: 'icon', paths: svc.paths, x: cx + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: 'branco', lineWidth: 1.6, opacity: 1 });
+    els.push({ type: 'icon', paths: svc.paths, x: cx + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: color, lineWidth: 1.6, opacity: 1 });
   });
   return block('servicos', 'Ícones de serviços', els);
 }
 
-function qrPlate({ x, y, qrMm, data, id = 'qr', label = 'QR code', r = 0 }) {
+function qrPlate({ x, y, qrMm, data, id = 'qr', label = 'QR code', r = 0, th = null }) {
   const plate = qrMm + 2 * QR_QUIET_MM;
   return block(id, label, [
-    { type: 'rect', x, y, w: plate, h: plate, fill: 'branco', r },
-    { type: 'qr', x: x + QR_QUIET_MM, y: y + QR_QUIET_MM, w: qrMm, h: qrMm, data, color: 'preto' },
+    { type: 'rect', x, y, w: plate, h: plate, fill: th ? th.qrPlate : 'branco', r },
+    { type: 'qr', x: x + QR_QUIET_MM, y: y + QR_QUIET_MM, w: qrMm, h: qrMm, data, color: th ? th.qr : 'preto' },
   ], { opaque: true });
 }
 
 /** Tela gerada do celular (coordenadas locais da tela: 0..sw × 0..sh). */
-function generatedScreen({ sw, sh, input, measure }) {
+function generatedScreen({ sw, sh, input, measure, th = null }) {
   const u = sw / 100;
   const pt = (mm) => mmToPtSize(mm);
   const m = input.municipio ?? {};
-  const els = [{ type: 'rect', x: 0, y: 0, w: sw, h: sh, fill: 'branco' }];
-  const T = (o) => textBlock({ measure, illustrative: true, ...o });
+  // GOVE: cores originais; BB: papéis da tela no tema (só paleta BB, pares aprovados)
+  const c = th
+    ? th.screen
+    : { bg: 'branco', header: 'whatsapp', headerHex: COLORS.whatsapp.hex, headerText: 'branco', chip: 'branco', title: 'grafite', body: 'cinzaTexto', circle: 'whatsapp', circleIcon: 'branco', card: 'verdeEscuro1', cardText: 'branco', line: 'cinzaClaro', link: 'azulLink', button: 'verdeEscuro2', buttonText: 'branco', foot: 'cinzaTexto', qr: 'preto' };
+  const MT = th ? BB_MOCKUP_TEXTS : MOCKUP_TEXTS;
+  const els = [{ type: 'rect', x: 0, y: 0, w: sw, h: sh, fill: c.bg }];
+  const T = (o) => textBlock({ measure, illustrative: true, th, ...o, ...(th && o.color ? { bg: [COLORS[o.bgKey ?? c.bg].hex] } : {}) });
 
   // Cabeçalho verde com hora, logo da prefeitura (num selo branco) e logo da Gove
   const headH = 26 * u;
-  els.push({ type: 'rect', x: 0, y: 0, w: sw, h: headH, fill: 'whatsapp' });
-  els.push(T({ id: 'm-hora', role: 'mockup', text: '9:41', x: 7 * u, y: 2.6 * u, w: 20 * u, sizePt: pt(3.4 * u), weight: 'semibold', color: 'branco' }));
+  els.push({ type: 'rect', x: 0, y: 0, w: sw, h: headH, fill: c.header });
+  els.push(T({ id: 'm-hora', role: 'mockup', text: '9:41', x: 7 * u, y: 2.6 * u, w: 20 * u, sizePt: pt(3.4 * u), weight: 'semibold', color: c.headerText, bgKey: c.header }));
   const chipH = 12 * u;
   const chipY = 10.5 * u;
-  els.push({ type: 'rect', x: 5 * u, y: chipY, w: 30 * u, h: chipH, fill: 'branco', r: 2.6 * u });
+  els.push({ type: 'rect', x: 5 * u, y: chipY, w: 30 * u, h: chipH, fill: c.chip, r: 2.6 * u });
   const pref = logoElement('prefeitura', input.assets?.prefeitura, { x: 6.5 * u, y: chipY + 1.3 * u, w: 27 * u, h: chipH - 2.6 * u }, COLORS.branco.hex);
   els.push({ ...pref, illustrative: true });
   const gove = input.assets?.gove;
   if (gove && !gove.official) {
-    els.push({ type: 'rect', x: 65 * u, y: chipY, w: 30 * u, h: chipH, fill: 'branco', r: 2.6 * u });
+    els.push({ type: 'rect', x: 65 * u, y: chipY, w: 30 * u, h: chipH, fill: c.chip, r: 2.6 * u });
     els.push({ ...logoElement('gove', gove, { x: 66.5 * u, y: chipY + 1.3 * u, w: 27 * u, h: chipH - 2.6 * u }, COLORS.branco.hex), illustrative: true });
   } else {
-    els.push({ ...logoElement('gove', gove, { x: 65 * u, y: chipY + 2.2 * u, w: 30 * u, h: chipH - 4.4 * u }, COLORS.whatsapp.hex, 'right'), illustrative: true });
+    els.push({ ...logoElement('gove', gove, { x: 65 * u, y: chipY + 2.2 * u, w: 30 * u, h: chipH - 4.4 * u }, c.headerHex, 'right'), illustrative: true });
   }
 
   // Corpo
   let y = headH + 7 * u;
-  const h1 = T({ id: 'm-h1', role: 'mockup', text: MOCKUP_TEXTS.h1, x: 7 * u, y, w: 86 * u, sizePt: pt(6.2 * u), weight: 'bold', align: 'center', leading: 1.12, color: 'grafite' });
+  const h1 = T({ id: 'm-h1', role: 'mockup', text: MT.h1, x: 7 * u, y, w: 86 * u, sizePt: pt(6.2 * u), weight: 'bold', align: 'center', leading: 1.12, color: c.title, family: 'title' });
   els.push(h1);
   y = textBottom(h1) + 3 * u;
-  const h2 = T({ id: 'm-h2', role: 'mockup', text: MOCKUP_TEXTS.h2, x: 10 * u, y, w: 80 * u, sizePt: pt(3.9 * u), weight: 'regular', align: 'center', leading: 1.25, color: 'cinzaTexto' });
+  const h2 = T({ id: 'm-h2', role: 'mockup', text: MT.h2, x: 10 * u, y, w: 80 * u, sizePt: pt(3.9 * u), weight: 'regular', align: 'center', leading: 1.25, color: c.body });
   els.push(h2);
   y = textBottom(h2) + 6 * u;
 
@@ -453,24 +712,24 @@ function generatedScreen({ sw, sh, input, measure }) {
   const G = 6.5 * u;
   let ix = (sw - (icons.length * D + (icons.length - 1) * G)) / 2;
   for (const svc of icons) {
-    els.push({ type: 'circle', x: ix, y, w: D, h: D, fill: 'whatsapp' });
+    els.push({ type: 'circle', x: ix, y, w: D, h: D, fill: c.circle });
     const ic = D * 0.56;
-    els.push({ type: 'icon', paths: svc.paths, x: ix + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: 'branco', lineWidth: 2, opacity: 1 });
+    els.push({ type: 'icon', paths: svc.paths, x: ix + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: c.circleIcon, lineWidth: 2, opacity: 1 });
     ix += D + G;
   }
   y += D + 7 * u;
 
   // Card verde com o número
   const cardH = 25 * u;
-  els.push({ type: 'rect', x: 6 * u, y, w: 88 * u, h: cardH, fill: 'verdeEscuro1', r: 4 * u });
+  els.push({ type: 'rect', x: 6 * u, y, w: 88 * u, h: cardH, fill: c.card, r: 4 * u });
   const gl = 13 * u;
-  els.push({ type: 'glyph', ...WHATSAPP_GLYPH, x: 11 * u, y: y + (cardH - gl) / 2, w: gl, h: gl, fill: 'branco' });
-  const num = T({ id: 'm-num', role: 'mockup', text: formatPhone(m.ddd, m.numero_whatsapp), x: 29 * u, y: y + 5 * u, w: 62 * u, sizePt: pt(6.8 * u), weight: 'bold', color: 'branco', fit: 3 });
+  els.push({ type: 'glyph', ...WHATSAPP_GLYPH, x: 11 * u, y: y + (cardH - gl) / 2, w: gl, h: gl, fill: c.cardText });
+  const num = T({ id: 'm-num', role: 'mockup', text: formatPhone(m.ddd, m.numero_whatsapp), x: 29 * u, y: y + 5 * u, w: 62 * u, sizePt: pt(6.8 * u), weight: 'bold', color: c.cardText, fit: 3, bgKey: c.card, family: 'title' });
   els.push(num);
-  els.push(T({ id: 'm-card', role: 'mockup', text: MOCKUP_TEXTS.card, x: 29 * u, y: textBottom(num) + 1.4 * u, w: 62 * u, sizePt: pt(3.5 * u), weight: 'regular', color: 'branco', fit: 2 }));
+  els.push(T({ id: 'm-card', role: 'mockup', text: MT.card, x: 29 * u, y: textBottom(num) + 1.4 * u, w: 62 * u, sizePt: pt(3.5 * u), weight: 'regular', color: c.cardText, fit: 2, bgKey: c.card }));
   y += cardH + 6 * u;
 
-  const h4 = T({ id: 'm-h4', role: 'mockup', text: MOCKUP_TEXTS.h4, x: 6 * u, y, w: 88 * u, sizePt: pt(4 * u), weight: 'semibold', align: 'center', color: 'grafite', fit: 2 });
+  const h4 = T({ id: 'm-h4', role: 'mockup', text: MT.h4, x: 6 * u, y, w: 88 * u, sizePt: pt(4 * u), weight: 'semibold', align: 'center', color: c.title, fit: 2 });
   els.push(h4);
   y = textBottom(h4) + 3.5 * u;
 
@@ -484,40 +743,40 @@ function generatedScreen({ sw, sh, input, measure }) {
     m.endereco ? { icon: UI_ICONS.pin, text: String(m.endereco).trim() } : null,
   ].filter(Boolean);
   for (const ln of lines) {
-    const t = T({ id: 'm-foot', role: 'mockup', text: ln.text, x: 14 * u, y: 0, w: 80 * u, sizePt: pt(3.1 * u), weight: 'regular', color: 'cinzaTexto', leading: 1.3 });
+    const t = T({ id: 'm-foot', role: 'mockup', text: ln.text, x: 14 * u, y: 0, w: 80 * u, sizePt: pt(3.1 * u), weight: 'regular', color: c.body, leading: 1.3 });
     fy -= t.h;
     const dy = fy;
     t.y += dy;
     t.lines.forEach((l) => (l.baseline += dy));
     const icS = 3.6 * u;
-    foot.push({ type: 'icon', paths: ln.icon, x: 8.5 * u, y: dy + 0.2 * u, w: icS, h: icS, stroke: 'cinzaTexto', lineWidth: 2, opacity: 1 }, t);
+    foot.push({ type: 'icon', paths: ln.icon, x: 8.5 * u, y: dy + 0.2 * u, w: icS, h: icS, stroke: c.body, lineWidth: 2, opacity: 1 }, t);
     fy -= 2.2 * u;
   }
   const footTop = lines.length ? fy - 1.5 * u : btnY - 4 * u;
-  if (lines.length) foot.push({ type: 'rect', x: 6 * u, y: footTop, w: 88 * u, h: Math.max(0.12, 0.25 * u), fill: 'cinzaClaro' });
+  if (lines.length) foot.push({ type: 'rect', x: 6 * u, y: footTop, w: 88 * u, h: Math.max(0.12, 0.25 * u), fill: c.line });
 
   // Card do QR (ilustrativo) com a URL em azul
   const url = whatsappLink(m.ddd, m.numero_whatsapp).replace(/^https:\/\//, '');
   const urlPt = pt(3 * u);
-  const urlH = ptToMm(urlPt) * LINE_HEIGHT_EM;
+  const urlH = ptToMm(urlPt) * (th ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM);
   const pad = 5 * u;
   const q = Math.max(16 * u, Math.min(40 * u, footTop - 4 * u - y - 2 * pad - 2.5 * u - urlH));
   const cw = Math.max(q + 2 * pad, 56 * u);
   const cx = (sw - cw) / 2;
   const ch = pad + q + 2.5 * u + urlH + pad * 0.8;
-  els.push({ type: 'rect', x: cx, y, w: cw, h: ch, fill: 'branco', stroke: 'cinzaClaro', lineWidth: 0.35 * u, r: 3 * u });
-  els.push({ type: 'qr', x: (sw - q) / 2, y: y + pad, w: q, h: q, data: whatsappLink(m.ddd, m.numero_whatsapp), color: 'preto', illustrative: true });
-  els.push(T({ id: 'm-url', role: 'mockup', text: url, x: cx + 2 * u, y: y + pad + q + 2.5 * u, w: cw - 4 * u, sizePt: urlPt, weight: 'regular', align: 'center', color: 'azulLink', fit: 1.5 }));
+  els.push({ type: 'rect', x: cx, y, w: cw, h: ch, fill: c.bg, stroke: c.line, lineWidth: 0.35 * u, r: 3 * u });
+  els.push({ type: 'qr', x: (sw - q) / 2, y: y + pad, w: q, h: q, data: whatsappLink(m.ddd, m.numero_whatsapp), color: th ? th.qr : 'preto', illustrative: true });
+  els.push(T({ id: 'm-url', role: 'mockup', text: url, x: cx + 2 * u, y: y + pad + q + 2.5 * u, w: cw - 4 * u, sizePt: urlPt, weight: 'regular', align: 'center', color: c.link, fit: 1.5 }));
 
   els.push(...foot);
-  els.push({ type: 'rect', x: 6 * u, y: btnY, w: 88 * u, h: btnH, fill: 'verdeEscuro2', r: btnH / 2 });
+  els.push({ type: 'rect', x: 6 * u, y: btnY, w: 88 * u, h: btnH, fill: c.button, r: btnH / 2 });
   const bPt = pt(4.2 * u);
-  const label = MOCKUP_TEXTS.button;
-  const lw = measure(label, 'semibold', bPt);
+  const label = MT.button;
+  const lw = measure(label, th ? BB_FONT_OF.text.semibold : 'semibold', bPt);
   const icS = 4.6 * u;
   const bx = (sw - (icS + 2 * u + lw)) / 2;
-  els.push({ type: 'icon', paths: UI_ICONS.userPlus, x: bx, y: btnY + (btnH - icS) / 2, w: icS, h: icS, stroke: 'branco', lineWidth: 2, opacity: 1 });
-  els.push(T({ id: 'm-btn', role: 'mockup', text: label, x: bx + icS + 2 * u, y: btnY + (btnH - ptToMm(bPt) * LINE_HEIGHT_EM) / 2, w: lw + 1, sizePt: bPt, weight: 'semibold', color: 'branco' }));
+  els.push({ type: 'icon', paths: UI_ICONS.userPlus, x: bx, y: btnY + (btnH - icS) / 2, w: icS, h: icS, stroke: c.buttonText, lineWidth: 2, opacity: 1 });
+  els.push(T({ id: 'm-btn', role: 'mockup', text: label, x: bx + icS + 2 * u, y: btnY + (btnH - ptToMm(bPt) * (th ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM)) / 2, w: lw + 1, sizePt: bPt, weight: 'semibold', color: c.buttonText, bgKey: c.button }));
   return els;
 }
 
@@ -525,7 +784,9 @@ function generatedScreen({ sw, sh, input, measure }) {
  * Celular (moldura realista) com a tela gerada ou a captura enviada, inclinado.
  * (ox, oy) = canto superior esquerdo do aparelho antes da rotação; W = largura.
  */
-function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0 }) {
+function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = null }) {
+  const aro = th ? th.phone.frame : 'cinzaAro';
+  const corpo = th ? th.phone.bezel : 'pretoRico';
   // Proporção de um celular atual (~9:18,5); nos flyers o aparelho sai pela base da
   // página (como nas referências), então alonga se preciso para cobrir a sangria.
   const ang = (angle * Math.PI) / 180;
@@ -539,11 +800,11 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0 }) {
   const upload = input.mockup?.mode === 'upload' || (input.mockup?.imageId && input.mockup?.mode !== 'generated');
   const children = [
     // botões laterais (contorno sutil, sem sombra — CMYK sólido)
-    { type: 'rect', x: -W * 0.012, y: H * 0.2, w: W * 0.02, h: H * 0.06, fill: 'cinzaAro', r: W * 0.006 },
-    { type: 'rect', x: -W * 0.012, y: H * 0.28, w: W * 0.02, h: H * 0.06, fill: 'cinzaAro', r: W * 0.006 },
-    { type: 'rect', x: W - W * 0.008, y: H * 0.24, w: W * 0.02, h: H * 0.09, fill: 'cinzaAro', r: W * 0.006 },
-    { type: 'rect', x: 0, y: 0, w: W, h: H, fill: 'cinzaAro', r: rOuter },
-    { type: 'rect', x: rim, y: rim, w: W - 2 * rim, h: H - 2 * rim, fill: 'pretoRico', r: rOuter - rim },
+    { type: 'rect', x: -W * 0.012, y: H * 0.2, w: W * 0.02, h: H * 0.06, fill: aro, r: W * 0.006 },
+    { type: 'rect', x: -W * 0.012, y: H * 0.28, w: W * 0.02, h: H * 0.06, fill: aro, r: W * 0.006 },
+    { type: 'rect', x: W - W * 0.008, y: H * 0.24, w: W * 0.02, h: H * 0.09, fill: aro, r: W * 0.006 },
+    { type: 'rect', x: 0, y: 0, w: W, h: H, fill: aro, r: rOuter },
+    { type: 'rect', x: rim, y: rim, w: W - 2 * rim, h: H - 2 * rim, fill: corpo, r: rOuter - rim },
   ];
   if (upload) {
     const m = input.mockup;
@@ -557,13 +818,13 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0 }) {
       imageId: m?.imageId ?? null,
       focus: m?.focus ?? { x: 0.5, y: 0.5 },
       dpi: m?.width ? Math.min(m.width, (m.height * sw) / sh) / (sw / 25.4) : null,
-      fill: 'cinzaTela',
+      fill: th ? th.phone.empty : 'cinzaTela',
     });
   } else {
-    children.push({ type: 'group', x: bezel, y: bezel, rotate: 0, clip: { w: sw, h: sh, r: rScreen }, children: generatedScreen({ sw, sh, input, measure }), w: sw, h: sh });
+    children.push({ type: 'group', x: bezel, y: bezel, rotate: 0, clip: { w: sw, h: sh, r: rScreen }, children: generatedScreen({ sw, sh, input, measure, th }), w: sw, h: sh });
   }
   // ilha dinâmica
-  children.push({ type: 'rect', x: (W - sw * 0.3) / 2, y: bezel + sw * 0.03, w: sw * 0.3, h: sw * 0.085, fill: 'pretoRico', r: sw * 0.0425 });
+  children.push({ type: 'rect', x: (W - sw * 0.3) / 2, y: bezel + sw * 0.03, w: sw * 0.3, h: sw * 0.085, fill: corpo, r: sw * 0.0425 });
 
   const a = (angle * Math.PI) / 180;
   const rot = ([x, y]) => [ox + x * Math.cos(a) - y * Math.sin(a), oy + x * Math.sin(a) + y * Math.cos(a)];
@@ -578,8 +839,8 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0 }) {
 // --------------------------------------------------------------- layouts
 
 /** Flyers A4 e 10x15: medidas do A4 de referência × s (geometria) e × ts (tipos). */
-function flyer(layout, input, measure, s, ts, nts) {
-  const T = { ...DEFAULT_TEXTS[layout.id], ...input.texts };
+function flyer(layout, input, measure, s, ts, nts, theme = null) {
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const minX = SAFE_MM + 0.5;
@@ -587,11 +848,12 @@ function flyer(layout, input, measure, s, ts, nts) {
   const R2 = Math.min(tw - 11.6 * s, tw - minX); // conteúdo do painel
   const blocks = [];
 
-  const h1 = textBlock({ id: 'h1', role: 'h1', text: T.h1, x: minX, y: Math.max(minX, 12.2 * s), w: R1 - minX, sizePt: 44 * ts, weight: 'regular', boldWeight: 'bold', align: 'right', leading: TITLE_LEADING_EM, color: 'branco', onGradient: true, fit: 44 * ts * 0.6, measure });
+  const onBg = theme ? { color: theme.title, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'branco', onGradient: true };
+  const h1 = textBlock({ id: 'h1', role: 'h1', text: T.h1, x: minX, y: Math.max(minX, 12.2 * s), w: R1 - minX, sizePt: 44 * ts, weight: 'regular', boldWeight: 'bold', align: 'right', leading: TITLE_LEADING_EM, ...onBg, fit: 44 * ts * 0.6, measure });
   blocks.push(block('h1', 'Título (H1)', [h1]));
   let cursor = textBottom(h1);
 
-  const circles = serviceCircles({ services: input.services ?? [], right: R1, left: minX, y: cursor + 4.9 * s, d: 15.2 * s, gap: 10.1 * s, s });
+  const circles = serviceCircles({ services: input.services ?? [], right: R1, left: minX, y: cursor + 4.9 * s, d: 15.2 * s, gap: 10.1 * s, s, ...(theme ? { color: theme.icon } : {}) });
   if (circles) {
     blocks.push(circles);
     cursor = circles.bbox.y + circles.bbox.h;
@@ -601,36 +863,43 @@ function flyer(layout, input, measure, s, ts, nts) {
   const panelX = 26.2 * s;
   const panelTop = Math.max(91.9 * s, cursor + 8.5 * s);
   const panel = block('painel', 'Painel branco', [
-    { type: 'rect', x: panelX, y: panelTop, w: tw + BLEED_MM - panelX, h: th + BLEED_MM - panelTop, fill: 'branco', radii: [26 * s, 0, 0, 0] },
+    { type: 'rect', x: panelX, y: panelTop, w: tw + BLEED_MM - panelX, h: th + BLEED_MM - panelTop, fill: theme ? theme.panel : 'branco', radii: [26 * s, 0, 0, 0] },
   ], { movable: false, exempt: true, opaque: true });
 
-  const h4a = textBlock({ id: 'h4a', role: 'h4', text: T.h4a, x: panelX + 10 * s, y: panelTop + 5.1 * s, w: R2 - panelX - 10 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, color: 'preto', bg: [COLORS.branco.hex], fit: TYPE.h4.min, measure });
+  const onPanel = theme ? { color: theme.panelText, bg: [theme.panelHex], th: theme } : { color: 'preto', bg: [COLORS.branco.hex] };
+  const h4a = textBlock({ id: 'h4a', role: 'h4', text: T.h4a, x: panelX + 10 * s, y: panelTop + 5.1 * s, w: R2 - panelX - 10 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure });
 
   // Faixa verde com o número (arredondada à esquerda, vai até a sangria)
   const barY = textBottom(h4a) + 4 * s;
   const numPt = 39 * nts;
   const phone = formatPhone(input.municipio?.ddd, input.municipio?.numero_whatsapp);
-  const barH = Math.max(21.6 * s, ptToMm(numPt) * LINE_HEIGHT_EM + 4 * s);
-  const numW = measure(phone, 'bold', numPt);
+  const lineEm = theme ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM;
+  const barH = Math.max(21.6 * s, ptToMm(numPt) * lineEm + 4 * s);
+  const numW = measure(phone, theme ? BB_FONT_OF.title.bold : 'bold', numPt);
   const barX = Math.min(82 * s, R2 - numW - barH * 0.7);
-  const num = textBlock({ id: 'numero', role: 'number', text: phone, x: barX, y: barY + (barH - ptToMm(numPt) * LINE_HEIGHT_EM) / 2, w: R2 - barX, sizePt: numPt, weight: 'bold', align: 'right', color: 'branco', bg: [COLORS.folhaFaixa.hex], measure });
+  const onBar = theme ? { color: theme.barText, bg: [theme.barHex], th: theme, family: 'title' } : { color: 'branco', bg: [COLORS.folhaFaixa.hex] };
+  const num = textBlock({ id: 'numero', role: 'number', text: phone, x: barX, y: barY + (barH - ptToMm(numPt) * lineEm) / 2, w: R2 - barX, sizePt: numPt, weight: 'bold', align: 'right', ...onBar, measure });
   const numero = block('numero', 'Faixa do número', [
-    { type: 'rect', x: barX, y: barY, w: tw + BLEED_MM - barX, h: barH, fill: 'folhaFaixa', radii: [barH / 2, 0, 0, barH / 2] },
+    { type: 'rect', x: barX, y: barY, w: tw + BLEED_MM - barX, h: barH, fill: theme ? theme.bar : 'folhaFaixa', radii: [barH / 2, 0, 0, barH / 2] },
     num,
   ], { movable: false, opaque: true, bleedOk: true });
 
-  const h4b = textBlock({ id: 'h4b', role: 'h4', text: T.h4b, x: R2 - 88 * s, y: barY + barH + 6.2 * s, w: 88 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, color: 'preto', bg: [COLORS.branco.hex], fit: TYPE.h4.min, measure });
+  const h4b = textBlock({ id: 'h4b', role: 'h4', text: T.h4b, x: R2 - 88 * s, y: barY + barH + 6.2 * s, w: 88 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure });
 
   // QR e logos à direita, até o limite inferior
   const qrTop = textBottom(h4b) + 4.2 * s;
   const bottom = th - 16.8 * s;
   const logoH = { prefeitura: 24 * s, gove: 14 * s, bb: 14 * s };
-  const logosNeed = logoH.prefeitura + logoH.gove + (input.includeBB ? logoH.bb + 4 * s : 0) + 4 * s;
+  // BB: a logomarca BB entra sempre, abaixo dos parceiros, no tamanho mínimo de impressão
+  const bbCol = theme ? { assets: input.assets, heights: logoH, gap: 4 * s, w: 58 * s, maxW: Math.min(R2 - minX, 42) } : null;
+  const logosNeed = theme ? logosColumnBBNeed(bbCol) : logoH.prefeitura + logoH.gove + (input.includeBB ? logoH.bb + 4 * s : 0) + 4 * s;
   const qrMm = Math.max(QR_MIN_MM, Math.min(47.4 * s, bottom - qrTop - 2 * QR_QUIET_MM - 3.6 * s - logosNeed));
   const plate = qrMm + 2 * QR_QUIET_MM;
-  const qr = qrPlate({ x: R2 - plate, y: qrTop, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp) });
+  const qr = qrPlate({ x: R2 - plate, y: qrTop, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme });
   const logosTop = qrTop + plate + 3.6 * s;
-  const logos = logosColumn({ x: R2 - 58 * s, y: logosTop, w: 58 * s, h: Math.max(10, bottom - logosTop), gap: 4 * s, assets: input.assets, includeBB: input.includeBB, heights: logoH });
+  const logos = theme
+    ? logosColumnBB({ ...bbCol, x: R2 - 58 * s, y: logosTop, h: Math.max(10, bottom - logosTop), bgHex: theme.panelHex })
+    : logosColumn({ x: R2 - 58 * s, y: logosTop, w: 58 * s, h: Math.max(10, bottom - logosTop), gap: 4 * s, assets: input.assets, includeBB: input.includeBB, heights: logoH });
 
   // Celular inclinado à esquerda, encostado na faixa do número
   const W = 82 * s;
@@ -639,20 +908,40 @@ function flyer(layout, input, measure, s, ts, nts) {
   const tr = [86.3 * s, barY + barH + 1.5 * s];
   const ox = tr[0] - W * Math.cos(a);
   const oy = tr[1] - W * Math.sin(a);
-  const mock = phoneMockup({ ox, oy, W, angle, input, measure, minBottom: th + BLEED_MM + 3 });
+  const mock = phoneMockup({ ox, oy, W, angle, input, measure, minBottom: th + BLEED_MM + 3, th: theme });
+  if (theme) {
+    // BB: o celular (decorativo) recua para a esquerda até sair da área de proteção da logomarca BB
+    const bbEl = logos.elements.find((e) => e.which === 'bb');
+    const c = bbEl.clear;
+    const zone = clipBox({ x: bbEl.x - c, y: bbEl.y - c, w: bbEl.w + 2 * c, h: bbEl.h + 2 * c }, { x: 0, y: 0, w: tw, h: th });
+    for (let i = 0; i < 40 && zone && polysIntersect(mock.shape, rectPoly(zone)); i++) shiftBlock(mock, -0.25, 0);
+  }
 
   blocks.push(panel, block('h4a', 'Instrução do QR (H4)', [h4a]), numero, block('h4b', 'Chamada após o número (H4)', [h4b]), qr, mock, logos);
   return { blocks, watermark: { max: 100 * s, min: 40 * s, top: minX, bottom: panelTop + 10 * s }, panelTop };
 }
 
-function adesivo(layout, input, measure) {
-  const T = { ...DEFAULT_TEXTS[layout.id], ...input.texts };
+function adesivo(layout, input, measure, theme = null) {
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const m = SAFE_MM + 0.5;
   const blocks = [];
-  const h1 = textBlock({ id: 'h1', role: 'h1', text: T.h1, x: m, y: 5.9, w: tw - 2 * m, sizePt: 17.5, weight: 'regular', boldWeight: 'bold', align: 'center', leading: TITLE_LEADING_EM, color: 'branco', onGradient: true, fit: 11, measure });
+  const onBg = theme ? { color: theme.title, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'branco', onGradient: true };
+  const h1 = textBlock({ id: 'h1', role: 'h1', text: T.h1, x: m, y: 5.9, w: tw - 2 * m, sizePt: 17.5, weight: 'regular', boldWeight: 'bold', align: 'center', leading: TITLE_LEADING_EM, ...onBg, fit: 11, measure });
   blocks.push(block('h1', 'Título (H1)', [h1]));
+  if (theme) {
+    // BB: logos ancorados embaixo (logomarca BB no mínimo de impressão + área de proteção);
+    // a faixa branca sobe o quanto for preciso e o QR ocupa o espaço que sobra (mín. 20 mm).
+    const logos = logosRowBB({ x: m, bottom: th - m, w: tw - 2 * m, ph: 9, gap: 3, assets: input.assets, rel: { prefeitura: 1, gove: 0.62, bb: 1 }, bgHex: theme.footerHex });
+    const footerTop = Math.min(76.4, logos.bbox.y - 3);
+    const qrY = Math.max(textBottom(h1) + 4, Math.min(31.2, footerTop - 3 - 35));
+    const plate = Math.min(35, Math.max(QR_MIN_MM + 2 * QR_QUIET_MM, footerTop - 3 - qrY));
+    blocks.push(qrPlate({ x: (tw - plate) / 2, y: qrY, qrMm: plate - 2 * QR_QUIET_MM, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme }));
+    blocks.push(block('rodape', 'Faixa branca dos logos', [{ type: 'rect', x: -BLEED_MM, y: footerTop, w: tw + 2 * BLEED_MM, h: th - footerTop + BLEED_MM, fill: theme.footer }], { movable: false, exempt: true, opaque: true }));
+    blocks.push(logos);
+    return { blocks, watermark: null };
+  }
   const plate = 35;
   const qrMm = plate - 2 * QR_QUIET_MM;
   blocks.push(qrPlate({ x: (tw - plate) / 2, y: Math.max(31.2, textBottom(h1) + 4), qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp) }));
@@ -662,8 +951,8 @@ function adesivo(layout, input, measure) {
   return { blocks, watermark: null };
 }
 
-function displayA6(layout, input, measure) {
-  const T = { ...DEFAULT_TEXTS[layout.id], ...input.texts };
+function displayA6(layout, input, measure, theme = null) {
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const m = SAFE_MM + 0.5;
@@ -671,30 +960,38 @@ function displayA6(layout, input, measure) {
 
   // Ícone grande do WhatsApp (decorativo, sai pela sangria à esquerda)
   blocks.push(block('icone-whatsapp', 'Ícone do WhatsApp', [
-    { type: 'glyph', ...WHATSAPP_GLYPH, x: -10.5, y: 10.5, w: 43, h: 43, fill: 'branco' },
+    { type: 'glyph', ...WHATSAPP_GLYPH, x: -10.5, y: 10.5, w: 43, h: 43, fill: theme ? theme.icon : 'branco' },
   ], { movable: false, exempt: true }));
 
   const hx = 37.8;
   const hw = tw - m - hx;
-  const opts = { x: hx, w: hw, sizePt: 26.3, weight: 'bold', leading: 1.0, onGradient: true, fit: 14, measure };
-  const probe1 = textBlock({ ...opts, id: 'h1', role: 'h1', text: T.h1, y: 10.9, color: 'preto' });
-  const probe2 = textBlock({ ...opts, id: 'h1b', role: 'h1', text: T.h1b, y: 0, color: 'branco' });
+  // BB: título em duas cores aprovadas para o fundo (título + destaque)
+  const c1 = theme ? { color: theme.title, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'preto' };
+  const c2 = theme ? { color: theme.accent, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'branco' };
+  const opts = { x: hx, w: hw, sizePt: 26.3, weight: 'bold', leading: 1.0, ...(theme ? {} : { onGradient: true }), fit: 14, measure };
+  const probe1 = textBlock({ ...opts, id: 'h1', role: 'h1', text: T.h1, y: 10.9, ...c1 });
+  const probe2 = textBlock({ ...opts, id: 'h1b', role: 'h1', text: T.h1b, y: 0, ...c2 });
   const size = Math.min(probe1.size, probe2.size);
-  const h1 = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1', role: 'h1', text: T.h1, y: 10.9, color: 'preto' });
-  const h1b = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1b', role: 'h1', text: T.h1b, y: 10.9 + h1.lines.length * ptToMm(size) * 1.0, color: 'branco' });
+  const h1 = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1', role: 'h1', text: T.h1, y: 10.9, ...c1 });
+  const h1b = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1b', role: 'h1', text: T.h1b, y: 10.9 + h1.lines.length * ptToMm(size) * 1.0, ...c2 });
   blocks.push(block('h1', 'Título (H1)', [h1, h1b]));
 
-  const plate = 38.5;
+  // BB: logos ancorados embaixo; a faixa branca sobe se a logomarca BB pedir mais espaço
+  const logosBB = theme
+    ? logosRowBB({ x: 14, bottom: th - m, w: tw - 28, ph: 13.1, gap: 10, assets: input.assets, rel: { prefeitura: 1, gove: 0.68, bb: 0.75 }, bgHex: theme.footerHex })
+    : null;
+  const footerTop = theme ? Math.min(127.35, logosBB.bbox.y - 2.55) : 127.35;
+  const plate = theme ? Math.min(38.5, Math.max(QR_MIN_MM + 2 * QR_QUIET_MM, footerTop - 3 - Math.max(65.1, textBottom(h1b) + 6))) : 38.5;
   const qrMm = plate - 2 * QR_QUIET_MM;
   const qrY = Math.max(65.1, textBottom(h1b) + 6);
-  const qr = qrPlate({ x: 53.1, y: qrY, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp) });
-  const probe = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: 0, w: 47.4 - m, sizePt: 17.1, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, color: 'branco', onGradient: true, fit: 10, measure });
-  const h3 = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: qrY + (plate - probe.h) / 2, w: 47.4 - m, sizePt: probe.size, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, color: 'branco', onGradient: true, measure });
+  const qr = qrPlate({ x: theme ? 53.1 + (38.5 - plate) / 2 : 53.1, y: qrY, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme });
+  const c3 = theme ? { color: theme.text, bg: [theme.bgHex], th: theme } : { color: 'branco', onGradient: true };
+  const probe = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: 0, w: 47.4 - m, sizePt: 17.1, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, ...c3, fit: 10, measure });
+  const h3 = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: qrY + (plate - probe.h) / 2, w: 47.4 - m, sizePt: probe.size, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, ...c3, measure });
   blocks.push(block('h3', 'Apoio ao lado do QR (H3)', [h3]), qr);
 
-  const footerTop = 127.35;
-  blocks.push(block('rodape', 'Faixa branca dos logos', [{ type: 'rect', x: -BLEED_MM, y: footerTop, w: tw + 2 * BLEED_MM, h: th - footerTop + BLEED_MM, fill: 'branco' }], { movable: false, exempt: true, opaque: true }));
-  blocks.push(logosRow({ x: 14, y: 129.9, w: tw - 28, h: 13.1, gap: 10, assets: input.assets, includeBB: input.includeBB, rel: { prefeitura: 1, gove: 0.68, bb: 0.75 } }));
+  blocks.push(block('rodape', 'Faixa branca dos logos', [{ type: 'rect', x: -BLEED_MM, y: footerTop, w: tw + 2 * BLEED_MM, h: th - footerTop + BLEED_MM, fill: theme ? theme.footer : 'branco' }], { movable: false, exempt: true, opaque: true }));
+  blocks.push(logosBB ?? logosRow({ x: 14, y: 129.9, w: tw - 28, h: 13.1, gap: 10, assets: input.assets, includeBB: input.includeBB, rel: { prefeitura: 1, gove: 0.68, bb: 0.75 } }));
   return { blocks, watermark: null };
 }
 
@@ -738,11 +1035,14 @@ export function buildLayout(layoutId, input, measure) {
   const pageW = tw + 2 * BLEED_MM;
   const pageH = th + 2 * BLEED_MM;
 
+  const theme = themeOf(input);
+  // Identidade BB: a logomarca do Banco do Brasil é obrigatória
+  if (theme) input = { ...input, includeBB: true };
   let spec;
-  if (layoutId === 'flyer-a4') spec = flyer(layout, input, measure, 1, 1, 1);
-  else if (layoutId === 'flyer-10x15') spec = flyer(layout, input, measure, tw / 210, 0.504, 0.56);
-  else if (layoutId === 'adesivo-5x10') spec = adesivo(layout, input, measure);
-  else spec = displayA6(layout, input, measure);
+  if (layoutId === 'flyer-a4') spec = flyer(layout, input, measure, 1, 1, 1, theme);
+  else if (layoutId === 'flyer-10x15') spec = flyer(layout, input, measure, tw / 210, 0.504, 0.56, theme);
+  else if (layoutId === 'adesivo-5x10') spec = adesivo(layout, input, measure, theme);
+  else spec = displayA6(layout, input, measure, theme);
 
   const blocks = spec.blocks;
   // Trim → página (soma a sangria) e aplica os deslocamentos manuais do editor
@@ -754,9 +1054,11 @@ export function buildLayout(layoutId, input, measure) {
 
   const diag = Math.hypot(tw, th);
   const bg = { cx: BLEED_MM + BACKGROUND.cx * tw, cy: BLEED_MM + BACKGROUND.cy * th, r: BACKGROUND.r * diag, stops: BACKGROUND.stops };
-  const background = block('fundo', 'Fundo em degradê', [
-    { type: 'gradient', kind: 'radial', x: 0, y: 0, w: pageW, h: pageH, cx: bg.cx, cy: bg.cy, r: bg.r, stops: bg.stops },
-  ], { movable: false, exempt: true });
+  const background = theme
+    ? block('fundo', 'Fundo', [{ type: 'rect', x: 0, y: 0, w: pageW, h: pageH, fill: theme.bg }], { movable: false, exempt: true })
+    : block('fundo', 'Fundo em degradê', [
+      { type: 'gradient', kind: 'radial', x: 0, y: 0, w: pageW, h: pageH, cx: bg.cx, cy: bg.cy, r: bg.r, stops: bg.stops },
+    ], { movable: false, exempt: true });
 
   // Contraste dos textos sobre o degradê: amostra cantos e meio de cada linha
   for (const b of blocks) {
@@ -772,7 +1074,8 @@ export function buildLayout(layoutId, input, measure) {
     }
   }
 
-  const wm = spec.watermark ? placeWatermark(spec.watermark, blocks) : null;
+  // Marca d'água (branco translúcido) só na GOVE: na BB toda cor impressa é uma cor sólida da paleta
+  const wm = spec.watermark && !theme ? placeWatermark(spec.watermark, blocks) : null;
   // Ordem de pintura: fundo → marca d'água → conteúdo (na ordem do layout)
   const ordered = [background, ...(wm ? [wm] : []), ...blocks];
   const result = {
@@ -783,8 +1086,240 @@ export function buildLayout(layoutId, input, measure) {
     background: bg,
     blocks: ordered,
   };
+  if (theme) {
+    result.identity = 'bb';
+    result.bbScheme = theme.scheme.id;
+    result.bbFixes = bbAutoFix(result);
+  }
   result.checks = checkLayout(result, input);
   return result;
+}
+
+// ------------------------------------------- identidade BB: auditoria de cor
+
+const BB_HEXES = new Set(Object.values(BB_PALETTE));
+const UNKNOWN = 'imagem';
+
+function inRoundRect(e, px, py) {
+  if (px < e.x || px > e.x + e.w || py < e.y || py > e.y + e.h) return false;
+  const r = e.radii ?? e.r ?? 0;
+  const [tl, tr, br, bl] = (Array.isArray(r) ? r : [r, r, r, r]).map((v) => Math.max(0, Math.min(v || 0, e.w / 2, e.h / 2)));
+  const corner = (cx, cy, rr, inX, inY) => !(inX && inY) || Math.hypot(px - cx, py - cy) <= rr;
+  return (
+    corner(e.x + tl, e.y + tl, tl, px < e.x + tl, py < e.y + tl) &&
+    corner(e.x + e.w - tr, e.y + tr, tr, px > e.x + e.w - tr, py < e.y + tr) &&
+    corner(e.x + e.w - br, e.y + e.h - br, br, px > e.x + e.w - br, py > e.y + e.h - br) &&
+    corner(e.x + bl, e.y + e.h - bl, bl, px < e.x + bl, py > e.y + e.h - bl)
+  );
+}
+const inBox = (e, px, py) => px >= e.x && px <= e.x + e.w && py >= e.y && py <= e.y + e.h;
+function inPoly(P, px, py) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [xi, yi] = P[i];
+    const [xj, yj] = P[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function groupPoly(g) {
+  const a = ((g.rotate ?? 0) * Math.PI) / 180;
+  return [[0, 0], [g.w, 0], [g.w, g.h], [0, g.h]].map(([x, y]) => [g.x + x * Math.cos(a) - y * Math.sin(a), g.y + x * Math.sin(a) + y * Math.cos(a)]);
+}
+
+/**
+ * Cores realmente atrás de um ponto: percorre o que já foi pintado de cima para
+ * baixo até a primeira forma opaca. Ícones, QR e contornos entram como possíveis
+ * cores sob o texto; imagens (logos, fotos) viram "imagem" (sem como garantir 4,5:1).
+ */
+function backdropAt(painted, px, py) {
+  const out = new Set();
+  for (let i = painted.length - 1; i >= 0; i--) {
+    const e = painted[i];
+    if (e.type === 'rect' && inRoundRect(e, px, py)) {
+      if (e.fill) {
+        out.add(COLORS[e.fill].hex);
+        return [...out];
+      }
+      if (e.stroke) out.add(COLORS[e.stroke].hex);
+    } else if (e.type === 'circle' && inBox(e, px, py)) {
+      const inside = ((px - e.x - e.w / 2) / (e.w / 2)) ** 2 + ((py - e.y - e.h / 2) / (e.h / 2)) ** 2 <= 1;
+      if (inside && e.fill) {
+        out.add(COLORS[e.fill].hex);
+        return [...out];
+      }
+      if (e.stroke) out.add(COLORS[e.stroke].hex);
+    } else if (e.type === 'gradient' && inBox(e, px, py)) {
+      out.add(UNKNOWN);
+      return [...out];
+    } else if ((e.type === 'icon' || e.type === 'glyph') && inBox(e, px, py)) {
+      out.add(COLORS[e.stroke ?? e.fill].hex);
+    } else if (e.type === 'qr' && inBox(e, px, py)) {
+      out.add(COLORS[e.color].hex);
+    } else if ((e.type === 'logo' && !e.missing) || e.type === 'mockup-screen') {
+      if (inBox(e, px, py)) out.add(UNKNOWN);
+    } else if (e.type === 'group' && inPoly(groupPoly(e), px, py)) {
+      out.add(UNKNOWN);
+      return [...out];
+    }
+  }
+  return [...out];
+}
+
+function textSamples(e) {
+  return lineBoxes(e).flatMap((r) => {
+    const ix = Math.min(0.2, r.w / 4);
+    const iy = Math.min(0.2, r.h / 4);
+    return [[r.x + ix, r.y + iy], [r.x + r.w - ix, r.y + iy], [r.x + ix, r.y + r.h - iy], [r.x + r.w - ix, r.y + r.h - iy], [r.x + r.w / 2, r.y + r.h / 2]];
+  });
+}
+
+/**
+ * Identidade BB — confere cada texto contra o que está de fato atrás dele (inclusive
+ * depois dos ajustes manuais de posição) e corrige sozinho: troca a cor pela
+ * aprovada que passa 4,5:1 contra todas as amostras (textOnSamples; Preto só sobre
+ * Rosa escuro) ou, sem nenhuma, aplica a proteção de contraste (caixa Azul escuro,
+ * texto Branco). Devolve a lista de correções aplicadas.
+ */
+function bbAutoFix(r) {
+  const fixes = [];
+  const audit = (elements, painted, blockId) => {
+    for (let i = 0; i < elements.length; i++) {
+      const e = elements[i];
+      if (e.type === 'group') {
+        audit(e.children, [], blockId);
+      } else if (e.type === 'text' && e.lines.length) {
+        const backs = [...new Set(textSamples(e).flatMap(([x, y]) => backdropAt(painted, x, y)))];
+        e.bbBackdrop = backs;
+        if (backs.includes(UNKNOWN) || !backs.length) {
+          e.contrast = 0;
+        } else {
+          const ratio = (hex) => Math.min(...backs.map((b) => bbContrast(hex, b)));
+          const cur = COLORS[e.color].hex;
+          if (ratio(cur) < MIN_TEXT || (cur === BB_PRETO && backs.some((b) => b !== BB_PALETTE.rosaEscuro))) {
+            let next = textOnSamples(backs, BB_TEXT_ON[backs[0]]?.[0]);
+            if (!next && backs.every((b) => b === BB_PALETTE.rosaEscuro)) next = BB_PRETO;
+            if (next) {
+              fixes.push({ blockId, id: e.id, from: BB_NAMES[cur] ?? cur, to: BB_NAMES[next], reason: 'contraste' });
+              e.color = bbKey(next);
+            } else {
+              // Proteção de contraste: caixa Azul escuro atrás do texto, texto Branco
+              const boxes = lineBoxes(e);
+              const pad = Math.max(0.8, ptToMm(e.size) * 0.25);
+              const bx = Math.min(...boxes.map((b) => b.x)) - pad;
+              const by = Math.min(...boxes.map((b) => b.y)) - pad;
+              const rect = { type: 'rect', x: bx, y: by, w: Math.max(...boxes.map((b) => b.x + b.w)) + pad - bx, h: Math.max(...boxes.map((b) => b.y + b.h)) + pad - by, fill: bbKey(BB_PALETTE.azulEscuro), r: pad, protection: true };
+              elements.splice(i, 0, rect);
+              painted.push(rect);
+              i += 1;
+              fixes.push({ blockId, id: e.id, from: BB_NAMES[cur] ?? cur, to: 'Branco sobre caixa Azul escuro', reason: 'protecao' });
+              e.color = bbKey(BB_PALETTE.branco);
+              e.bbBackdrop = [BB_PALETTE.azulEscuro];
+            }
+          }
+          e.contrast = Math.min(...e.bbBackdrop.map((b) => bbContrast(COLORS[e.color].hex, b)));
+        }
+      }
+      painted.push(e);
+    }
+  };
+  const painted = [];
+  for (const b of r.blocks) audit(b.elements, painted, b.id);
+  return fixes;
+}
+
+/** Todas as cores pintadas na peça (fill, stroke, texto, QR, degradê), com o elemento. Logos (imagens) ficam de fora. */
+function paintedColors(r) {
+  const out = [];
+  const walk = (els, blockId) => {
+    for (const e of els) {
+      if (e.type === 'group') walk(e.children, blockId);
+      if (e.type === 'logo') continue;
+      for (const k of ['fill', 'stroke', 'color']) if (typeof e[k] === 'string') out.push({ key: e[k], e, blockId, prop: k });
+      if (e.stops) for (const [, k] of e.stops) out.push({ key: k, e, blockId, prop: 'stops' });
+    }
+  };
+  for (const b of r.blocks) walk(b.elements, b.id);
+  return out;
+}
+
+function allTexts(r) {
+  const out = [];
+  const walk = (els, blockId) => els.forEach((e) => (e.type === 'group' ? walk(e.children, blockId) : e.type === 'text' && out.push({ e, blockId })));
+  r.blocks.forEach((b) => walk(b.elements, b.id));
+  return out;
+}
+
+/**
+ * Erros da identidade BB que bloqueiam a fila e a exportação (sem "exportar mesmo
+ * assim"): cor fora da paleta, texto abaixo de 4,5:1 e fonte fora da tipografia BB.
+ */
+export const BB_BLOCKING = ['bb-paleta', 'bb-contraste', 'bb-fonte'];
+export const bbBlockingChecks = (checks) => (checks ?? []).filter((c) => c.level === 'error' && BB_BLOCKING.includes(c.code));
+
+/** Checagens da identidade BB: paleta, contraste de todo texto, fontes e regras da logomarca BB. */
+export function bbChecks(r) {
+  const out = [];
+  const add = (level, code, message, blockId = null) => out.push({ level, code, message, blockId });
+  const bad = new Map();
+  for (const { key, e, blockId } of paintedColors(r)) {
+    const hex = COLORS[key]?.hex;
+    const okPreto = hex === BB_PRETO && e.type === 'text' && (e.bbBackdrop ?? []).every((b) => b === BB_PALETTE.rosaEscuro);
+    if (!hex || (!BB_HEXES.has(hex) && !okPreto)) bad.set(key, blockId);
+  }
+  for (const [key, blockId] of bad) add('error', 'bb-paleta', `Cor fora da paleta Banco do Brasil: ${COLORS[key]?.name ?? key}.`, blockId);
+  if (!bad.size) add('ok', 'bb-paleta', 'Paleta BB ok — todas as cores impressas são da paleta oficial (CMYK do guia).');
+
+  let worst = Infinity;
+  let fails = 0;
+  for (const { e, blockId } of allTexts(r)) {
+    if (!e.lines.length) continue;
+    if ((e.bbBackdrop ?? []).includes(UNKNOWN)) {
+      fails += 1;
+      add('error', 'bb-contraste', `"${e.lines[0].text}…" está sobre uma imagem — afaste o texto da imagem.`, blockId);
+      continue;
+    }
+    worst = Math.min(worst, e.contrast ?? 0);
+    if ((e.contrast ?? 0) < MIN_TEXT) {
+      fails += 1;
+      add('error', 'bb-contraste', `Contraste de ${(e.contrast ?? 0).toFixed(2)}:1 em "${e.lines[0].text}…" — a identidade BB pede 4,5:1 em todo texto.`, blockId);
+    }
+    if (!String(e.weight).startsWith('bb') || e.lines.some((l) => l.runs?.some((run) => !String(run.weight).startsWith('bb')))) {
+      add('error', 'bb-fonte', `"${e.lines[0].text}…" fora da tipografia BB (BancoDoBrasil Titulos/Textos).`, blockId);
+    }
+  }
+  if (!fails && worst < Infinity) add('ok', 'bb-contraste', `Contraste BB ok — todo texto ≥ 4,5:1 com o fundo real (mín. ${worst.toFixed(2)}:1).`);
+  for (const f of r.bbFixes ?? []) {
+    add('warn', 'bb-ajuste', f.reason === 'protecao' ? `Texto "${f.id}" sem cor da paleta com 4,5:1 sobre o fundo: aplicada a proteção (Branco sobre caixa Azul escuro).` : `Cor do texto "${f.id}" ajustada de ${f.from} para ${f.to} para manter 4,5:1.`, f.blockId);
+  }
+
+  // Logomarca BB
+  for (const e of logoElements(r).filter((x) => x.which === 'bb')) {
+    if (e.missing) {
+      add('error', 'logo-bb', 'Identidade Banco do Brasil: a logomarca BB é obrigatória — envie-a em "Logos fixos".', 'logos');
+      continue;
+    }
+    const nome = { simbolo: 'símbolo', central: 'central', horizontal: 'horizontal' }[e.bbKind];
+    if (e.w < e.minW - 0.05) add('error', 'bb-logo-min', `Logomarca BB (${nome}) com ${e.w.toFixed(1)} mm — mínimo de impressão ${e.minW} mm. ${e.bbKind === 'horizontal' ? 'Use a versão central (mín. 25 mm) neste formato.' : 'Aumente o espaço dos logos.'}`, 'logos');
+    if (e.bbKind !== 'simbolo' && !BB_LOGO_RULES.centralHorizontalBackgrounds.includes(bbNorm(e.bg ?? '#FFFFFF'))) {
+      add('warn', 'bb-logo-fundo', `Logomarca BB ${nome} sobre ${BB_NAMES[bbNorm(e.bg)] ?? e.bg}: o manual só permite Amarelo institucional, Azul institucional ou Branco.`, 'logos');
+    }
+    const c = e.clear;
+    // a área de proteção vale dentro do formato final (o que passa da linha de corte é refilado)
+    const zone = clipBox({ x: e.x - c, y: e.y - c, w: e.w + 2 * c, h: e.h + 2 * c }, r.trim);
+    const invaders = [];
+    for (const b of r.blocks) {
+      if (b.exempt) continue;
+      for (const o of b.elements) {
+        // retângulo da mesma cor do fundo do logo (ex.: placa branca do QR no painel branco) não aparece
+        if (o === e || o.protection || (o.type === 'rect' && o.fill && !o.stroke && COLORS[o.fill].hex === bbNorm(e.bg ?? ''))) continue;
+        const hit = o.type === 'group' ? polysIntersect(groupPoly(o), rectPoly(zone)) : boxesIntersect(o.type === 'text' ? bboxOf(lineBoxes(o)) : o, zone);
+        if (hit) invaders.push(o.type === 'logo' ? `logo ${o.which}` : o.type === 'text' ? `texto "${o.lines[0]?.text ?? ''}"` : b.label);
+      }
+    }
+    if (invaders.length) add('error', 'bb-logo-protecao', `Área de proteção da logomarca BB (metade da altura em volta) invadida por: ${[...new Set(invaders)].join(', ')}.${e.bbKind === 'horizontal' ? ' Neste formato, prefira a versão central da logomarca BB.' : ''}`, 'logos');
+  }
+  return out;
 }
 
 /** Todos os elementos de logo (inclusive os da tela do celular). */
@@ -845,11 +1380,11 @@ export function checkLayout(r, input) {
 
   for (const b of r.blocks) {
     for (const e of b.elements) {
-      if (e.type === 'text' && e.lines.length && e.contrast != null && e.contrast < e.minContrast) {
+      if (r.identity !== 'bb' && e.type === 'text' && e.lines.length && e.contrast != null && e.contrast < e.minContrast) {
         add('error', 'contraste', `Contraste de ${e.contrast.toFixed(2)}:1 em "${e.lines[0].text}…" — mínimo ${e.minContrast}:1.`, b.id);
       }
       if (e.type === 'qr' && e.w < QR_MIN_MM - 0.01) add('error', 'qr-min', `QR code com ${e.w.toFixed(1)} mm — mínimo ${QR_MIN_MM} mm.`, b.id);
-      if (e.type === 'logo' && e.missing) {
+      if (e.type === 'logo' && e.missing && !(e.which === 'bb' && r.identity === 'bb')) {
         const label = { gove: 'Logo da Gove', prefeitura: 'Logo da prefeitura', bb: 'Logo do Banco do Brasil' }[e.which];
         add('error', `logo-${e.which}`, `${label} não cadastrado.`, b.id);
       }
@@ -865,6 +1400,7 @@ export function checkLayout(r, input) {
   }
   const lc = logoContrastCheck(r);
   if (lc && lc.level !== 'ok') add(lc.level, lc.code, lc.message, 'logos');
+  if (r.identity === 'bb') out.push(...bbChecks(r));
   if ((input.services?.length ?? 0) > MAX_SERVICES_RECOMMENDED && r.layout.id.startsWith('flyer')) {
     add('warn', 'servicos', `${input.services.length} ícones de serviço — o recomendado é até ${MAX_SERVICES_RECOMMENDED} por peça.`);
   }

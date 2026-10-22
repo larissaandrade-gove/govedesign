@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Canvas, FabricObject, Rect } from 'fabric';
 import QRCode from 'qrcode';
 import { drawElements, walkElements } from '../../../../shared/draw.js';
-import { COLORS, FONT_WEIGHTS, ptToMm } from '../../../../shared/tokens.js';
-import { FONT_FAMILY } from '@/lib/studio';
+import { COLORS, ptToMm } from '../../../../shared/tokens.js';
+import { fontCss } from '@/lib/studio';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type LayoutResult = any;
@@ -87,7 +87,7 @@ function canvasPainter(ctx: CanvasRenderingContext2D, images: Map<El, Img>) {
       ctx.translate(x, y);
       const s = ptToMm(sizePt) / 100; // desenha a 100 px e escala (evita o piso de tamanho de fonte)
       ctx.scale(s, s);
-      ctx.font = `${(FONT_WEIGHTS as Record<string, number>)[weight] ?? 400} 100px "${FONT_FAMILY}"`;
+      ctx.font = fontCss(weight, 100);
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = hex(key);
       ctx.fillText(str, 0, 0);
