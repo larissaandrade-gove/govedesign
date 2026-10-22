@@ -247,10 +247,10 @@ export interface GradientPreset {
 }
 
 export const GRADIENT_PRESETS: GradientPreset[] = [
-  { id: "gove", nome: "Degradê GOVE", from: "#20133D", via: "#3D0099", to: "#9741FC", angle: 135 },
-  { id: "gove-vertical", nome: "GOVE vertical", from: "#3D0099", via: "", to: "#9741FC", angle: 180 },
+  { id: "gove", nome: "Degradê GOVE", from: "#20133D", via: "#3D0099", to: "#A278DA", angle: 135 },
+  { id: "gove-vertical", nome: "GOVE vertical", from: "#3D0099", via: "", to: "#A278DA", angle: 180 },
   { id: "roxo-profundo", nome: "Roxo profundo", from: "#20133D", via: "", to: "#351F65", angle: 135 },
-  { id: "amarelo-gove", nome: "Amarelo GOVE", from: "#FFC72C", via: "", to: "#E0A800", angle: 135 },
+  { id: "amarelo-gove", nome: "Amarelo GOVE", from: "#FFC72C", via: "", to: "#F4F4F4", angle: 135 },
   { id: "grafite", nome: "Grafite", from: "#2F3539", via: "", to: "#5B6770", angle: 135 },
   { id: "claro", nome: "Claro suave", from: "#FFFFFF", via: "", to: "#F4F4F4", angle: 180 },
 ];

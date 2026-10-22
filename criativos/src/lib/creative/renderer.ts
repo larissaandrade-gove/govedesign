@@ -156,6 +156,15 @@ export const BG_PRESETS: BgPreset[] = [
     kind: "linear",
   },
   { key: "glow", label: "Halo roxo", colors: [PALETTE.purple1, PALETTE.purple3], kind: "radial" },
+  { key: "blue", label: "Azul", colors: [PALETTE.blue, PALETTE.blue], kind: "solid" },
+  {
+    key: "blue-deep",
+    label: "Degradê azul → profundo",
+    colors: [PALETTE.blue, PALETTE.purple3],
+    kind: "diagonal",
+  },
+  { key: "cyan", label: "Ciano", colors: [PALETTE.cyan, PALETTE.cyan], kind: "solid" },
+  { key: "lilac", label: "Lilás", colors: [PALETTE.lilac, PALETTE.lilac], kind: "solid" },
   {
     key: "light-top",
     label: "Degradê branco → cinza (vertical)",
@@ -757,7 +766,7 @@ function renderCreativeOnce(
   // Card/faixa: institucional usa roxo; minimalista claro usa respiro #F4F4F4;
   // minimalista roxo usa um roxo mais profundo que o fundo. A disposição
   // (card, faixa, painel) é idêntica nos três esquemas — muda só a cor.
-  const purples = [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3];
+  const purples = [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3, PALETTE.blue];
   const requested = spec.cardColor?.toUpperCase();
   const candidate = purples.find((p) => p.toUpperCase() === requested);
   const cardColor = bb

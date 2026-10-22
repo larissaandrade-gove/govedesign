@@ -29,7 +29,7 @@ export const defaultBox = (over: Partial<BoxProps> = {}): BoxProps => ({
   overlayColor: "#20133D",
   gradientFrom: "#20133D",
   gradientVia: "#3D0099",
-  gradientTo: "#9741FC",
+  gradientTo: "#A278DA",
   gradientAngle: 135,
   borderColor: "#F4F4F4",
   borderWidth: 0,

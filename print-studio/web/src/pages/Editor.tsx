@@ -74,8 +74,8 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   const [texts, setTexts] = useState<Record<string, Record<string, string>>>({});
   const [overrides, setOverrides] = useState<PieceOptions['overrides']>({});
   const [mockup, setMockup] = useState<(Imagem & { focus: { x: number; y: number } }) | null>(null);
-  // Tela do celular: gerada para o município (padrão) ou captura própria enviada
-  const [mockMode, setMockMode] = useState<'generated' | 'upload'>('generated');
+  // Tela do celular: sempre a captura enviada (a tela gerada foi removida)
+  const mockMode = 'upload' as const;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const dragFrom = useRef<number | null>(null);
@@ -120,7 +120,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         prefeitura: municipio?.logo_largura ? { width: municipio.logo_largura, height: municipio.logo_altura } : null,
       },
     };
-  }, [activeLayout, municipio, identity, bbScheme, bb, includeBB, services, texts, overrides, mockup, mockMode, logosFixos]);
+  }, [activeLayout, municipio, identity, bbScheme, bb, includeBB, services, texts, overrides, mockup, logosFixos]);
 
   const result = useMemo(() => (input && activeLayout ? buildLayout(activeLayout, input, measure) : null), [input, activeLayout]);
   const checks: Check[] = useMemo(() => {
@@ -169,7 +169,6 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     try {
       const img = await api.uploadImagem(file);
       setMockup({ ...img, focus: { x: 0.5, y: 0.5 } });
-      setMockMode('upload');
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -409,32 +408,6 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         </Section>
 
         <Section title="Tela do celular" icon={Smartphone}>
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Tela do celular">
-            {(
-              [
-                ['generated', 'Tela gerada', 'Tela do app gerada com os dados do município'],
-                ['upload', 'Captura própria', 'Usar uma captura de tela enviada'],
-              ] as const
-            ).map(([id, label, hint]) => (
-              <button
-                key={id}
-                type="button"
-                role="radio"
-                aria-checked={mockMode === id}
-                title={hint}
-                onClick={() => setMockMode(id)}
-                className={cn(
-                  'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors',
-                  mockMode === id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {mockMode === 'generated' ? (
-            <p className="text-xs text-muted-foreground">Logo, número, QR, endereço e e-mail vêm do cadastro do município; ícones: os 4 primeiros serviços.</p>
-          ) : (
           <>
           <div className="flex items-center gap-3">
             <label
@@ -490,7 +463,6 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
             </div>
           )}
           </>
-          )}
         </Section>
 
         {activeLayout && (

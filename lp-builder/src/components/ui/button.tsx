@@ -16,7 +16,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-secondary hover:text-secondary-foreground",
         // Ação principal da tela (uma por tela): amarelo GOVE com texto #20133D (11:1).
-        cta: "bg-[#FFC72C] text-[#20133D] font-semibold shadow-sm hover:bg-[#F2B705]",
+        cta: "bg-[#FFC72C] text-[#20133D] font-semibold shadow-sm hover:shadow-md hover:ring-2 hover:ring-[#20133D]/20",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

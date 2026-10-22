@@ -9,10 +9,14 @@ export const PALETTE = {
   supportMid: "#5B6770",
   supportLight: "#F4F4F4",
   white: "#FFFFFF",
+  // Secundárias da paleta institucional (Design System GOVE)
+  lilac: "#A278DA",
+  cyan: "#5AC2CD",
+  blue: "#16499F",
 } as const;
 
 /** Únicas cores permitidas para fundo/overlay. */
-export const BG_COLORS = [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3] as const;
+export const BG_COLORS = [PALETTE.purple1, PALETTE.purple2, PALETTE.purple3, PALETTE.blue] as const;
 
 /** Únicas cores permitidas para texto. */
 export const TEXT_COLORS = [PALETTE.white, PALETTE.purple3] as const;
@@ -26,6 +30,9 @@ export const ALLOWED_COLORS: string[] = [
   PALETTE.supportMid,
   PALETTE.supportLight,
   PALETTE.white,
+  PALETTE.lilac,
+  PALETTE.cyan,
+  PALETTE.blue,
 ];
 
 /** Pares (texto, fundo) aprovados. */
@@ -36,6 +43,9 @@ export const APPROVED_PAIRS: Array<[string, string]> = [
   [PALETTE.purple3, PALETTE.white],
   [PALETTE.purple3, PALETTE.gold],
   [PALETTE.purple3, PALETTE.supportLight],
+  [PALETTE.white, PALETTE.blue], // 8,6:1
+  [PALETTE.purple3, PALETTE.cyan], // 8,0:1
+  [PALETTE.purple3, PALETTE.lilac], // 5,0:1
 ];
 
 export const CANVAS_W = 1080;

@@ -81,31 +81,25 @@ test('e-mail do município: validação simples', () => {
   assert.ok(!isEmail('sem arroba.com'));
 });
 
-test('logomarca oficial: versão pelo contraste (painel branco → roxa; cabeçalho verde do mockup → roxa) e checagem ≥ 4,5:1', () => {
+test('logomarca oficial: versão pelo contraste (painel branco → roxa) e checagem ≥ 4,5:1', () => {
   const r = buildLayout('flyer-a4', input({ assets: { ...assets, gove: { official: true } }, municipio: { ...municipio, endereco: 'Rua A, 1', email: 'a@b.gov.br' } }), measure);
   const logos = [];
   const walk = (els) => els.forEach((e) => (e.type === 'logo' && e.which === 'gove' ? logos.push(e) : e.type === 'group' && walk(e.children)));
   r.blocks.forEach((b) => walk(b.elements));
-  assert.equal(logos.length, 2);
+  assert.equal(logos.length, 1); // a tela gerada do celular (com a segunda logo) foi removida
   assert.ok(logos.every((e) => e.official && e.variant === 'roxo' && e.logoContrast >= 4.5));
   assert.equal(logoContrastCheck(r).level, 'ok');
   assert.deepEqual(r.checks.filter((c) => c.level === 'error'), []);
 });
 
-test('tela gerada do mockup: rodapé omite linhas vazias; captura própria sem imagem avisa', () => {
-  const texts = (r) => {
-    const out = [];
-    const walk = (els) => els.forEach((e) => (e.type === 'text' ? out.push(...e.lines.map((l) => l.text)) : e.type === 'group' && walk(e.children)));
-    r.blocks.forEach((b) => walk(b.elements));
-    return out.join(' | ');
-  };
-  const com = buildLayout('flyer-a4', input({ municipio: { ...municipio, endereco: 'Avenida Central, 10', email: 'contato@x.gov.br' } }), measure);
-  assert.match(texts(com), /contato@x\.gov\.br/);
-  assert.match(texts(com), /Avenida Central/);
-  const sem = buildLayout('flyer-a4', input(), measure);
-  assert.doesNotMatch(texts(sem), /@/);
-  const up = buildLayout('flyer-a4', input({ mockup: { mode: 'upload' } }), measure);
-  assert.ok(up.checks.some((c) => c.code === 'mockup'));
+test('celular só com captura enviada: sem imagem, a tela sai vazia e a verificação avisa', () => {
+  const r = buildLayout('flyer-a4', input(), measure);
+  const groups = [];
+  const walk = (els) => els.forEach((e) => e.type === 'group' && (groups.push(e), walk(e.children)));
+  r.blocks.forEach((b) => walk(b.elements));
+  assert.ok(groups.some((g) => g.mockupMode === 'upload'));
+  assert.ok(!groups.some((g) => g.mockupMode === 'generated'));
+  assert.ok(r.checks.some((c) => c.code === 'mockup'));
 });
 
 test('banco: migração segura acrescenta endereço e e-mail a uma base antiga', async () => {

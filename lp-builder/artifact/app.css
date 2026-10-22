@@ -30,19 +30,19 @@
 /* ---------- escuro ---------- */
 :root.dark {
   --gove-primary: #a278da;
-  --background: #1a1030;
+  --background: #20133d;
   --foreground: #f4f4f4;
-  --card: #20133d;
+  --card: #351f65;
   --card-foreground: #f4f4f4;
-  --popover: #20133d;
+  --popover: #351f65;
   --popover-foreground: #f4f4f4;
   /* Lilás nos estados selecionados; o amarelo fica só na ação principal (variant "cta"). */
   --primary: #a278da; /* texto #20133D 5:1; como texto sobre #20133D 5:1 */
   --primary-foreground: #20133d;
-  --secondary: #160c2b;
+  --secondary: #351f65;
   --secondary-foreground: #f4f4f4;
   --muted: #351f65;
-  --muted-foreground: #c8bedd; /* 9:1 no card, 7:1 no muted */
+  --muted-foreground: #f4f4f4; /* 11:1 no card e no muted */
   --accent: #351f65;
   --accent-foreground: #f4f4f4;
   --destructive: #ff8a80;

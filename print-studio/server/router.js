@@ -47,7 +47,7 @@ function pieceContext(db, item, layoutId) {
   const fixos = getLogosFixos(db);
   const opts = item.options ?? {};
   const img = opts.mockup?.imageId ? getImagem(db, opts.mockup.imageId) : null;
-  const mode = opts.mockup?.mode ?? (img ? 'upload' : 'generated');
+  const mode = 'upload'; // só captura enviada (tela gerada removida)
   const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
   // Identidade BB: logomarca do Banco do Brasil obrigatória
   const includeBB = identity === 'bb' || (opts.includeBB ?? municipio.incluir_logo_banco_do_brasil);

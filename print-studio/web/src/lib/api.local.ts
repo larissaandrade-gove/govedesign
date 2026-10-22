@@ -120,7 +120,7 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
           texts: opts.texts?.[layoutId] ?? {},
           overrides: opts.overrides?.[layoutId] ?? {},
           mockup: {
-            mode: opts.mockup?.mode ?? (opts.mockup?.imageId ? 'upload' : 'generated'),
+            mode: 'upload', // só captura enviada (tela gerada removida)
             ...(mockDims && opts.mockup ? { imageId: opts.mockup.imageId, ...mockDims, focus: opts.mockup.focus } : {}),
           },
           assets: {

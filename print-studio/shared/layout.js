@@ -10,7 +10,7 @@
 // scratch/itupeva/*.pdf): fundo verde em degradê com marca d'água do WhatsApp,
 // título branco misturando Bold e Regular, ícones de serviço em círculos, painel
 // branco com canto arredondado, faixa verde com o número, QR e logos à direita,
-// celular inclinado com a tela gerada para o município.
+// celular inclinado com a captura de tela enviada.
 import { LOGOS, LOGO_MIN_CONTRAST, kindForBox, pickLogo } from '../../brand/logos.js';
 import { BB_LOGO_RULES, BB_NAMES, BB_PALETTE, BB_PRETO, BB_SCHEMES, BB_TEXT_ON, MIN_TEXT, contrast as bbContrast, graphicColors, norm as bbNorm, textOn, textOnSamples } from '../../brand/bb.js';
 import { SERVICE_ICONS, UI_ICONS, WHATSAPP_GLYPH, WHATSAPP_OUTLINE } from './icons.js';
@@ -98,22 +98,6 @@ export const TEXT_LABELS = {
   h3: 'Apoio ao lado do QR (H3)',
   h4a: 'Instrução do QR (H4)',
   h4b: 'Chamada após o número (H4)',
-};
-
-/** Textos fixos da tela gerada do celular (o restante vem do cadastro do município). */
-export const MOCKUP_TEXTS = {
-  h1: 'Serviços da Prefeitura agora também estão no Whatsapp',
-  h2: 'Acesse o menu de serviços de forma rápida e prática.',
-  card: "Salve o número e mande um 'Oi'",
-  h4: 'Ou aponte a câmera para o QR Code:',
-  button: 'Adicionar aos contatos',
-};
-const BB_MOCKUP_TEXTS = {
-  h1: 'Fale com a Prefeitura pelo WhatsApp',
-  h2: 'Escolha o serviço e resolva sem sair de casa.',
-  card: "Salve o número e mande um 'Oi'",
-  h4: 'Ou aponte a câmera para o QR code:',
-  button: 'Salvar nos contatos',
 };
 
 /** Serviços padrão (referências): Saúde, Finanças, Trânsito, Meio Ambiente. */
@@ -667,122 +651,8 @@ function qrPlate({ x, y, qrMm, data, id = 'qr', label = 'QR code', r = 0, th = n
   ], { opaque: true });
 }
 
-/** Tela gerada do celular (coordenadas locais da tela: 0..sw × 0..sh). */
-function generatedScreen({ sw, sh, input, measure, th = null }) {
-  const u = sw / 100;
-  const pt = (mm) => mmToPtSize(mm);
-  const m = input.municipio ?? {};
-  // GOVE: cores originais; BB: papéis da tela no tema (só paleta BB, pares aprovados)
-  const c = th
-    ? th.screen
-    : { bg: 'branco', header: 'whatsapp', headerHex: COLORS.whatsapp.hex, headerText: 'branco', chip: 'branco', title: 'grafite', body: 'cinzaTexto', circle: 'whatsapp', circleIcon: 'branco', card: 'verdeEscuro1', cardText: 'branco', line: 'cinzaClaro', link: 'azulLink', button: 'verdeEscuro2', buttonText: 'branco', foot: 'cinzaTexto', qr: 'preto' };
-  const MT = th ? BB_MOCKUP_TEXTS : MOCKUP_TEXTS;
-  const els = [{ type: 'rect', x: 0, y: 0, w: sw, h: sh, fill: c.bg }];
-  const T = (o) => textBlock({ measure, illustrative: true, th, ...o, ...(th && o.color ? { bg: [COLORS[o.bgKey ?? c.bg].hex] } : {}) });
-
-  // Cabeçalho verde com hora, logo da prefeitura (num selo branco) e logo da Gove
-  const headH = 26 * u;
-  els.push({ type: 'rect', x: 0, y: 0, w: sw, h: headH, fill: c.header });
-  els.push(T({ id: 'm-hora', role: 'mockup', text: '9:41', x: 7 * u, y: 2.6 * u, w: 20 * u, sizePt: pt(3.4 * u), weight: 'semibold', color: c.headerText, bgKey: c.header }));
-  const chipH = 12 * u;
-  const chipY = 10.5 * u;
-  els.push({ type: 'rect', x: 5 * u, y: chipY, w: 30 * u, h: chipH, fill: c.chip, r: 2.6 * u });
-  const pref = logoElement('prefeitura', input.assets?.prefeitura, { x: 6.5 * u, y: chipY + 1.3 * u, w: 27 * u, h: chipH - 2.6 * u }, COLORS.branco.hex);
-  els.push({ ...pref, illustrative: true });
-  const gove = input.assets?.gove;
-  if (gove && !gove.official) {
-    els.push({ type: 'rect', x: 65 * u, y: chipY, w: 30 * u, h: chipH, fill: c.chip, r: 2.6 * u });
-    els.push({ ...logoElement('gove', gove, { x: 66.5 * u, y: chipY + 1.3 * u, w: 27 * u, h: chipH - 2.6 * u }, COLORS.branco.hex), illustrative: true });
-  } else {
-    els.push({ ...logoElement('gove', gove, { x: 65 * u, y: chipY + 2.2 * u, w: 30 * u, h: chipH - 4.4 * u }, c.headerHex, 'right'), illustrative: true });
-  }
-
-  // Corpo
-  let y = headH + 7 * u;
-  const h1 = T({ id: 'm-h1', role: 'mockup', text: MT.h1, x: 7 * u, y, w: 86 * u, sizePt: pt(6.2 * u), weight: 'bold', align: 'center', leading: 1.12, color: c.title, family: 'title' });
-  els.push(h1);
-  y = textBottom(h1) + 3 * u;
-  const h2 = T({ id: 'm-h2', role: 'mockup', text: MT.h2, x: 10 * u, y, w: 80 * u, sizePt: pt(3.9 * u), weight: 'regular', align: 'center', leading: 1.25, color: c.body });
-  els.push(h2);
-  y = textBottom(h2) + 6 * u;
-
-  const chosen = (input.services?.length ? input.services : DEFAULT_SERVICES).slice(0, 4);
-  const icons = chosen.map((id) => SERVICE_ICONS.find((i) => i.id === id)).filter(Boolean);
-  const D = 15 * u;
-  const G = 6.5 * u;
-  let ix = (sw - (icons.length * D + (icons.length - 1) * G)) / 2;
-  for (const svc of icons) {
-    els.push({ type: 'circle', x: ix, y, w: D, h: D, fill: c.circle });
-    const ic = D * 0.56;
-    els.push({ type: 'icon', paths: svc.paths, x: ix + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: c.circleIcon, lineWidth: 2, opacity: 1 });
-    ix += D + G;
-  }
-  y += D + 7 * u;
-
-  // Card verde com o número
-  const cardH = 25 * u;
-  els.push({ type: 'rect', x: 6 * u, y, w: 88 * u, h: cardH, fill: c.card, r: 4 * u });
-  const gl = 13 * u;
-  els.push({ type: 'glyph', ...WHATSAPP_GLYPH, x: 11 * u, y: y + (cardH - gl) / 2, w: gl, h: gl, fill: c.cardText });
-  const num = T({ id: 'm-num', role: 'mockup', text: formatPhone(m.ddd, m.numero_whatsapp), x: 29 * u, y: y + 5 * u, w: 62 * u, sizePt: pt(6.8 * u), weight: 'bold', color: c.cardText, fit: 3, bgKey: c.card, family: 'title' });
-  els.push(num);
-  els.push(T({ id: 'm-card', role: 'mockup', text: MT.card, x: 29 * u, y: textBottom(num) + 1.4 * u, w: 62 * u, sizePt: pt(3.5 * u), weight: 'regular', color: c.cardText, fit: 2, bgKey: c.card }));
-  y += cardH + 6 * u;
-
-  const h4 = T({ id: 'm-h4', role: 'mockup', text: MT.h4, x: 6 * u, y, w: 88 * u, sizePt: pt(4 * u), weight: 'semibold', align: 'center', color: c.title, fit: 2 });
-  els.push(h4);
-  y = textBottom(h4) + 3.5 * u;
-
-  // Rodapé ancorado embaixo: botão, e acima endereço e e-mail (linhas vazias somem)
-  const btnH = 11.5 * u;
-  const btnY = sh - 8 * u - btnH;
-  const foot = [];
-  let fy = btnY - 5 * u;
-  const lines = [
-    m.email ? { icon: UI_ICONS.mail, text: String(m.email).trim() } : null,
-    m.endereco ? { icon: UI_ICONS.pin, text: String(m.endereco).trim() } : null,
-  ].filter(Boolean);
-  for (const ln of lines) {
-    const t = T({ id: 'm-foot', role: 'mockup', text: ln.text, x: 14 * u, y: 0, w: 80 * u, sizePt: pt(3.1 * u), weight: 'regular', color: c.body, leading: 1.3 });
-    fy -= t.h;
-    const dy = fy;
-    t.y += dy;
-    t.lines.forEach((l) => (l.baseline += dy));
-    const icS = 3.6 * u;
-    foot.push({ type: 'icon', paths: ln.icon, x: 8.5 * u, y: dy + 0.2 * u, w: icS, h: icS, stroke: c.body, lineWidth: 2, opacity: 1 }, t);
-    fy -= 2.2 * u;
-  }
-  const footTop = lines.length ? fy - 1.5 * u : btnY - 4 * u;
-  if (lines.length) foot.push({ type: 'rect', x: 6 * u, y: footTop, w: 88 * u, h: Math.max(0.12, 0.25 * u), fill: c.line });
-
-  // Card do QR (ilustrativo) com a URL em azul
-  const url = whatsappLink(m.ddd, m.numero_whatsapp).replace(/^https:\/\//, '');
-  const urlPt = pt(3 * u);
-  const urlH = ptToMm(urlPt) * (th ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM);
-  const pad = 5 * u;
-  const q = Math.max(16 * u, Math.min(40 * u, footTop - 4 * u - y - 2 * pad - 2.5 * u - urlH));
-  const cw = Math.max(q + 2 * pad, 56 * u);
-  const cx = (sw - cw) / 2;
-  const ch = pad + q + 2.5 * u + urlH + pad * 0.8;
-  els.push({ type: 'rect', x: cx, y, w: cw, h: ch, fill: c.bg, stroke: c.line, lineWidth: 0.35 * u, r: 3 * u });
-  els.push({ type: 'rect', x: (sw - q) / 2 - 1.5 * u, y: y + pad - 1.5 * u, w: q + 3 * u, h: q + 3 * u, fill: 'branco' }); // QR sempre sobre branco
-  els.push({ type: 'qr', x: (sw - q) / 2, y: y + pad, w: q, h: q, data: whatsappLink(m.ddd, m.numero_whatsapp), color: 'qrPreto', illustrative: true });
-  els.push(T({ id: 'm-url', role: 'mockup', text: url, x: cx + 2 * u, y: y + pad + q + 2.5 * u, w: cw - 4 * u, sizePt: urlPt, weight: 'regular', align: 'center', color: c.link, fit: 1.5 }));
-
-  els.push(...foot);
-  els.push({ type: 'rect', x: 6 * u, y: btnY, w: 88 * u, h: btnH, fill: c.button, r: btnH / 2 });
-  const bPt = pt(4.2 * u);
-  const label = MT.button;
-  const lw = measure(label, th ? BB_FONT_OF.text.semibold : 'semibold', bPt);
-  const icS = 4.6 * u;
-  const bx = (sw - (icS + 2 * u + lw)) / 2;
-  els.push({ type: 'icon', paths: UI_ICONS.userPlus, x: bx, y: btnY + (btnH - icS) / 2, w: icS, h: icS, stroke: c.buttonText, lineWidth: 2, opacity: 1 });
-  els.push(T({ id: 'm-btn', role: 'mockup', text: label, x: bx + icS + 2 * u, y: btnY + (btnH - ptToMm(bPt) * (th ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM)) / 2, w: lw + 1, sizePt: bPt, weight: 'semibold', color: c.buttonText, bgKey: c.button }));
-  return els;
-}
-
 /**
- * Celular (moldura realista) com a tela gerada ou a captura enviada, inclinado.
+ * Celular (moldura realista) com a captura enviada, inclinado.
  * (ox, oy) = canto superior esquerdo do aparelho antes da rotação; W = largura.
  */
 function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = null }) {
@@ -798,7 +668,6 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = nul
   const sw = W - 2 * bezel;
   const sh = H - 2 * bezel;
   const rScreen = rOuter - bezel;
-  const upload = input.mockup?.mode === 'upload' || (input.mockup?.imageId && input.mockup?.mode !== 'generated');
   const children = [
     // botões laterais (contorno sutil, sem sombra — CMYK sólido)
     { type: 'rect', x: -W * 0.012, y: H * 0.2, w: W * 0.02, h: H * 0.06, fill: aro, r: W * 0.006 },
@@ -807,7 +676,8 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = nul
     { type: 'rect', x: 0, y: 0, w: W, h: H, fill: aro, r: rOuter },
     { type: 'rect', x: rim, y: rim, w: W - 2 * rim, h: H - 2 * rim, fill: corpo, r: rOuter - rim },
   ];
-  if (upload) {
+  {
+    // Tela do celular: sempre a captura enviada (sem imagem, sai vazia e a verificação avisa)
     const m = input.mockup;
     children.push({
       type: 'mockup-screen',
@@ -821,8 +691,6 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = nul
       dpi: m?.width ? Math.min(m.width, (m.height * sw) / sh) / (sw / 25.4) : null,
       fill: th ? th.phone.empty : 'cinzaTela',
     });
-  } else {
-    children.push({ type: 'group', x: bezel, y: bezel, rotate: 0, clip: { w: sw, h: sh, r: rScreen }, children: generatedScreen({ sw, sh, input, measure, th }), w: sw, h: sh });
   }
   // ilha dinâmica
   children.push({ type: 'rect', x: (W - sw * 0.3) / 2, y: bezel + sw * 0.03, w: sw * 0.3, h: sw * 0.085, fill: corpo, r: sw * 0.0425 });
@@ -833,7 +701,7 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = nul
   const xs = shape.map((p) => p[0]);
   const ys = shape.map((p) => p[1]);
   const bbox = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
-  const group = { type: 'group', x: ox, y: oy, rotate: angle, children, w: W, h: H, mockupMode: upload ? 'upload' : 'generated' };
+  const group = { type: 'group', x: ox, y: oy, rotate: angle, children, w: W, h: H, mockupMode: 'upload' };
   return block('mockup', 'Mockup do celular', [group], { opaque: true, bleedOk: true, shape, bbox });
 }
 
@@ -1025,7 +893,7 @@ function placeWatermark(spec, blocks) {
 /**
  * @param {string} layoutId
  * @param {object} input  { municipio, includeBB, services:[ids], texts:{}, overrides:{blockId:{dx,dy}},
- *   mockup:{ mode:'generated'|'upload', imageId, width, height, focus },
+ *   mockup:{ mode:'upload', imageId, width, height, focus },
  *   assets:{ gove:{official:true}|{width,height}|null, prefeitura, bb } }
  * @param {(text:string, weight:string, sizePt:number) => number} measure  largura em mm
  */
@@ -1395,7 +1263,7 @@ export function checkLayout(r, input) {
       }
       if (e.type === 'group' && e.mockupMode === 'upload') {
         const scr = e.children.find((c) => c.type === 'mockup-screen');
-        if (!scr?.imageId) add('warn', 'mockup', 'Captura própria selecionada, mas nenhuma imagem enviada: a tela do celular sai vazia.', b.id);
+        if (!scr?.imageId) add('warn', 'mockup', 'Envie a captura da tela do celular: sem ela, a tela sai vazia.', b.id);
         else if (scr.dpi != null && scr.dpi < IMAGE_MIN_DPI) add('warn', 'mockup-dpi', `Imagem do mockup com ${Math.round(scr.dpi)} dpi no tamanho de impressão — mínimo ${IMAGE_MIN_DPI}.`, b.id);
       }
     }

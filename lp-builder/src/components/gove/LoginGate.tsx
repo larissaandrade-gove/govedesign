@@ -27,7 +27,7 @@ export function LoginGate({ children }: { children: ReactNode }) {
             className="mx-auto flex size-11 items-center justify-center rounded-full"
             style={{ backgroundColor: "var(--gove-accent)" }}
           >
-            <Lock className="size-5" color="#1e1145" aria-hidden />
+            <Lock className="size-5" color="#20133D" aria-hidden />
           </span>
           <p
             className="mt-4 text-xs font-bold tracking-[0.2em]"
@@ -74,7 +74,7 @@ export function LoginGate({ children }: { children: ReactNode }) {
           </div>
 
           {erro ? (
-            <p role="alert" className="text-sm font-semibold" style={{ color: "#ffb4b4" }}>
+            <p role="alert" className="text-sm font-semibold" style={{ color: "#FFC72C" }}>
               {erro}
             </p>
           ) : null}
@@ -82,7 +82,7 @@ export function LoginGate({ children }: { children: ReactNode }) {
           <Button
             type="submit"
             className="w-full rounded-full font-bold tracking-wide uppercase"
-            style={{ backgroundColor: "var(--gove-accent)", color: "#1e1145" }}
+            style={{ backgroundColor: "var(--gove-accent)", color: "#20133D" }}
           >
             Entrar
           </Button>

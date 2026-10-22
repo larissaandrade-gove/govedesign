@@ -13,7 +13,7 @@ export function normalizeBox(box: BoxProps): BoxProps {
     overlayColor: box.overlayColor ?? "#20133D",
     gradientFrom: box.gradientFrom ?? "#20133D",
     gradientVia: box.gradientVia ?? "#3D0099",
-    gradientTo: box.gradientTo ?? "#9741FC",
+    gradientTo: box.gradientTo ?? "#A278DA",
     gradientAngle: box.gradientAngle ?? 135,
     borderColor: box.borderColor,
     borderWidth: box.borderWidth,

@@ -917,17 +917,17 @@ function Studio() {
             </div>
             <div
               role="radiogroup"
-              aria-label="Roxo do card/painel"
+              aria-label="Cor do card/painel"
               className={`flex gap-2 ${isBB ? "hidden" : ""}`}
             >
-              {[PALETTE.purple1, PALETTE.purple2, PALETTE.purple3].map((c) => (
+              {([[PALETTE.purple1, "Roxo Gove"], [PALETTE.purple2, "Roxo Profundo"], [PALETTE.purple3, "Roxo Noite"], [PALETTE.blue, "Azul"]] as const).map(([c, nome]) => (
                 <button
                   key={c}
                   type="button"
                   role="radio"
                   aria-checked={cardColor === c}
-                  aria-label={`Card ${c}`}
-                  title={`Roxo do card ${c}`}
+                  aria-label={`Card ${nome}`}
+                  title={`Card ${nome}`}
                   onClick={() => setCardColor(c)}
                   className={`h-11 flex-1 rounded-lg border-2 ${cardColor === c ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
                   style={{ background: c }}

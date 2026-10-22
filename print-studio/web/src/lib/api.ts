@@ -37,7 +37,7 @@ export type PieceOptions = {
   services: string[];
   texts: Record<string, Record<string, string>>;
   overrides: Record<string, Record<string, { dx: number; dy: number }>>;
-  mockup: { mode?: 'generated' | 'upload'; imageId?: string; focus?: { x: number; y: number } } | null;
+  mockup: { mode?: 'upload'; imageId?: string; focus?: { x: number; y: number } } | null;
 };
 export type QueueItem = { key: string; municipioId: number; municipioNome: string; layouts: string[]; options: PieceOptions };
 
