@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VectorCraft · Gove</title>
+<style>
+  :root { --roxo: #3D0099; --roxo-2: #2A006B; --amarelo: #FFC72C; --texto: #FFFFFF; --muted: #CFC2EA; --ok: #5AC2CD; --erro: #FFB4B4; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #262626; font-family: Montserrat, system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; overscroll-behavior: none; }
+  .gv-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; background: var(--roxo); color: var(--texto); }
+  .gv-brand { display: flex; flex-direction: column; margin-right: 8px; line-height: 1.15; }
+  .gv-brand b { font-size: 15px; font-weight: 800; }
+  .gv-brand span { font-size: 12px; color: var(--muted); max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gv-group { display: flex; gap: 6px; align-items: center; padding-left: 8px; border-left: 1px solid rgba(255,255,255,.2); }
+  .gv-bar button { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--texto); font: 600 13px Montserrat, system-ui, sans-serif; cursor: pointer; }
+  .gv-bar button:hover { background: rgba(255,255,255,.12); }
+  .gv-bar button:focus-visible { outline: 2px solid var(--amarelo); outline-offset: 2px; }
+  .gv-bar button.gv-primary { background: var(--amarelo); border-color: var(--amarelo); color: var(--roxo-2); }
+  .gv-bar button.gv-primary:hover { filter: brightness(1.05); }
+  #gv-stage { position: relative; flex: 1; min-height: 0; }
+  #vectorcraft_canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #vectorcraft_loading { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; color: #d8d8d8; font: 14px Montserrat, system-ui, sans-serif; pointer-events: none; text-align: center; padding: 16px; }
+  #gv-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: min(560px, calc(100% - 32px)); padding: 10px 16px; border-radius: 10px; background: var(--roxo-2); color: var(--texto); font: 500 13px Montserrat, system-ui, sans-serif; box-shadow: 0 6px 24px rgba(0,0,0,.35); z-index: 10; }
+  #gv-toast[data-kind="error"] { border-left: 4px solid var(--erro); }
+  #gv-report { position: fixed; right: 16px; top: 64px; width: min(420px, calc(100% - 32px)); max-height: 60vh; overflow: auto; background: #fff; color: #20133D; border-radius: 12px; box-shadow: 0 10px 32px rgba(0,0,0,.35); padding: 16px; z-index: 9; font: 13px Montserrat, system-ui, sans-serif; }
+  #gv-report h2 { margin: 0 0 8px; font-size: 15px; color: var(--roxo); }
+  #gv-report ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  #gv-report li[data-level="error"]::marker { content: "✕  "; color: #B3261E; }
+  #gv-report li[data-level="warn"]::marker { content: "!  "; color: #9A6B00; font-weight: 800; }
+  #gv-report li[data-level="ok"]::marker { content: "✓  "; color: #1B6B29; }
+  #gv-report-close { float: right; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--roxo); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="gv-bar">
+  <div class="gv-brand"><b>VectorCraft</b><span id="gv-doc">Refino de impressos</span></div>
+  <button id="gv-open" type="button" title="PDF, SVG, AI, EPS ou documento VectorCraft">Abrir peça</button>
+  <input id="gv-file" type="file" accept=".pdf,.svg,.ai,.eps,.vectorcraft,.afdesign,.dxf,.emf,.wmf,.psd,.png,.jpg,.jpeg" hidden>
+  <div class="gv-group" role="group" aria-label="Amostras CMYK">
+    <button id="gv-gove" type="button" title="Amostras CMYK da GOVE (as mesmas do Print Studio)">Amostras GOVE</button>
+    <button id="gv-bb" type="button" title="Amostras CMYK/Pantone do Banco do Brasil">Amostras BB</button>
+  </div>
+  <div class="gv-group" role="group" aria-label="Fechamento de arquivo">
+    <button id="gv-cmyk" type="button">Converter para CMYK</button>
+    <button id="gv-check" type="button">Checar impressão</button>
+    <button id="gv-export" type="button" class="gv-primary" title="Vetores e texto preservados, cores em CMYK, sangria e marcas de corte">Exportar PDF/X-4</button>
+    <button id="gv-export-x1a" type="button" title="Para gráficas que exigem PDF 1.3: a transparência é achatada e partes da peça podem virar imagem">PDF/X-1a</button>
+  </div>
+</header>
+<main id="gv-stage">
+  <canvas id="vectorcraft_canvas"></canvas>
+  <div id="vectorcraft_loading">Carregando o VectorCraft…</div>
+</main>
+<div id="gv-toast" role="status" hidden></div>
+<section id="gv-report" aria-labelledby="gv-report-title" hidden>
+  <button id="gv-report-close" type="button" aria-label="Fechar">×</button>
+  <h2 id="gv-report-title"></h2>
+  <ul id="gv-report-list"></ul>
+</section>
+<script type="module">
+/*__GOVE_MAIN__*/
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+--- a/crates/doc/Cargo.toml
++++ b/crates/doc/Cargo.toml
+@@ -22,6 +22,10 @@
+ thiserror = { workspace = true }
+ chrono = { workspace = true }
+ 
++# The browser's clock (Date.now) for the web build: PDF/X files need a creation date.
++[target.'cfg(target_arch = "wasm32")'.dependencies]
++js-sys = "0.3"
++
+ [dev-dependencies]
+ jpeg-encoder = { workspace = true }
+ proptest = { workspace = true }
+--- a/crates/doc/src/metadata.rs
++++ b/crates/doc/src/metadata.rs
+@@ -116,7 +116,8 @@
+ }
+ #[cfg(target_arch = "wasm32")]
+ pub fn now_unix() -> Option<i64> {
+-    None
++    let ms = js_sys::Date::now();
++    (ms.is_finite() && ms >= 0.0).then(|| (ms / 1000.0) as i64)
+ }
+ 
+ /// Unix seconds (UTC) → `[year, month, day, hour, minute, second]` (proleptic Gregorian; years

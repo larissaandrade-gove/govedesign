@@ -1,0 +1,28 @@
+--- a/apps/vectorcraft-web/src/api.rs
++++ b/apps/vectorcraft-web/src/api.rs
+@@ -12,6 +12,7 @@
+ //! await vectorcraft.openFile("logo.svg", bytes)               // opened as a dropped file is
+ //! vectorcraft.captureDownloads(true)                           // saves stay in the page…
+ //! vectorcraft.files(); await vectorcraft.readFile("logo.png")  // …to be read back
++//! vectorcraft.addFont(bytes)                                   // a .ttf/.otf for the type to use
+ //! ```
+ //!
+ //! Results resolve with the method's `result`; errors reject with an `Error`.
+@@ -156,6 +157,17 @@
+         })
+         .into_js_value(),
+     )?;
++    // Fonts the page supplies (brand faces) join the font database as the web fonts do: type set in them redraws
++    set_fn(
++        &obj,
++        "addFont",
++        Closure::<dyn Fn(js_sys::Uint8Array) -> JsValue>::new(|bytes: js_sys::Uint8Array| {
++            let faces = vectorcraft_text::FontDb::global().add_font(bytes.to_vec());
++            repaint();
++            JsValue::from_f64(faces as f64)
++        })
++        .into_js_value(),
++    )?;
+     set_fn(&obj, "captureDownloads", Closure::<dyn Fn(bool)>::new(|on: bool| CAPTURE.with(|c| c.set(on))).into_js_value())?;
+     set_fn(
+         &obj,

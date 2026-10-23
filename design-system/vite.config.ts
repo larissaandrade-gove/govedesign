@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -18,7 +18,11 @@ function copyEmbedded(): Plugin {
     closeBundle() {
       const out = resolve(__dirname, 'dist/apps');
       mkdirSync(out, { recursive: true });
-      for (const id of embedded) copyFileSync(resolve(EMBED_DIR, `${id}.html`), resolve(out, `${id}.html`));
+      for (const id of embedded) {
+        copyFileSync(resolve(EMBED_DIR, `${id}.html`), resolve(out, `${id}.html`));
+        // Arquivos de apoio do app (ex.: o .wasm do VectorCraft) em src/embedded/<id>/
+        if (existsSync(resolve(EMBED_DIR, id))) cpSync(resolve(EMBED_DIR, id), resolve(out, id), { recursive: true });
+      }
     },
   };
 }

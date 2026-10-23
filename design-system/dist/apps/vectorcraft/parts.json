@@ -1,0 +1,8 @@
+{
+ "wasmBytes": 40821370,
+ "gzipBytes": 15976316,
+ "parts": [
+  "vectorcraft-web_bg.wasm.gz.00.bin",
+  "vectorcraft-web_bg.wasm.gz.01.bin"
+ ]
+}
