@@ -27,7 +27,7 @@ A mesma pasta guarda também os `.ttf` de Montserrat e BB, em `fonts/`.
 ## Arquivos
 
 - `web/index.html`, `web/main.js`, `web/boot.js` e `web/palettes.js`: a barra Gove e o carregador.
-- `scripts/build-web.mjs`: monta `design-system/src/embedded/vectorcraft.html` e a pasta `vectorcraft/`. A pasta guarda o `.js` do wasm-bindgen, as licenças e o `.wasm` em gzip, dividido em partes de 12 MB (`parts.json`), porque cada arquivo de apoio do artefato tem limite de 15 MB. O navegador junta e descompacta as partes. O build do Design System copia o HTML e a pasta para `dist/apps/`.
+- `scripts/build-web.mjs`: monta `design-system/src/embedded/vectorcraft.html` e a pasta `vectorcraft/`. A pasta guarda o `.js` do wasm-bindgen, as licenças e o `.wasm` em gzip, dividido em partes de 12 MB com extensão `.wasm` (`parts.json`), porque cada arquivo de apoio do artefato tem limite de 15 MB. O navegador junta e descompacta as partes. O build do Design System copia o HTML e a pasta para `dist/apps/`.
 - `patches/`: o script aplica estes patches no código do VectorCraft antes de compilar.
   - `web-clock.patch` dá à build web o relógio do navegador. Sem ele, o PDF/X fica sem data de criação e a exportação é recusada.
   - `web-add-font.patch` cria `vectorcraft.addFont(bytes)` para a página carregar as fontes da marca.

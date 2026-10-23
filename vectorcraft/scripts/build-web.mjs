@@ -67,7 +67,8 @@ if (srcIdx > 0) {
   const gz = gzipSync(raw, { level: 9 });
   const parts = [];
   for (let i = 0; i * PART_BYTES < gz.length; i++) {
-    const name = `${NAME}_bg.wasm.gz.${String(i).padStart(2, '0')}.bin`;
+    // Extensão .wasm: tipo servido pelo artefato (o conteúdo é gzip; o carregador lê os bytes)
+    const name = `${NAME}_bg.gz.part${String(i).padStart(2, '0')}.wasm`;
     writeFileSync(join(OUT_DIR, name), gz.subarray(i * PART_BYTES, (i + 1) * PART_BYTES));
     parts.push(name);
   }
