@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { api, type Municipio } from '@/lib/api';
-import { isEmail } from '../../../../shared/layout.js';
+import { isEmail, normalizeSite } from '../../../../shared/layout.js';
 
 type Props = {
   open: boolean;
@@ -25,6 +25,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
   const [bb, setBb] = useState(false);
   const [endereco, setEndereco] = useState('');
   const [email, setEmail] = useState('');
+  const [site, setSite] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -38,13 +39,15 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
     setBb(municipio?.incluir_logo_banco_do_brasil ?? false);
     setEndereco(municipio?.endereco ?? '');
     setEmail(municipio?.email ?? '');
+    setSite(municipio?.url_domicilio ?? '');
     setLogo(null);
     setError('');
   }, [open, municipio]);
 
   const numeroOk = digits(numero).length >= 8 && digits(numero).length <= 9;
   const emailOk = !email.trim() || isEmail(email);
-  const valid = nome.trim() && digits(ddd).length === 2 && numeroOk && emailOk && (municipio?.tem_logo || logo);
+  const siteOk = normalizeSite(site) !== null;
+  const valid = nome.trim() && digits(ddd).length === 2 && numeroOk && emailOk && siteOk && (municipio?.tem_logo || logo);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +61,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
     form.append('incluir_logo_banco_do_brasil', String(bb));
     form.append('endereco', endereco.trim());
     form.append('email', email.trim());
+    form.append('url_domicilio', site.trim());
     if (logo) form.append('logo', logo);
     try {
       const saved = await api.saveMunicipio(form, municipio?.id);
@@ -130,6 +134,25 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
               maxLength={120}
             />
             {!emailOk && <p id="mun-email-erro" className="text-xs text-destructive">E-mail inválido.</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="mun-site">Site do domicílio eletrônico <span className="font-normal text-muted-foreground">· opcional</span></Label>
+            <Input
+              id="mun-site"
+              inputMode="url"
+              autoComplete="url"
+              value={site}
+              onChange={(e) => setSite(e.target.value)}
+              placeholder="www.municipio.sp.gov.br"
+              aria-invalid={!siteOk}
+              aria-describedby={siteOk ? 'mun-site-ajuda' : 'mun-site-erro'}
+              maxLength={300}
+            />
+            {siteOk ? (
+              <p id="mun-site-ajuda" className="text-xs text-muted-foreground">QR code e faixa das peças do Portal Cidadão.</p>
+            ) : (
+              <p id="mun-site-erro" className="text-xs text-destructive">Endereço inválido. Ex.: www.municipio.sp.gov.br</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="mun-logo">Logo da prefeitura {municipio?.tem_logo && <span className="font-normal text-muted-foreground">· já cadastrado</span>}</Label>

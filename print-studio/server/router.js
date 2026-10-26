@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
-import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, onlyDigits, pdfFileName } from '../shared/layout.js';
+import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../shared/layout.js';
 import { FONT_FILES } from '../shared/tokens.js';
 import {
   deleteMunicipio, getImagem, getLogosFixos, getMunicipio, listMunicipios, openPrintDb,
@@ -36,8 +36,11 @@ function validateMunicipio(body) {
   const endereco = String(body.endereco ?? '').trim().slice(0, 200);
   const email = String(body.email ?? '').trim().slice(0, 120);
   if (email && !isEmail(email)) throw new InputError('E-mail inválido.');
+  // Site do domicílio eletrônico (opcional): QR e faixa das peças do Portal Cidadão
+  const site = normalizeSite(String(body.url_domicilio ?? '').slice(0, 300));
+  if (site === null) throw new InputError('Site do domicílio eletrônico inválido. Ex.: www.municipio.sp.gov.br');
   const bb = body.incluir_logo_banco_do_brasil;
-  return { nome_municipio: nome, uf, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: bb === true || bb === 'true' || bb === '1' || bb === 'on', endereco, email };
+  return { nome_municipio: nome, uf, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: bb === true || bb === 'true' || bb === '1' || bb === 'on', endereco, email, url_domicilio: site };
 }
 
 /** Monta a entrada do motor de layout e os arquivos de uma peça. */
@@ -56,6 +59,7 @@ function pieceContext(db, item, layoutId) {
     municipio,
     input: {
       municipio,
+      model: opts.model === 'portal' ? 'portal' : 'whatsapp',
       identity,
       bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
       includeBB,
@@ -190,7 +194,7 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
         const { report, layout } = await renderPiece(p.layoutId, p);
         const checks = [...layout.checks, ...report];
         results.push({
-          arquivo: pdfFileName(p.layoutId, p.municipio),
+          arquivo: pdfFileName(p.layoutId, p.municipio, new Date(), p.input.model),
           municipio: p.municipio.nome_municipio,
           layout: layout.layout.name,
           checks,
@@ -219,7 +223,7 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
       const used = new Set();
       for (const p of list) {
         const { buffer } = await renderPiece(p.layoutId, p);
-        let name = pdfFileName(p.layoutId, p.municipio);
+        let name = pdfFileName(p.layoutId, p.municipio, new Date(), p.input.model);
         for (let i = 2; used.has(name); i++) name = name.replace(/(_\d+)?\.pdf$/, `_${i}.pdf`);
         used.add(name);
         zip.append(buffer, { name });

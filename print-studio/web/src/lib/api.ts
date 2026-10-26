@@ -14,6 +14,8 @@ export type Municipio = {
   bb_esquema?: string;
   endereco?: string | null;
   email?: string | null;
+  /** Site do domicílio eletrônico (opcional): QR e faixa do modelo Portal Cidadão. */
+  url_domicilio?: string | null;
   logo_largura: number | null;
   logo_altura: number | null;
   logo_avisos: string[];
@@ -30,7 +32,10 @@ export type Imagem = { id: string; width: number; height: number };
 export type Check = { level: 'ok' | 'warn' | 'error'; code: string; message: string; layout?: string; blockId?: string | null };
 export type PreflightPeca = { arquivo: string; municipio: string; layout: string; checks: Check[]; ok: boolean };
 
+export type Model = 'whatsapp' | 'portal';
 export type PieceOptions = {
+  /** Modelo (pauta) das peças: WhatsApp (padrão) ou Portal Cidadão. */
+  model?: Model;
   identity?: 'gove' | 'bb';
   bbScheme?: string;
   includeBB: boolean;

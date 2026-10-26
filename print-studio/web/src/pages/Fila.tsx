@@ -136,6 +136,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                     </span>
                   ))}
                   <span>
+                    {q.options.model === 'portal' ? '· Portal Cidadão ' : ''}
                     {q.options.identity === 'bb' ? '· identidade Banco do Brasil ' : q.options.includeBB ? '· com Banco do Brasil ' : ''}· {q.options.services.length} ícone(s)
                   </span>
                 </div>
@@ -158,7 +159,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
           ))}
         </ul>
       )}
-      {queue.length > 0 && <p className="mt-3 font-mono text-xs text-muted-foreground">{'{layout}_{municipio}_{ddmmaaaa}.pdf'}</p>}
+      {queue.length > 0 && <p className="mt-3 font-mono text-xs text-muted-foreground">{'[portal-cidadao_]{layout}_{municipio}_{ddmmaaaa}.pdf'}</p>}
 
       <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">

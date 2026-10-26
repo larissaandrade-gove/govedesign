@@ -10,10 +10,13 @@ export const DEFAULT_TEXTS = layout.DEFAULT_TEXTS as Record<string, Record<strin
 export const TEXT_LABELS = layout.TEXT_LABELS as Record<string, string>;
 export const DEFAULT_SERVICES = layout.DEFAULT_SERVICES as string[];
 export const BB_DEFAULT_TEXTS = layout.BB_DEFAULT_TEXTS as Record<string, Record<string, string>>;
-export const { LAYOUTS, MAX_SERVICES_RECOMMENDED, formatPhone, gradientLine, pdfFileName, whatsappLink, IDENTITIES, BB_SCHEMES, bbBlockingChecks } = layout;
+export const PORTAL_DEFAULT_TEXTS = layout.PORTAL_DEFAULT_TEXTS as Record<string, Record<string, string>>;
+export const { LAYOUTS, MAX_SERVICES_RECOMMENDED, formatPhone, gradientLine, pdfFileName, whatsappLink, IDENTITIES, BB_SCHEMES, bbBlockingChecks, normalizeSite, siteLabel } = layout;
+export const MODELS = layout.MODELS as { id: Model; label: string; hint: string }[];
 export type Identity = 'gove' | 'bb';
-/** Textos padrão da identidade escolhida (BB: tom de voz BB). */
-export const defaultTextsFor = (identity: Identity) => (identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
+export type Model = 'whatsapp' | 'portal';
+/** Textos padrão do modelo e da identidade (BB no WhatsApp: tom de voz BB; Portal Cidadão: texto revisado). */
+export const defaultTextsFor = (identity: Identity, model: Model = 'whatsapp') => (model === 'portal' ? PORTAL_DEFAULT_TEXTS : identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
 /** Resultado do motor de layout (elementos em mm + checagens). */
 export const buildLayout = layout.buildLayout as (id: string, input: any, m: typeof measure) => any;
 export { SERVICE_ICONS, WHATSAPP_OUTLINE } from '../../../shared/icons.js';

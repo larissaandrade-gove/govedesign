@@ -16,6 +16,7 @@ import { BB_LOGO_RULES, BB_NAMES, BB_PALETTE, BB_PRETO, BB_SCHEMES, BB_TEXT_ON, 
 import { SERVICE_ICONS, UI_ICONS, WHATSAPP_GLYPH, WHATSAPP_OUTLINE } from './icons.js';
 import {
   BACKGROUND,
+  PORTAL_BACKGROUND,
   BB_ASCENT_EM,
   BB_COLOR_KEY,
   BB_FONT_OF,
@@ -82,6 +83,34 @@ export const BB_DEFAULT_TEXTS = {
   },
 };
 
+/**
+ * Modelo Portal Cidadão: mesma diagramação e mesmos campos de texto do kit WhatsApp,
+ * com a pauta do Portal Cidadão (textos revisados das referências). O QR e a faixa
+ * levam ao site do domicílio eletrônico do município, em vez do WhatsApp (wa.me).
+ */
+const PORTAL_FLYER_TEXTS = {
+  h1: '**Serviços da Prefeitura**\na um clique de você',
+  h4a: 'Aponte a câmera do seu celular para\no **QR code** abaixo ou **acesse o site**',
+  h4b: 'acesse os serviços\nda prefeitura de\n**qualquer lugar!**',
+};
+export const PORTAL_DEFAULT_TEXTS = {
+  'flyer-a4': { ...PORTAL_FLYER_TEXTS },
+  'flyer-10x15': { ...PORTAL_FLYER_TEXTS },
+  'adesivo-5x10': { h1: '**Sua prefeitura**\nmais digital\n**na palma**\nda sua mão' },
+  'display-a6': {
+    h1: 'Os serviços\nda Prefeitura',
+    h1b: 'na palma da\nsua mão',
+    h3: 'Escaneie o\n**QR CODE**\ne acesse\ntudo pelo\n**Portal**\n**Cidadão**',
+  },
+};
+
+/** Modelos (pauta) das peças: a identidade visual (GOVE ou BB) vale para os dois. */
+export const MODELS = [
+  { id: 'whatsapp', label: 'WhatsApp', hint: 'QR e faixa com o número do WhatsApp (wa.me)' },
+  { id: 'portal', label: 'Portal Cidadão', hint: 'QR e faixa com o site do domicílio eletrônico' },
+];
+export const isPortalInput = (input) => input?.model === 'portal';
+
 /** Identidades visuais das peças. GOVE é o padrão. */
 export const IDENTITIES = [
   { id: 'gove', label: 'GOVE' },
@@ -89,15 +118,15 @@ export const IDENTITIES = [
 ];
 export { BB_SCHEMES };
 export const isBBInput = (input) => input?.identity === 'bb';
-/** Textos padrão da identidade escolhida. */
-export const defaultTextsFor = (identity) => (identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
+/** Textos padrão do modelo e da identidade (o Portal Cidadão usa o texto revisado nas duas). */
+export const defaultTextsFor = (identity, model = 'whatsapp') => (model === 'portal' ? PORTAL_DEFAULT_TEXTS : identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
 
 export const TEXT_LABELS = {
   h1: 'Título principal (H1)',
   h1b: 'Título — continuação em branco (H1)',
   h3: 'Apoio ao lado do QR (H3)',
   h4a: 'Instrução do QR (H4)',
-  h4b: 'Chamada após o número (H4)',
+  h4b: 'Chamada após a faixa do número/site (H4)',
 };
 
 /** Serviços padrão (referências): Saúde, Finanças, Trânsito, Meio Ambiente. */
@@ -118,6 +147,32 @@ export function formatPhone(ddd, numero) {
 
 export const whatsappLink = (ddd, numero) => `https://wa.me/55${onlyDigits(ddd)}${onlyDigits(numero)}`;
 
+/**
+ * Site do domicílio eletrônico (cadastro do município, opcional): aceita com ou sem
+ * "https://". Devolve a URL completa, '' se vazio, ou null se inválido.
+ */
+export function normalizeSite(raw) {
+  let v = String(raw ?? '').trim();
+  if (!v) return '';
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  try {
+    const u = new URL(v);
+    if (!/^https?:$/.test(u.protocol) || !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(u.hostname) || /\s/.test(v)) return null;
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
+/** Endereço como aparece impresso na faixa: sem "https://" e sem a barra final. */
+export const siteLabel = (url) => String(url ?? '').replace(/^https?:\/\//i, '').replace(/\/$/, '');
+
+/** Destino do QR da peça: WhatsApp (wa.me) ou o site do domicílio eletrônico. */
+function qrTarget(input) {
+  if (!isPortalInput(input)) return whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp);
+  return normalizeSite(input.municipio?.url_domicilio) || 'https://www.';
+}
+
 export function slugify(s) {
   return String(s ?? '')
     .normalize('NFD')
@@ -127,11 +182,11 @@ export function slugify(s) {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Nome do arquivo: {slug-layout}_{slug-municipio}_{ddmmaaaa}.pdf */
-export function pdfFileName(layoutId, municipio, date = new Date()) {
+/** Nome do arquivo: [portal-cidadao_]{slug-layout}_{slug-municipio}_{ddmmaaaa}.pdf */
+export function pdfFileName(layoutId, municipio, date = new Date(), model = 'whatsapp') {
   const d = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
   const mun = slugify([municipio.nome_municipio, municipio.uf].filter(Boolean).join(' '));
-  return `${getLayout(layoutId).slug}_${mun}_${d}.pdf`;
+  return `${model === 'portal' ? 'portal-cidadao_' : ''}${getLayout(layoutId).slug}_${mun}_${d}.pdf`;
 }
 
 /** Validação simples de e-mail (cadastro do município). */
@@ -709,7 +764,8 @@ function phoneMockup({ ox, oy, W, angle, input, measure, minBottom = 0, th = nul
 
 /** Flyers A4 e 10x15: medidas do A4 de referência × s (geometria) e × ts (tipos). */
 function flyer(layout, input, measure, s, ts, nts, theme = null) {
-  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
+  const portal = isPortalInput(input);
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove', input.model)[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const minX = SAFE_MM + 0.5;
@@ -738,33 +794,49 @@ function flyer(layout, input, measure, s, ts, nts, theme = null) {
   const onPanel = theme ? { color: theme.panelText, bg: [theme.panelHex], th: theme } : { color: 'preto', bg: [COLORS.branco.hex] };
   const h4a = textBlock({ id: 'h4a', role: 'h4', text: T.h4a, x: panelX + 10 * s, y: panelTop + 5.1 * s, w: R2 - panelX - 10 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure });
 
-  // Faixa verde com o número (arredondada à esquerda, vai até a sangria)
+  // Faixa com o número (WhatsApp, verde) ou com o site (Portal Cidadão, índigo):
+  // arredondada à esquerda, vai até a sangria
   const barY = textBottom(h4a) + 4 * s;
-  const numPt = 39 * nts;
-  const phone = formatPhone(input.municipio?.ddd, input.municipio?.numero_whatsapp);
   const lineEm = theme ? BB_LINE_HEIGHT_EM : LINE_HEIGHT_EM;
-  const barH = Math.max(21.6 * s, ptToMm(numPt) * lineEm + 4 * s);
-  const numW = measure(phone, theme ? BB_FONT_OF.title.bold : 'bold', numPt);
-  const barX = Math.min(82 * s, R2 - numW - barH * 0.7);
-  const onBar = theme ? { color: theme.barText, bg: [theme.barHex], th: theme, family: 'title' } : { color: 'branco', bg: [COLORS.folhaFaixa.hex] };
-  const num = textBlock({ id: 'numero', role: 'number', text: phone, x: barX, y: barY + (barH - ptToMm(numPt) * lineEm) / 2, w: R2 - barX, sizePt: numPt, weight: 'bold', align: 'right', ...onBar, measure });
-  const numero = block('numero', 'Faixa do número', [
-    { type: 'rect', x: barX, y: barY, w: tw + BLEED_MM - barX, h: barH, fill: theme ? theme.bar : 'folhaFaixa', radii: [barH / 2, 0, 0, barH / 2] },
+  const barWeight = theme ? BB_FONT_OF.title.bold : 'bold';
+  const barLabel = portal ? siteLabel(normalizeSite(input.municipio?.url_domicilio)) || 'www.' : formatPhone(input.municipio?.ddd, input.municipio?.numero_whatsapp);
+  let numPt = 39 * nts;
+  if (portal) {
+    // Endereços longos: o corpo diminui até caber entre o painel e a margem (piso legível)
+    const maxW = R2 - (panelX + 8 * s) - 21.6 * s * 0.7;
+    const w0 = measure(barLabel, barWeight, numPt);
+    if (w0 > maxW) numPt = Math.max(TYPE.h4.min * nts * 1.6, (numPt * maxW) / w0);
+  }
+  const barH = Math.max(21.6 * s, ptToMm(39 * nts) * lineEm + 4 * s);
+  const numW = measure(barLabel, barWeight, numPt);
+  const barX = Math.max(panelX + 4 * s, Math.min(82 * s, R2 - numW - barH * 0.7));
+  const barFill = theme ? theme.bar : portal ? 'portalFaixa' : 'folhaFaixa';
+  const onBar = theme ? { color: theme.barText, bg: [theme.barHex], th: theme, family: 'title' } : { color: 'branco', bg: [COLORS[barFill].hex] };
+  const num = textBlock({ id: 'numero', role: 'number', text: barLabel, x: barX, y: barY + (barH - ptToMm(numPt) * lineEm) / 2, w: R2 - barX, sizePt: numPt, weight: 'bold', align: 'right', ...onBar, measure });
+  const numero = block('numero', portal ? 'Faixa do site' : 'Faixa do número', [
+    { type: 'rect', x: barX, y: barY, w: tw + BLEED_MM - barX, h: barH, fill: barFill, radii: [barH / 2, 0, 0, barH / 2] },
     num,
   ], { movable: false, opaque: true, bleedOk: true });
 
-  const h4b = textBlock({ id: 'h4b', role: 'h4', text: T.h4b, x: R2 - 88 * s, y: barY + barH + 6.2 * s, w: 88 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure });
-
   // QR e logos à direita, até o limite inferior
-  const qrTop = textBottom(h4b) + 4.2 * s;
   const bottom = th - 16.8 * s;
   const logoH = { prefeitura: 24 * s, gove: 14 * s, bb: 14 * s };
   // BB: a logomarca BB entra sempre, abaixo dos parceiros, no tamanho mínimo de impressão
   const bbCol = theme ? { assets: input.assets, heights: logoH, gap: 4 * s, w: 58 * s, maxW: Math.min(R2 - minX, 42) } : null;
   const logosNeed = theme ? logosColumnBBNeed(bbCol) : logoH.prefeitura + logoH.gove + (input.includeBB ? logoH.bb + 4 * s : 0) + 4 * s;
+
+  const h4bOpts = { id: 'h4b', role: 'h4', text: T.h4b, x: R2 - 88 * s, y: barY + barH + 6.2 * s, w: 88 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure };
+  let h4b = textBlock(h4bOpts);
+  // Sem altura para o QR mínimo + logos (ex.: chamada de 3 linhas no 10x15 BB): o H4b diminui (piso legível)
+  const spare = th - SAFE_MM - 0.5 - (textBottom(h4b) + 4.2 * s + QR_MIN_MM + 2 * QR_QUIET_MM + 3.6 * s + logosNeed);
+  if (spare < 0 && h4b.h > 0) {
+    const size = Math.max(TYPE.h4.min, (h4b.size * (h4b.h + spare)) / h4b.h);
+    h4b = textBlock({ ...h4bOpts, sizePt: size, fit: Math.min(size, TYPE.h4.min) });
+  }
+  const qrTop = textBottom(h4b) + 4.2 * s;
   const qrMm = Math.max(QR_MIN_MM, Math.min(47.4 * s, bottom - qrTop - 2 * QR_QUIET_MM - 3.6 * s - logosNeed));
   const plate = qrMm + 2 * QR_QUIET_MM;
-  const qr = qrPlate({ x: R2 - plate, y: qrTop, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme });
+  const qr = qrPlate({ x: R2 - plate, y: qrTop, qrMm, data: qrTarget(input), th: theme });
   const logosTop = qrTop + plate + 3.6 * s;
   const logos = theme
     ? logosColumnBB({ ...bbCol, x: R2 - 58 * s, y: logosTop, h: Math.max(10, bottom - logosTop), bgHex: theme.panelHex })
@@ -786,12 +858,13 @@ function flyer(layout, input, measure, s, ts, nts, theme = null) {
     for (let i = 0; i < 40 && zone && polysIntersect(mock.shape, rectPoly(zone)); i++) shiftBlock(mock, -0.25, 0);
   }
 
-  blocks.push(panel, block('h4a', 'Instrução do QR (H4)', [h4a]), numero, block('h4b', 'Chamada após o número (H4)', [h4b]), qr, mock, logos);
-  return { blocks, watermark: { max: 100 * s, min: 40 * s, top: minX, bottom: panelTop + 10 * s }, panelTop };
+  blocks.push(panel, block('h4a', 'Instrução do QR (H4)', [h4a]), numero, block('h4b', portal ? 'Chamada após o site (H4)' : 'Chamada após o número (H4)', [h4b]), qr, mock, logos);
+  // Marca d'água do WhatsApp só no modelo WhatsApp
+  return { blocks, watermark: portal ? null : { max: 100 * s, min: 40 * s, top: minX, bottom: panelTop + 10 * s }, panelTop };
 }
 
 function adesivo(layout, input, measure, theme = null) {
-  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove', input.model)[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const m = SAFE_MM + 0.5;
@@ -806,14 +879,14 @@ function adesivo(layout, input, measure, theme = null) {
     const footerTop = Math.min(76.4, logos.bbox.y - 3);
     const qrY = Math.max(textBottom(h1) + 4, Math.min(31.2, footerTop - 3 - 35));
     const plate = Math.min(35, Math.max(QR_MIN_MM + 2 * QR_QUIET_MM, footerTop - 3 - qrY));
-    blocks.push(qrPlate({ x: (tw - plate) / 2, y: qrY, qrMm: plate - 2 * QR_QUIET_MM, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme }));
+    blocks.push(qrPlate({ x: (tw - plate) / 2, y: qrY, qrMm: plate - 2 * QR_QUIET_MM, data: qrTarget(input), th: theme }));
     blocks.push(block('rodape', 'Faixa branca dos logos', [{ type: 'rect', x: -BLEED_MM, y: footerTop, w: tw + 2 * BLEED_MM, h: th - footerTop + BLEED_MM, fill: theme.footer }], { movable: false, exempt: true, opaque: true }));
     blocks.push(logos);
     return { blocks, watermark: null };
   }
   const plate = 35;
   const qrMm = plate - 2 * QR_QUIET_MM;
-  blocks.push(qrPlate({ x: (tw - plate) / 2, y: Math.max(31.2, textBottom(h1) + 4), qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp) }));
+  blocks.push(qrPlate({ x: (tw - plate) / 2, y: Math.max(31.2, textBottom(h1) + 4), qrMm, data: qrTarget(input) }));
   const footerTop = 76.4;
   blocks.push(block('rodape', 'Faixa branca dos logos', [{ type: 'rect', x: -BLEED_MM, y: footerTop, w: tw + 2 * BLEED_MM, h: th - footerTop + BLEED_MM, fill: 'branco' }], { movable: false, exempt: true, opaque: true }));
   blocks.push(logosRow({ x: m, y: 80, w: tw - 2 * m, h: 14.6, gap: 3.8, assets: input.assets, includeBB: input.includeBB, rel: { prefeitura: 1, gove: 0.56, bb: 0.6 } }));
@@ -821,28 +894,33 @@ function adesivo(layout, input, measure, theme = null) {
 }
 
 function displayA6(layout, input, measure, theme = null) {
-  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove')[layout.id], ...input.texts };
+  const portal = isPortalInput(input);
+  const T = { ...defaultTextsFor(theme ? 'bb' : 'gove', input.model)[layout.id], ...input.texts };
   const tw = layout.trim.w;
   const th = layout.trim.h;
   const m = SAFE_MM + 0.5;
   const blocks = [];
 
-  // Ícone grande do WhatsApp (decorativo, sai pela sangria à esquerda)
-  blocks.push(block('icone-whatsapp', 'Ícone do WhatsApp', [
-    { type: 'glyph', ...WHATSAPP_GLYPH, x: -10.5, y: 10.5, w: 43, h: 43, fill: theme ? theme.icon : 'branco' },
-  ], { movable: false, exempt: true }));
+  // Ícone grande do WhatsApp (decorativo, sai pela sangria à esquerda) — só no modelo WhatsApp
+  if (!portal) {
+    blocks.push(block('icone-whatsapp', 'Ícone do WhatsApp', [
+      { type: 'glyph', ...WHATSAPP_GLYPH, x: -10.5, y: 10.5, w: 43, h: 43, fill: theme ? theme.icon : 'branco' },
+    ], { movable: false, exempt: true }));
+  }
 
-  const hx = 37.8;
-  const hw = tw - m - hx;
+  // Portal Cidadão: título centralizado na largura toda (sem o ícone), negrito + regular em branco
+  const hx = portal ? m : 37.8;
+  const hw = portal ? tw - 2 * m : tw - m - hx;
   // BB: título em duas cores aprovadas para o fundo (título + destaque)
-  const c1 = theme ? { color: theme.title, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'preto' };
+  const c1 = theme ? { color: theme.title, bg: [theme.bgHex], th: theme, family: 'title' } : { color: portal ? 'branco' : 'preto' };
   const c2 = theme ? { color: theme.accent, bg: [theme.bgHex], th: theme, family: 'title' } : { color: 'branco' };
-  const opts = { x: hx, w: hw, sizePt: 26.3, weight: 'bold', leading: 1.0, ...(theme ? {} : { onGradient: true }), fit: 14, measure };
+  const opts = { x: hx, w: hw, sizePt: 26.3, weight: 'bold', leading: 1.0, ...(portal ? { align: 'center' } : {}), ...(theme ? {} : { onGradient: true }), fit: 14, measure };
+  const w2 = portal ? { weight: 'regular', boldWeight: 'bold' } : {};
   const probe1 = textBlock({ ...opts, id: 'h1', role: 'h1', text: T.h1, y: 10.9, ...c1 });
-  const probe2 = textBlock({ ...opts, id: 'h1b', role: 'h1', text: T.h1b, y: 0, ...c2 });
+  const probe2 = textBlock({ ...opts, ...w2, id: 'h1b', role: 'h1', text: T.h1b, y: 0, ...c2 });
   const size = Math.min(probe1.size, probe2.size);
   const h1 = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1', role: 'h1', text: T.h1, y: 10.9, ...c1 });
-  const h1b = textBlock({ ...opts, sizePt: size, fit: 0, id: 'h1b', role: 'h1', text: T.h1b, y: 10.9 + h1.lines.length * ptToMm(size) * 1.0, ...c2 });
+  const h1b = textBlock({ ...opts, ...w2, sizePt: size, fit: 0, id: 'h1b', role: 'h1', text: T.h1b, y: 10.9 + h1.lines.length * ptToMm(size) * 1.0, ...c2 });
   blocks.push(block('h1', 'Título (H1)', [h1, h1b]));
 
   // BB: logos ancorados embaixo; a faixa branca sobe se a logomarca BB pedir mais espaço
@@ -853,7 +931,7 @@ function displayA6(layout, input, measure, theme = null) {
   const plate = theme ? Math.min(38.5, Math.max(QR_MIN_MM + 2 * QR_QUIET_MM, footerTop - 3 - Math.max(65.1, textBottom(h1b) + 6))) : 38.5;
   const qrMm = plate - 2 * QR_QUIET_MM;
   const qrY = Math.max(65.1, textBottom(h1b) + 6);
-  const qr = qrPlate({ x: theme ? 53.1 + (38.5 - plate) / 2 : 53.1, y: qrY, qrMm, data: whatsappLink(input.municipio?.ddd, input.municipio?.numero_whatsapp), th: theme });
+  const qr = qrPlate({ x: theme ? 53.1 + (38.5 - plate) / 2 : 53.1, y: qrY, qrMm, data: qrTarget(input), th: theme });
   const c3 = theme ? { color: theme.text, bg: [theme.bgHex], th: theme } : { color: 'branco', onGradient: true };
   const probe = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: 0, w: 47.4 - m, sizePt: 17.1, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, ...c3, fit: 10, measure });
   const h3 = textBlock({ id: 'h3', role: 'h3', text: T.h3, x: m, y: qrY + (plate - probe.h) / 2, w: 47.4 - m, sizePt: probe.size, weight: 'regular', boldWeight: 'bold', align: 'right', leading: 0.965, ...c3, measure });
@@ -922,7 +1000,9 @@ export function buildLayout(layoutId, input, measure) {
   }
 
   const diag = Math.hypot(tw, th);
-  const bg = { cx: BLEED_MM + BACKGROUND.cx * tw, cy: BLEED_MM + BACKGROUND.cy * th, r: BACKGROUND.r * diag, stops: BACKGROUND.stops };
+  // Fundo GOVE: degradê verde (WhatsApp) ou índigo (Portal Cidadão)
+  const BG = isPortalInput(input) ? PORTAL_BACKGROUND : BACKGROUND;
+  const bg = { cx: BLEED_MM + BG.cx * tw, cy: BLEED_MM + BG.cy * th, r: BG.r * diag, stops: BG.stops };
   const background = theme
     ? block('fundo', 'Fundo', [{ type: 'rect', x: 0, y: 0, w: pageW, h: pageH, fill: theme.bg }], { movable: false, exempt: true })
     : block('fundo', 'Fundo em degradê', [
@@ -955,6 +1035,7 @@ export function buildLayout(layoutId, input, measure) {
     background: bg,
     blocks: ordered,
   };
+  result.model = isPortalInput(input) ? 'portal' : 'whatsapp';
   if (theme) {
     result.identity = 'bb';
     result.bbScheme = theme.scheme.id;
@@ -1228,9 +1309,17 @@ export function checkLayout(r, input) {
   const m = input.municipio ?? {};
   const name = r.layout.name;
 
-  if (onlyDigits(m.ddd).length !== 2) add('error', 'ddd', 'DDD inválido: use 2 dígitos.');
-  const n = onlyDigits(m.numero_whatsapp).length;
-  if (n < 8 || n > 9) add('error', 'numero', 'Número de WhatsApp inválido: use 8 ou 9 dígitos.');
+  if (isPortalInput(input)) {
+    // Portal Cidadão: o QR e a faixa levam ao site do domicílio eletrônico (cadastro do município)
+    const site = normalizeSite(m.url_domicilio);
+    if (site === '') add('error', 'site', 'Portal Cidadão: cadastre o site do domicílio eletrônico do município (Municípios › Editar).', 'numero');
+    else if (site === null) add('error', 'site', 'Site do domicílio eletrônico inválido — confira o endereço no cadastro do município.', 'numero');
+    else add('ok', 'site', `QR code e faixa apontam para ${siteLabel(site)}.`);
+  } else {
+    if (onlyDigits(m.ddd).length !== 2) add('error', 'ddd', 'DDD inválido: use 2 dígitos.');
+    const n = onlyDigits(m.numero_whatsapp).length;
+    if (n < 8 || n > 9) add('error', 'numero', 'Número de WhatsApp inválido: use 8 ou 9 dígitos.');
+  }
 
   const content = r.blocks.filter((b) => !b.exempt);
   const s = r.safe;

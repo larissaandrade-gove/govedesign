@@ -269,3 +269,44 @@ test('banco: identidade e esquema BB persistidos por município (com migração)
     assert.equal(saveMunicipio(db, { ...municipio, nome_municipio: 'São Carlos 2' }, m.id).identidade, 'bb');
   });
 });
+
+test('Portal Cidadão: QR e faixa levam ao site do domicílio eletrônico, nas duas identidades', async () => {
+  const { normalizeSite, siteLabel, PORTAL_DEFAULT_TEXTS } = await import('../print-studio/shared/layout.js');
+  const { PORTAL_BACKGROUND } = await import('../print-studio/shared/tokens.js');
+  assert.equal(normalizeSite('www.SaoCarlos.sp.gov.br'), 'https://www.saocarlos.sp.gov.br/');
+  assert.equal(normalizeSite('https://saocarlos.sp.gov.br/dme'), 'https://saocarlos.sp.gov.br/dme');
+  assert.equal(normalizeSite(''), '');
+  assert.equal(normalizeSite('sem ponto'), null);
+  assert.equal(siteLabel('https://www.saocarlos.sp.gov.br/'), 'www.saocarlos.sp.gov.br');
+  assert.equal(pdfFileName('flyer-a4', municipio, new Date(2026, 8, 21), 'portal'), 'portal-cidadao_flyer-a4_sao-carlos-sp_21092026.pdf');
+  for (const [, key] of PORTAL_BACKGROUND.stops) assert.ok(contrastRatio(COLORS.branco.hex, COLORS[key].hex) >= 4.5, key);
+
+  const site = 'https://www.saocarlos.sp.gov.br/';
+  for (const identity of ['gove', 'bb']) {
+    for (const l of LAYOUTS) {
+      // número de WhatsApp inválido não importa no Portal Cidadão
+      const r = buildLayout(l.id, input({ model: 'portal', identity, municipio: { ...municipio, numero_whatsapp: '', url_domicilio: site } }), measure);
+      const errors = r.checks.filter((c) => c.level === 'error');
+      assert.deepEqual(errors, [], `${identity} ${l.id}: ${errors.map((e) => e.message).join('; ')}`);
+      const els = r.blocks.flatMap((b) => b.elements);
+      assert.equal(els.find((e) => e.type === 'qr').data, site, `${identity} ${l.id}: QR`);
+      assert.equal(els.find((e) => e.type === 'qr').color, 'qrPreto');
+      assert.ok(!els.some((e) => e.type === 'glyph'), `${l.id}: sem ícone do WhatsApp`);
+      const texts = els.filter((e) => e.type === 'text').map((e) => e.lines.map((x) => x.text).join(' ')).join(' | ');
+      assert.ok(!/whatsapp/i.test(texts), `${l.id}: ${texts}`);
+      if (l.id.startsWith('flyer')) assert.ok(texts.includes('www.saocarlos.sp.gov.br'), `${l.id}: faixa do site`);
+    }
+  }
+  assert.ok(PORTAL_DEFAULT_TEXTS['display-a6'].h3.includes('Portal'));
+  // Sem site cadastrado: erro que aponta o cadastro do município
+  const r = buildLayout('flyer-a4', input({ model: 'portal' }), measure);
+  assert.ok(r.checks.some((c) => c.level === 'error' && c.code === 'site'));
+});
+
+test('cadastro: site do domicílio eletrônico é opcional e fica salvo', async () => {
+  const db = openPrintDb(':memory:');
+  const a = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false });
+  assert.equal(a.url_domicilio, null);
+  const b = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false, url_domicilio: 'https://www.saocarlos.sp.gov.br/' }, a.id);
+  assert.equal(b.url_domicilio, 'https://www.saocarlos.sp.gov.br/');
+});

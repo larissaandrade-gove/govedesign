@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowUp, ChevronDown, GripVertical, ImageOff, ImagePlus, LayoutTemplate, ListPlus, Loader2, LocateFixed, MapPin, Move, MoveHorizontal,
-  MoveVertical, Palette, Phone, Plus, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
+  Globe, MoveVertical, Palette, Phone, Plus, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,11 @@ import { Preview } from '@/components/studio/Preview';
 import { ServiceIcon } from '@/components/studio/ServiceIcon';
 import { CheckList } from '@/components/studio/CheckList';
 import { LayoutGlyph, layoutShort } from '@/components/studio/LayoutGlyph';
-import { api, type Check, type Imagem, type LogosFixos, type Municipio, type PieceOptions, type QueueItem } from '@/lib/api';
+import { api, type Check, type Imagem, type LogosFixos, type Model, type Municipio, type PieceOptions, type QueueItem } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand';
 import {
-  BB_SCHEMES, DEFAULT_SERVICES, IDENTITIES, LAYOUTS, MAX_SERVICES_RECOMMENDED, SERVICE_ICONS, TEXT_LABELS, bbBlockingChecks, buildLayout, defaultTextsFor, formatPhone, measure,
-  type Identity,
+  BB_SCHEMES, DEFAULT_SERVICES, IDENTITIES, LAYOUTS, MAX_SERVICES_RECOMMENDED, MODELS, SERVICE_ICONS, TEXT_LABELS, bbBlockingChecks, buildLayout, defaultTextsFor, formatPhone, measure,
+  normalizeSite, siteLabel, type Identity,
 } from '@/lib/studio';
 import { cn } from '@/lib/utils';
 
@@ -70,8 +70,14 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
   // Identidade visual das peças: GOVE (padrão) ou Banco do Brasil; persistida por município
   const [identity, setIdentity] = useState<Identity>('gove');
   const [bbScheme, setBbScheme] = useState<string>('capa');
+  // Modelo (pauta): WhatsApp ou Portal Cidadão — mesma diagramação, textos e destino do QR próprios
+  const [model, setModel] = useState<Model>('whatsapp');
+  // Textos editados por modelo (cada pauta tem os seus)
+  const [textsByModel, setTextsByModel] = useState<Record<Model, Record<string, Record<string, string>>>>({ whatsapp: {}, portal: {} });
+  const texts = textsByModel[model];
+  const setTexts = (fn: (t: Record<string, Record<string, string>>) => Record<string, Record<string, string>>) =>
+    setTextsByModel((all) => ({ ...all, [model]: fn(all[model]) }));
   const [services, setServices] = useState<string[]>([...DEFAULT_SERVICES]);
-  const [texts, setTexts] = useState<Record<string, Record<string, string>>>({});
   const [overrides, setOverrides] = useState<PieceOptions['overrides']>({});
   const [mockup, setMockup] = useState<(Imagem & { focus: { x: number; y: number } }) | null>(null);
   // Tela do celular: sempre a captura enviada (a tela gerada foi removida)
@@ -101,12 +107,15 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     api.setIdentidade(municipio.id, next, scheme).then(onMunicipioSaved, (err: Error) => toast.error(err.message));
   }
   const bb = identity === 'bb';
-  const defaults = defaultTextsFor(identity);
+  const defaults = defaultTextsFor(identity, model);
+  const portal = model === 'portal';
+  const site = municipio ? normalizeSite(municipio.url_domicilio) : '';
 
   const input = useMemo(() => {
     if (!activeLayout) return null;
     return {
       municipio: municipio ?? { ddd: '', numero_whatsapp: '' },
+      model,
       identity,
       bbScheme,
       includeBB: bb || includeBB,
@@ -120,12 +129,12 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         prefeitura: municipio?.logo_largura ? { width: municipio.logo_largura, height: municipio.logo_altura } : null,
       },
     };
-  }, [activeLayout, municipio, identity, bbScheme, bb, includeBB, services, texts, overrides, mockup, logosFixos]);
+  }, [activeLayout, municipio, model, identity, bbScheme, bb, includeBB, services, texts, overrides, mockup, logosFixos]);
 
   const result = useMemo(() => (input && activeLayout ? buildLayout(activeLayout, input, measure) : null), [input, activeLayout]);
   const checks: Check[] = useMemo(() => {
     const list = (result?.checks ?? []) as Check[];
-    return municipio ? list : [{ level: 'error', code: 'municipio', message: 'Selecione ou cadastre um município.' }, ...list.filter((c) => c.code !== 'ddd' && c.code !== 'numero')];
+    return municipio ? list : [{ level: 'error', code: 'municipio', message: 'Selecione ou cadastre um município.' }, ...list.filter((c) => c.code !== 'ddd' && c.code !== 'numero' && c.code !== 'site')];
   }, [result, municipio]);
   const errorBlocks = useMemo(() => new Set(checks.filter((c) => c.level === 'error' && c.blockId).map((c) => c.blockId as string)), [checks]);
 
@@ -195,6 +204,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
       municipioNome: [municipio.nome_municipio, municipio.uf].filter(Boolean).join(' - '),
       layouts: LAYOUTS.map((l: { id: string }) => l.id).filter((id: string) => selected.includes(id)),
       options: {
+        model,
         identity,
         bbScheme,
         includeBB: bb || includeBB,
@@ -204,7 +214,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         mockup: { mode: mockMode, ...(mockup ? { imageId: mockup.id, focus: mockup.focus } : {}) },
       },
     });
-    toast.success(`${municipio.nome_municipio}: ${selected.length} peça(s) na fila de exportação.`);
+    toast.success(`${municipio.nome_municipio}${portal ? ' · Portal Cidadão' : ''}: ${selected.length} peça(s) na fila de exportação.`);
   }
 
   const errors = checks.filter((c) => c.level === 'error').length;
@@ -217,6 +227,33 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     <div className="relative h-full min-h-0 overflow-y-auto lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
       {/* Painel de controles */}
       <aside className="border-b border-border bg-card/40 lg:min-h-0 lg:overflow-y-auto lg:border-b-0 lg:border-r" aria-label="Configurações da peça">
+        <Section title="Modelo" icon={Globe}>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Modelo do impresso">
+            {MODELS.map((it) => (
+              <button
+                key={it.id}
+                type="button"
+                role="radio"
+                aria-checked={model === it.id}
+                title={it.hint}
+                onClick={() => setModel(it.id)}
+                className={cn(
+                  'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors',
+                  model === it.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">{MODELS.find((it) => it.id === model)?.hint}.</p>
+          {portal && municipio && !site && (
+            <p className="flex gap-1.5 text-xs font-medium text-warning" role="status">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Cadastre o site do domicílio eletrônico de {municipio.nome_municipio} (Municípios › Editar).
+            </p>
+          )}
+        </Section>
+
         <Section title="Identidade" icon={Palette}>
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Identidade visual">
             {(IDENTITIES as { id: Identity; label: string }[]).map((it) => (
@@ -321,6 +358,13 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
                 <span className="sr-only">WhatsApp</span>
                 <span className="font-medium tabular-nums text-foreground">{formatPhone(municipio.ddd, municipio.numero_whatsapp)}</span>
               </span>
+              {site && (
+                <span className="flex min-w-0 items-center gap-1.5" title="Site do domicílio eletrônico">
+                  <Globe className="size-3.5 shrink-0" aria-hidden />
+                  <span className="sr-only">Site do domicílio eletrônico</span>
+                  <span className="truncate font-medium text-foreground">{siteLabel(site)}</span>
+                </span>
+              )}
               {!municipio.tem_logo && (
                 <span className="flex items-center gap-1.5 text-warning">
                   <ImageOff className="size-3.5" aria-hidden /> sem logo

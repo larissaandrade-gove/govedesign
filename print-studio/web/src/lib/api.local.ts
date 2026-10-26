@@ -5,7 +5,7 @@
 // .zip gerados aqui mesmo.
 import { zipSync } from 'fflate';
 import { collection, deleteFile, fileUrl, getFile, putFile, saveFile, type Doc } from '../../../../artifact-runtime/index.ts';
-import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, onlyDigits, pdfFileName } from '../../../shared/layout.js';
+import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
 import { measure, renderPiece } from '@/lib/pdf.browser';
 import type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem } from './api';
@@ -51,8 +51,11 @@ function validateMunicipio(form: FormData) {
   const endereco = get('endereco').trim().slice(0, 200);
   const email = get('email').trim().slice(0, 120);
   if (email && !isEmail(email)) throw new Error('E-mail inválido.');
+  // Site do domicílio eletrônico (opcional): QR e faixa das peças do Portal Cidadão
+  const site = normalizeSite(get('url_domicilio').slice(0, 300));
+  if (site === null) throw new Error('Site do domicílio eletrônico inválido. Ex.: www.municipio.sp.gov.br');
   const bb = get('incluir_logo_banco_do_brasil');
-  return { nome_municipio: nome, uf: uf || null, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: ['true', '1', 'on'].includes(bb), endereco: endereco || null, email: email || null };
+  return { nome_municipio: nome, uf: uf || null, ddd, numero_whatsapp: numero, incluir_logo_banco_do_brasil: ['true', '1', 'on'].includes(bb), endereco: endereco || null, email: email || null, url_domicilio: site || null };
 }
 
 function uploadedFile(form: FormData, field: string): File | null {
@@ -113,6 +116,7 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
         extra,
         input: {
           municipio,
+          model: opts.model === 'portal' ? 'portal' : 'whatsapp',
           identity,
           bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
           includeBB,
@@ -246,7 +250,7 @@ export const api = {
       const { report, layout } = await renderPiece(p.layoutId, p.input, p.files);
       const checks: Check[] = [...(layout.checks as Check[]), ...p.extra, ...report];
       results.push({
-        arquivo: pdfFileName(p.layoutId, p.municipio),
+        arquivo: pdfFileName(p.layoutId, p.municipio, new Date(), (p.input as { model?: string }).model),
         municipio: p.municipio.nome_municipio,
         layout: layout.layout.name,
         checks,
@@ -267,7 +271,7 @@ export const api = {
     }
     for (const p of list) {
       const { bytes } = await renderPiece(p.layoutId, p.input, p.files);
-      let name = pdfFileName(p.layoutId, p.municipio);
+      let name = pdfFileName(p.layoutId, p.municipio, new Date(), (p.input as { model?: string }).model);
       for (let i = 2; files[name]; i++) name = name.replace(/(_\d+)?\.pdf$/, `_${i}.pdf`);
       files[name] = bytes;
     }

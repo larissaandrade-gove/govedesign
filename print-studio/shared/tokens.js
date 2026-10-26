@@ -55,6 +55,15 @@ export const COLORS = {
   roxoGove: { name: 'Roxo Gove', hex: '#3E0099', cmyk: [94, 98, 0, 0] },
   amareloGove: { name: 'Amarelo Gove', hex: '#FEC526', cmyk: [0, 15, 92, 3] },
 
+  // ---- Modelo Portal Cidadão (Kit Portal Cidadão / Domicílio Eletrônico) ----------
+  // Medidas nas referências aprovadas (Impressos_Kit_boas_Vindas_Portal_Cidadão_DME):
+  // degradê índigo que escurece para baixo e faixa do site. CMYK: conversão ICC do HEX
+  // pelo perfil CMYK padrão do libvips/sharp. TODO_VALIDAR_GRAFICA: confirmar com a gráfica.
+  portalClaro: { name: 'Índigo Portal (claro)', hex: '#3B3E80', cmyk: [88, 80, 0, 16] },
+  portalMedio: { name: 'Índigo Portal (médio)', hex: '#222253', cmyk: [96, 93, 6, 52] },
+  portalProfundo: { name: 'Índigo Portal (profundo)', hex: '#10132A', cmyk: [91, 78, 0, 91] },
+  portalFaixa: { name: 'Índigo Portal (faixa do site)', hex: '#2B2C81', cmyk: [97, 92, 0, 4] },
+
   // ---- Identidade Banco do Brasil (brand/bb.js) ---------------------------------
   // CMYK/Pantone oficiais do guia de cores BB (impressão). Só estas cores (e o
   // Preto, apenas como texto sobre Rosa escuro) entram nas peças do modo BB.
@@ -101,6 +110,23 @@ export const BACKGROUND = {
     [0.35, 'folhaClara'],
     [0.75, 'folhaMedia'],
     [1, 'verdeProfundo'],
+  ],
+};
+
+/**
+ * Fundo do modelo Portal Cidadão: índigo claro no alto (atrás do título) que escurece
+ * para baixo e para a direita, como nas referências. Branco passa 4,5:1 em todas as paradas.
+ */
+export const PORTAL_BACKGROUND = {
+  kind: 'radial',
+  cx: 0.15,
+  cy: -0.25,
+  r: 1.0,
+  stops: [
+    [0, 'portalClaro'],
+    [0.5, 'portalClaro'],
+    [0.75, 'portalMedio'],
+    [1, 'portalProfundo'],
   ],
 };
 
