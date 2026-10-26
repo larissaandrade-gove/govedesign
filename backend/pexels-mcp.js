@@ -3,8 +3,14 @@
 // na organização. A chave do Pexels fica só aqui (PEXELS_API_KEY) e o endereço
 // leva um token secreto: https://<servidor>/mcp/<PEXELS_MCP_TOKEN>. As imagens
 // voltam em data URI, porque o artefato não carrega imagens de outros sites.
+//
+// O mesmo conector faz a captura da tela do celular de um site (capture_site), usada
+// pelo Print Studio no modelo Portal Cidadão: o artefato não abre sites externos.
 import express from 'express';
 import { timingSafeEqual } from 'node:crypto';
+import sharp from 'sharp';
+import { CaptureError, captureSite } from '../print-studio/server/capture.js';
+import { normalizeSite } from '../print-studio/shared/layout.js';
 
 const API = 'https://api.pexels.com/v1';
 const IMAGE_HOST = 'images.pexels.com';
@@ -39,6 +45,17 @@ const TOOLS = [
     },
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
+  {
+    name: 'capture_site',
+    title: 'Capturar site no celular',
+    description: 'Abre um site público num celular (390×844, densidade 3) e devolve a captura da tela em JPEG (data URI, 1170×2532 px).',
+    inputSchema: {
+      type: 'object',
+      properties: { url: { type: 'string', description: 'Endereço do site (com ou sem https://)' } },
+      required: ['url'],
+    },
+    annotations: { readOnlyHint: true, openWorldHint: true },
+  },
 ];
 
 const sameToken = (a, b) => {
@@ -47,7 +64,7 @@ const sameToken = (a, b) => {
   return x.length === y.length && x.length > 0 && timingSafeEqual(x, y);
 };
 
-export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, token = process.env.PEXELS_MCP_TOKEN, fetchImpl = fetch } = {}) {
+export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, token = process.env.PEXELS_MCP_TOKEN, fetchImpl = fetch, capture = captureSite } = {}) {
   const router = express.Router({ mergeParams: true });
   router.use(express.json({ limit: '64kb' }));
 
@@ -67,7 +84,20 @@ export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, tok
     return `data:${type};base64,${buf.toString('base64')}`;
   }
 
+  async function captureTool(args) {
+    const url = normalizeSite(String(args.url ?? '').slice(0, 300));
+    if (!url) throw new Error('Endereço inválido. Ex.: www.municipio.sp.gov.br');
+    try {
+      // JPEG de alta qualidade: a resposta do conector fica leve (o PNG passa de 2 MB)
+      const { data, info } = await sharp(await capture(url)).jpeg({ quality: 92, chromaSubsampling: '4:4:4' }).toBuffer({ resolveWithObject: true });
+      return { url, width: info.width, height: info.height, dataUrl: `data:image/jpeg;base64,${data.toString('base64')}` };
+    } catch (err) {
+      throw new Error(err instanceof CaptureError ? err.message : 'Não foi possível capturar o site.');
+    }
+  }
+
   async function searchPhotos(args) {
+    if (!apiKey) throw new Error('Busca no Pexels não configurada no servidor.');
     const q = String(args.query ?? '').trim().slice(0, 80);
     if (!q) return { photos: [], page: 1, total: 0, next: false };
     const params = new URLSearchParams({ query: q, locale: 'pt-BR', per_page: String(Math.min(30, Math.max(1, Number(args.per_page) || 12))), page: String(Math.max(1, Number(args.page) || 1)) });
@@ -108,7 +138,7 @@ export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, tok
         protocolVersion: params.protocolVersion || '2025-06-18',
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: 'pexels-gove', title: 'Pexels Gove', version: '1.0.0' },
-        instructions: 'Banco de imagens Pexels para os apps do Gove Design System.',
+        instructions: 'Banco de imagens Pexels e captura de sites no celular para os apps do Gove Design System.',
       });
     }
     if (typeof method === 'string' && method.startsWith('notifications/')) return null;
@@ -118,6 +148,7 @@ export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, tok
       const args = params.arguments ?? {};
       try {
         if (params.name === 'search_photos') return ok(id, toolResult(await searchPhotos(args)));
+        if (params.name === 'capture_site') return ok(id, toolResult(await captureTool(args)));
         if (params.name === 'get_image') return ok(id, toolResult({ dataUrl: await toDataUrl(String(args.url ?? ''), Math.min(2400, Math.max(200, Number(args.width) || 1600))) }));
         return fail(id, -32602, `Ferramenta desconhecida: ${params.name}`);
       } catch (err) {
@@ -128,7 +159,7 @@ export function createPexelsMcpRouter({ apiKey = process.env.PEXELS_API_KEY, tok
   }
 
   router.all('/', async (req, res) => {
-    if (!apiKey || !token || !sameToken(req.params.token, token)) return res.status(404).end();
+    if (!token || !sameToken(req.params.token, token)) return res.status(404).end();
     if (req.method !== 'POST') return res.status(405).set('Allow', 'POST').end();
     const body = req.body;
     if (Array.isArray(body)) {

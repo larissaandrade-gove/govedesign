@@ -72,3 +72,19 @@ export async function connectorImage(url: string, width = 1600): Promise<string>
     throw new Error(connectorMessage(e));
   }
 }
+
+/** Captura a tela do celular de um site público (Print Studio, Portal Cidadão), em data URI. */
+export async function connectorCapture(url: string): Promise<{ dataUrl: string; url: string }> {
+  const mcp = await capability('mcp');
+  if (!mcp) throw new Error('Captura indisponível: o conector da Gove não está ligado nesta página. Envie a captura manualmente.');
+  try {
+    const r = await mcp.callTool(PEXELS_CONNECTOR, 'capture_site', { url });
+    const d = payloadOf(r);
+    if (!d?.dataUrl) throw new Error('sem imagem');
+    return { dataUrl: d.dataUrl as string, url: d.url as string };
+  } catch (e: any) {
+    if (e?.code === 'tool_error' && e?.message) throw new Error(e.message);
+    if (e?.code === 'server_not_connected' || e?.code === 'not_in_manifest') throw new Error('Conector da Gove não conectado: envie a captura manualmente.');
+    throw new Error(e?.message === 'sem imagem' ? 'O site não devolveu uma captura.' : connectorMessage(e));
+  }
+}

@@ -9,8 +9,9 @@ import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeS
 import { FONT_FILES } from '../shared/tokens.js';
 import {
   deleteMunicipio, getImagem, getLogosFixos, getMunicipio, listMunicipios, openPrintDb,
-  saveImagem, saveMunicipio, setLogoFixo, setMunicipioIdentidade, setMunicipioLogo,
+  saveImagem, saveMunicipio, setLogoFixo, setMunicipioCaptura, setMunicipioIdentidade, setMunicipioLogo,
 } from './db.js';
+import { CaptureError, captureSite } from './capture.js';
 import { BRAND_DIR, ImageInputError, readStored, storeLogo, storeMockupImage } from './images.js';
 import { fontPath, measure, renderPiece } from './pdf.js';
 
@@ -49,7 +50,10 @@ function pieceContext(db, item, layoutId) {
   if (!municipio) throw new InputError(`Município ${item.municipioId} não encontrado.`, 404);
   const fixos = getLogosFixos(db);
   const opts = item.options ?? {};
-  const img = opts.mockup?.imageId ? getImagem(db, opts.mockup.imageId) : null;
+  // Portal Cidadão com a tela vinda da captura do site: vale a captura mais recente do município
+  const fromCapture = opts.model === 'portal' && opts.mockup?.source === 'captura' && municipio.captura_imagem_id;
+  const imageId = fromCapture ? municipio.captura_imagem_id : opts.mockup?.imageId;
+  const img = imageId ? getImagem(db, imageId) : null;
   const mode = 'upload'; // só captura enviada (tela gerada removida)
   const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
   // Identidade BB: logomarca do Banco do Brasil obrigatória
@@ -66,7 +70,7 @@ function pieceContext(db, item, layoutId) {
       services: opts.services ?? [],
       texts: opts.texts?.[layoutId] ?? {},
       overrides: opts.overrides?.[layoutId] ?? {},
-      mockup: { mode, ...(img ? { imageId: img.id, width: img.largura, height: img.altura, focus: opts.mockup.focus } : {}) },
+      mockup: { mode, ...(img ? { imageId: img.id, width: img.largura, height: img.altura, focus: opts.mockup?.focus } : {}) },
       assets: {
         // Sem upload em "Logos fixos", vale a logomarca oficial (brand/logos)
         gove: fixos.gove ? dims(fixos.gove.largura, fixos.gove.altura) : { official: true },
@@ -94,7 +98,7 @@ function pieces(db, items) {
   return list;
 }
 
-export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
+export function createPrintStudioRouter({ db = openPrintDb(), capture = captureSite } = {}) {
   const router = express.Router();
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
@@ -135,6 +139,21 @@ export function createPrintStudioRouter({ db = openPrintDb() } = {}) {
     const identidade = req.body?.identidade === 'bb' ? 'bb' : 'gove';
     const esquema = BB_SCHEMES.some((s) => s.id === req.body?.bb_esquema) ? req.body.bb_esquema : 'capa';
     res.json(setMunicipioIdentidade(db, id, identidade, esquema));
+  });
+  // Captura da tela do celular a partir do site do domicílio eletrônico (Portal Cidadão)
+  router.post('/api/municipios/:id/captura', async (req, res, next) => {
+    try {
+      const m = getMunicipio(db, Number(req.params.id));
+      if (!m) throw new InputError('Município não encontrado.', 404);
+      const site = normalizeSite(m.url_domicilio);
+      if (!site) throw new InputError('Cadastre o site do domicílio eletrônico do município antes de capturar.');
+      const png = await capture(site);
+      const img = saveImagem(db, await storeMockupImage(png));
+      const saved = setMunicipioCaptura(db, m.id, img.id);
+      res.status(201).json({ ...img, capturadoEm: saved.captura_em, site });
+    } catch (err) {
+      next(err instanceof CaptureError ? new InputError(err.message, 502) : err);
+    }
   });
   router.delete('/api/municipios/:id', (req, res) => res.status(deleteMunicipio(db, Number(req.params.id)) ? 204 : 404).end());
   router.get('/api/municipios/:id/logo', (req, res) => {

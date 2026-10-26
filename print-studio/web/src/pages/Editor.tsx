@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowUp, ChevronDown, GripVertical, ImageOff, ImagePlus, LayoutTemplate, ListPlus, Loader2, LocateFixed, MapPin, Move, MoveHorizontal,
-  Globe, MoveVertical, Palette, Phone, Plus, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
+  Globe, MoveVertical, Palette, Phone, Plus, RefreshCw, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,9 @@ type Props = {
   onMunicipioSaved: (m: Municipio) => void;
   onAddToQueue: (item: QueueItem) => void;
 };
+
+/** Captura do site: celular de 390×844 pt com densidade 3 (server/capture.js). */
+const CAPTURE_SIZE = { width: 1170, height: 2532 };
 
 type SectionProps = { title: string; icon: LucideIcon; aside?: React.ReactNode; collapsible?: boolean; children: React.ReactNode };
 
@@ -79,7 +82,10 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     setTextsByModel((all) => ({ ...all, [model]: fn(all[model]) }));
   const [services, setServices] = useState<string[]>([...DEFAULT_SERVICES]);
   const [overrides, setOverrides] = useState<PieceOptions['overrides']>({});
-  const [mockup, setMockup] = useState<(Imagem & { focus: { x: number; y: number } }) | null>(null);
+  // `source`: 'captura' = captura automática do site (Portal Cidadão); 'envio' = imagem enviada
+  const [mockup, setMockup] = useState<(Imagem & { focus: { x: number; y: number }; source?: 'envio' | 'captura' }) | null>(null);
+  const [capturing, setCapturing] = useState(false);
+  const autoCaptured = useRef(new Set<number>());
   // Tela do celular: sempre a captura enviada (a tela gerada foi removida)
   const mockMode = 'upload' as const;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -177,13 +183,52 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
     setUploading(true);
     try {
       const img = await api.uploadImagem(file);
-      setMockup({ ...img, focus: { x: 0.5, y: 0.5 } });
+      setMockup({ ...img, focus: { x: 0.5, y: 0.5 }, source: 'envio' });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setUploading(false);
     }
   }
+
+  const captureAge = municipio?.captura_em ? (Date.now() - Date.parse(municipio.captura_em)) / 864e5 : Infinity;
+
+  /** Captura a tela do celular a partir do site do domicílio eletrônico (servidor ou conector da Gove). */
+  async function captureSite(m: Municipio, auto = false) {
+    setCapturing(true);
+    try {
+      const r = await api.capturarSite(m.id);
+      onMunicipioSaved({ ...m, captura_imagem_id: r.id, captura_em: r.capturadoEm });
+      setMockup({ id: r.id, width: r.width, height: r.height, focus: { x: 0.5, y: 0 }, source: 'captura' });
+      if (!auto) toast.success('Captura do site atualizada.');
+    } catch (err) {
+      toast.error(auto ? 'Captura automática do site não concluída' : 'Captura do site não concluída', { description: (err as Error).message });
+    } finally {
+      setCapturing(false);
+    }
+  }
+
+  // Portal Cidadão: a tela do celular é a captura do site do município (a menos que uma imagem
+  // tenha sido enviada). Sem captura, ou com mais de 30 dias, o app captura de novo sozinho.
+  useEffect(() => {
+    if (!portal) {
+      if (mockup?.source === 'captura') setMockup(null);
+      return;
+    }
+    if (!municipio || mockup?.source === 'envio') return;
+    if (municipio.captura_imagem_id) {
+      if (mockup?.id !== municipio.captura_imagem_id) {
+        setMockup({ id: municipio.captura_imagem_id, ...CAPTURE_SIZE, focus: { x: 0.5, y: 0 }, source: 'captura' });
+      }
+    } else if (mockup?.source === 'captura') {
+      setMockup(null);
+    }
+    if (site && (!municipio.captura_imagem_id || captureAge > 30) && !autoCaptured.current.has(municipio.id)) {
+      autoCaptured.current.add(municipio.id);
+      void captureSite(municipio, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portal, municipio?.id, municipio?.captura_imagem_id, site, mockup?.id, mockup?.source]);
 
   function addToQueue() {
     if (!municipio) return toast.error('Selecione um município antes de adicionar à fila.');
@@ -211,7 +256,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         services,
         texts,
         overrides,
-        mockup: { mode: mockMode, ...(mockup ? { imageId: mockup.id, focus: mockup.focus } : {}) },
+        mockup: { mode: mockMode, ...(mockup ? { imageId: mockup.id, focus: mockup.focus, source: mockup.source ?? 'envio' } : {}) },
       },
     });
     toast.success(`${municipio.nome_municipio}${portal ? ' · Portal Cidadão' : ''}: ${selected.length} peça(s) na fila de exportação.`);
@@ -453,6 +498,31 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
 
         <Section title="Tela do celular" icon={Smartphone}>
           <>
+          {portal && (
+            <div className="space-y-2 rounded-md border border-border p-3">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Globe className="size-3.5 shrink-0" aria-hidden />
+                {!site
+                  ? 'Cadastre o site do domicílio eletrônico para capturar a tela automaticamente.'
+                  : capturing
+                    ? `Capturando ${siteLabel(site)} no celular…`
+                    : municipio?.captura_em
+                      ? `Captura de ${siteLabel(site)} · ${new Date(municipio.captura_em).toLocaleDateString('pt-BR')}${mockup?.source === 'envio' ? ' (em uso: imagem enviada)' : ''}`
+                      : `Sem captura de ${siteLabel(site)} ainda.`}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" disabled={!site || !municipio || capturing} onClick={() => municipio && captureSite(municipio)}>
+                  {capturing ? <Loader2 className="animate-spin" aria-hidden /> : <RefreshCw aria-hidden />}
+                  {municipio?.captura_imagem_id ? 'Atualizar captura' : 'Capturar do site'}
+                </Button>
+                {mockup?.source === 'envio' && municipio?.captura_imagem_id && (
+                  <Button size="sm" variant="ghost" onClick={() => setMockup(null)}>
+                    Usar a captura do site
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <label
               className={cn(
@@ -462,7 +532,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               title={mockup ? 'Trocar imagem' : 'Enviar imagem'}
             >
               {mockup ? (
-                <img src={api.imagemUrl(mockup.id)} alt="Imagem enviada para o mockup" className="h-full w-full object-cover" style={{ objectPosition: `${mockup.focus.x * 100}% ${mockup.focus.y * 100}%` }} />
+                <img src={api.imagemUrl(mockup.id)} alt={mockup.source === 'captura' ? 'Captura do site para o mockup' : 'Imagem enviada para o mockup'} className="h-full w-full object-cover" style={{ objectPosition: `${mockup.focus.x * 100}% ${mockup.focus.y * 100}%` }} />
               ) : (
                 <ImagePlus className="size-5" aria-hidden />
               )}

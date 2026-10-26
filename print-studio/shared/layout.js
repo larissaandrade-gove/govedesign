@@ -1352,7 +1352,7 @@ export function checkLayout(r, input) {
       }
       if (e.type === 'group' && e.mockupMode === 'upload') {
         const scr = e.children.find((c) => c.type === 'mockup-screen');
-        if (!scr?.imageId) add('warn', 'mockup', 'Envie a captura da tela do celular: sem ela, a tela sai vazia.', b.id);
+        if (!scr?.imageId) add('warn', 'mockup', isPortalInput(input) ? 'Capture o site do domicílio eletrônico (ou envie a captura): sem ela, a tela do celular sai vazia.' : 'Envie a captura da tela do celular: sem ela, a tela sai vazia.', b.id);
         else if (scr.dpi != null && scr.dpi < IMAGE_MIN_DPI) add('warn', 'mockup-dpi', `Imagem do mockup com ${Math.round(scr.dpi)} dpi no tamanho de impressão — mínimo ${IMAGE_MIN_DPI}.`, b.id);
       }
     }

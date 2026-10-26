@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS municipios (
   endereco                     TEXT,
   email                        TEXT,
   url_domicilio                TEXT,
+  captura_imagem_id            TEXT,
+  captura_em                   TEXT,
   identidade                   TEXT    NOT NULL DEFAULT 'gove',
   bb_esquema                   TEXT    NOT NULL DEFAULT 'capa',
   logo_original                TEXT,
@@ -64,7 +66,7 @@ export function openPrintDb(path = join(DATA_DIR, 'print-studio.sqlite')) {
 /** Migração segura: só acrescenta colunas que faltam (bases criadas antes dos campos novos). */
 function migrate(db) {
   const cols = new Set(db.prepare('PRAGMA table_info(municipios)').all().map((c) => c.name));
-  const add = { endereco: 'TEXT', email: 'TEXT', url_domicilio: 'TEXT', identidade: "TEXT NOT NULL DEFAULT 'gove'", bb_esquema: "TEXT NOT NULL DEFAULT 'capa'" };
+  const add = { endereco: 'TEXT', email: 'TEXT', url_domicilio: 'TEXT', captura_imagem_id: 'TEXT', captura_em: 'TEXT', identidade: "TEXT NOT NULL DEFAULT 'gove'", bb_esquema: "TEXT NOT NULL DEFAULT 'capa'" };
   db.transaction(() => {
     for (const [c, type] of Object.entries(add)) if (!cols.has(c)) db.exec(`ALTER TABLE municipios ADD COLUMN ${c} ${type}`);
   })();
@@ -100,9 +102,13 @@ export function saveMunicipio(db, data, id = null) {
     url_domicilio: data.url_domicilio || null,
   };
   if (id) {
+    // Site trocado: a captura antiga deixa de valer (o Editor captura de novo)
     db.prepare(
       `UPDATE municipios SET nome_municipio=@nome_municipio, uf=@uf, ddd=@ddd, numero_whatsapp=@numero_whatsapp,
-       incluir_logo_banco_do_brasil=@incluir_logo_banco_do_brasil, endereco=@endereco, email=@email, url_domicilio=@url_domicilio, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=@id`,
+       incluir_logo_banco_do_brasil=@incluir_logo_banco_do_brasil, endereco=@endereco, email=@email,
+       captura_imagem_id=CASE WHEN url_domicilio IS @url_domicilio THEN captura_imagem_id END,
+       captura_em=CASE WHEN url_domicilio IS @url_domicilio THEN captura_em END,
+       url_domicilio=@url_domicilio, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=@id`,
     ).run({ ...row, id });
     return getMunicipio(db, id);
   }
@@ -120,6 +126,14 @@ export function setMunicipioIdentidade(db, id, identidade, bbEsquema) {
   db.prepare(
     `UPDATE municipios SET identidade=?, bb_esquema=?, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`,
   ).run(identidade, bbEsquema, id);
+  return getMunicipio(db, id);
+}
+
+/** Captura automática do site do domicílio eletrônico (imagem do mockup do Portal Cidadão). */
+export function setMunicipioCaptura(db, id, imagemId) {
+  db.prepare(
+    `UPDATE municipios SET captura_imagem_id=?, captura_em=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`,
+  ).run(imagemId, id);
   return getMunicipio(db, id);
 }
 

@@ -5,6 +5,7 @@
 // .zip gerados aqui mesmo.
 import { zipSync } from 'fflate';
 import { collection, deleteFile, fileUrl, getFile, putFile, saveFile, type Doc } from '../../../../artifact-runtime/index.ts';
+import { connectorCapture } from '../../../../artifact-runtime/pexels.ts';
 import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
 import { measure, renderPiece } from '@/lib/pdf.browser';
@@ -94,7 +95,9 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
     const gove = logosCol.get('gove');
     const bb = logosCol.get('bb');
     const opts = item.options ?? ({} as QueueItem['options']);
-    const [goveBlob, bbBlob, prefBlob, mockBlob] = await Promise.all([blob(gove?.file), blob(bb?.file), blob(doc.logo_file), blob(opts.mockup?.imageId)]);
+    // Portal Cidadão com a tela vinda da captura do site: vale a captura mais recente do município
+    const mockId = opts.model === 'portal' && opts.mockup?.source === 'captura' && doc.captura_imagem_id ? doc.captura_imagem_id : opts.mockup?.imageId;
+    const [goveBlob, bbBlob, prefBlob, mockBlob] = await Promise.all([blob(gove?.file), blob(bb?.file), blob(doc.logo_file), blob(mockId)]);
     const mockDims = mockBlob ? await imageSize(mockBlob).catch(() => null) : null;
     const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
     // Identidade BB: logomarca do Banco do Brasil obrigatória
@@ -106,7 +109,7 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
     if (gove && !goveBlob) missingFile('Logo da Gove');
     if (bb && includeBB && !bbBlob) missingFile('Logo do Banco do Brasil');
     if (doc.logo_file && !prefBlob) missingFile('Logo da prefeitura');
-    if (opts.mockup?.imageId && !mockBlob) missingFile('Imagem do mockup');
+    if (mockId && !mockBlob) missingFile('Imagem do mockup');
 
     for (const layoutId of item.layouts ?? []) {
       if (!LAYOUTS.some((l: { id: string }) => l.id === layoutId)) throw new Error(`Layout desconhecido: ${layoutId}`);
@@ -125,7 +128,7 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
           overrides: opts.overrides?.[layoutId] ?? {},
           mockup: {
             mode: 'upload', // só captura enviada (tela gerada removida)
-            ...(mockDims && opts.mockup ? { imageId: opts.mockup.imageId, ...mockDims, focus: opts.mockup.focus } : {}),
+            ...(mockDims && mockId ? { imageId: mockId, ...mockDims, focus: opts.mockup?.focus } : {}),
           },
           assets: {
             // Sem upload em "Logos fixos", vale a logomarca oficial (brand/logos)
@@ -151,7 +154,7 @@ export const api = {
       .all()
       .filter((d) => !t || `${d.nome_municipio} ${d.uf ?? ''}`.toLowerCase().includes(t))
       .sort((a, b) => a.nome_municipio.localeCompare(b.nome_municipio, 'pt-BR', { sensitivity: 'base' }));
-    await Promise.all(docs.map((d) => resolveUrl(d.logo_file)));
+    await Promise.all(docs.flatMap((d) => [resolveUrl(d.logo_file), resolveUrl(d.captura_imagem_id)]));
     return docs.map(toMunicipio);
   },
 
@@ -179,6 +182,8 @@ export const api = {
       ...data,
       identidade: prev?.identidade ?? 'gove',
       bb_esquema: prev?.bb_esquema ?? 'capa',
+      // Site trocado: a captura antiga deixa de valer (o Editor captura de novo)
+      ...(prev && prev.url_domicilio === data.url_domicilio ? { captura_imagem_id: prev.captura_imagem_id ?? null, captura_em: prev.captura_em ?? null } : { captura_imagem_id: null, captura_em: null }),
       ...logo,
       data_criacao: prev?.data_criacao ?? now,
       data_atualizacao: now,
@@ -243,6 +248,27 @@ export const api = {
   },
 
   imagemUrl: (id: string) => urlOf(id),
+
+  /** Captura do site do domicílio eletrônico pelo conector da Gove (o artefato não abre sites externos). */
+  capturarSite: async (municipioId: number) => {
+    await municipiosCol.ready;
+    const prev = municipioDoc(municipioId);
+    if (!prev) throw new Error('Município não encontrado.');
+    const site = normalizeSite(prev.url_domicilio);
+    if (!site) throw new Error('Cadastre o site do domicílio eletrônico do município antes de capturar.');
+    const { dataUrl } = await connectorCapture(site);
+    // data URI → Blob sem fetch (a página do artefato não busca endereços data:)
+    const [head, b64] = dataUrl.split(',');
+    const file = new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], { type: /data:([^;]+)/.exec(head)?.[1] ?? 'image/jpeg' });
+    const { width, height } = await imageSize(file);
+    const stored = await putFile(file);
+    urls.set(stored.id, stored.url);
+    const capturadoEm = new Date().toISOString();
+    const old = prev.captura_imagem_id;
+    await municipiosCol.set({ ...prev, captura_imagem_id: stored.id, captura_em: capturadoEm });
+    if (old && old !== stored.id) void deleteFile(old);
+    return { id: stored.id, width, height, capturadoEm, site };
+  },
 
   preflight: async (items: QueueItem[]) => {
     const results: PreflightPeca[] = [];

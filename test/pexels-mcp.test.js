@@ -30,7 +30,7 @@ test('conector: token errado some (404); fluxo MCP completo', async () => {
     assert.equal(init.result.serverInfo.name, 'pexels-gove');
     assert.equal((await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) })).status, 202);
     const list = await (await rpc(url, 'tools/list')).json();
-    assert.deepEqual(list.result.tools.map((t) => t.name), ['search_photos', 'get_image']);
+    assert.deepEqual(list.result.tools.map((t) => t.name), ['search_photos', 'get_image', 'capture_site']);
 
     const r = await (await rpc(url, 'tools/call', { name: 'search_photos', arguments: { query: 'prefeitura', orientation: 'square' } })).json();
     const data = r.result.structuredContent;
@@ -44,6 +44,26 @@ test('conector: token errado some (404); fluxo MCP completo', async () => {
     assert.match(img.result.structuredContent.dataUrl, /^data:image\/png;base64,/);
     const bad = await (await rpc(url, 'tools/call', { name: 'get_image', arguments: { url: 'https://evil.example/x.jpg' } })).json();
     assert.equal(bad.result.isError, true);
+  } finally {
+    s.close();
+  }
+});
+
+test('conector: capture_site devolve a captura do site em JPEG (data URI)', async () => {
+  const sharp = (await import('sharp')).default;
+  const shot = await sharp({ create: { width: 1170, height: 2532, channels: 3, background: '#3B3E80' } }).png().toBuffer();
+  const seen = [];
+  const s = serve({ token: 'segredo-longo', capture: async (u) => (seen.push(u), shot) });
+  try {
+    const url = `${s.base}/segredo-longo`;
+    const tools = (await (await rpc(url, 'tools/list')).json()).result.tools.map((t) => t.name);
+    assert.ok(tools.includes('capture_site'));
+    const r = (await (await rpc(url, 'tools/call', { name: 'capture_site', arguments: { url: 'www.saocarlos.sp.gov.br' } })).json()).result;
+    assert.deepEqual(seen, ['https://www.saocarlos.sp.gov.br/']);
+    assert.equal(r.structuredContent.width, 1170);
+    assert.match(r.structuredContent.dataUrl, /^data:image\/jpeg;base64,/);
+    const bad = (await (await rpc(url, 'tools/call', { name: 'capture_site', arguments: { url: 'nada' } })).json()).result;
+    assert.equal(bad.isError, true);
   } finally {
     s.close();
   }

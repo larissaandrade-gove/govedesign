@@ -16,6 +16,9 @@ export type Municipio = {
   email?: string | null;
   /** Site do domicílio eletrônico (opcional): QR e faixa do modelo Portal Cidadão. */
   url_domicilio?: string | null;
+  /** Captura automática do site (tela do celular no Portal Cidadão) e quando foi feita. */
+  captura_imagem_id?: string | null;
+  captura_em?: string | null;
   logo_largura: number | null;
   logo_altura: number | null;
   logo_avisos: string[];
@@ -42,7 +45,8 @@ export type PieceOptions = {
   services: string[];
   texts: Record<string, Record<string, string>>;
   overrides: Record<string, Record<string, { dx: number; dy: number }>>;
-  mockup: { mode?: 'upload'; imageId?: string; focus?: { x: number; y: number } } | null;
+  /** `source: 'captura'`: a fila usa a captura mais recente do site do município. */
+  mockup: { mode?: 'upload'; imageId?: string; focus?: { x: number; y: number }; source?: 'envio' | 'captura' } | null;
 };
 export type QueueItem = { key: string; municipioId: number; municipioNome: string; layouts: string[]; options: PieceOptions };
 
@@ -90,6 +94,10 @@ export const api = {
     return request<Imagem>('api/imagens', { method: 'POST', body: form });
   },
   imagemUrl: (id: string) => `api/imagens/${id}`,
+
+  /** Captura a tela do celular a partir do site do domicílio eletrônico do município (servidor). */
+  capturarSite: (municipioId: number) =>
+    request<Imagem & { capturadoEm: string; site: string }>(`api/municipios/${municipioId}/captura`, { method: 'POST' }),
 
   preflight: (items: QueueItem[]) => request<{ pecas: PreflightPeca[]; ok: boolean }>('api/preflight', jsonBody({ items })),
   exportZip: async (items: QueueItem[]) => {

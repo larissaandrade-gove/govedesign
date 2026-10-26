@@ -310,3 +310,31 @@ test('cadastro: site do domicílio eletrônico é opcional e fica salvo', async 
   const b = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false, url_domicilio: 'https://www.saocarlos.sp.gov.br/' }, a.id);
   assert.equal(b.url_domicilio, 'https://www.saocarlos.sp.gov.br/');
 });
+
+test('captura do site: rota grava a imagem no município e a troca de site invalida', async () => {
+  const express = (await import('express')).default;
+  const { createPrintStudioRouter } = await import('../print-studio/server/router.js');
+  const db = openPrintDb(':memory:');
+  const m = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false, url_domicilio: 'https://www.saocarlos.sp.gov.br/' });
+  const shot = await sharp({ create: { width: 1170, height: 2532, channels: 3, background: '#3B3E80' } }).png().toBuffer();
+  const app = express();
+  app.use('/ps', createPrintStudioRouter({ db, capture: async () => shot }));
+  const srv = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${srv.address().port}/ps`;
+    const r = await fetch(`${base}/api/municipios/${m.id}/captura`, { method: 'POST' });
+    assert.equal(r.status, 201);
+    const img = await r.json();
+    assert.equal(img.width, 1170);
+    const saved = (await (await fetch(`${base}/api/municipios/${m.id}`)).json());
+    assert.equal(saved.captura_imagem_id, img.id);
+    assert.ok(saved.captura_em);
+    // mesmo site: a captura continua; site novo: a captura antiga deixa de valer
+    assert.equal(saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false, url_domicilio: 'https://www.saocarlos.sp.gov.br/' }, m.id).captura_imagem_id, img.id);
+    assert.equal(saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false, url_domicilio: 'https://portal.saocarlos.sp.gov.br/' }, m.id).captura_imagem_id, null);
+    const none = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: false });
+    assert.equal((await fetch(`${base}/api/municipios/${none.id}/captura`, { method: 'POST' })).status, 400);
+  } finally {
+    srv.close();
+  }
+});

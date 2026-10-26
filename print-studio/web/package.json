@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "bundle": "parcel build index.html --dist-dir dist --no-source-maps && html-inline dist/index.html > bundle.html",
+    "bundle": "vite build --config vite.bundle.config.ts",
     "bundle:artifact": "vite build --config vite.artifact.config.ts"
   },
   "dependencies": {
