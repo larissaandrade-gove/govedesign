@@ -19,6 +19,7 @@
     "lp:install": "npm --prefix lp-builder install",
     "lp:dev": "npm --prefix lp-builder run dev -- --port 5175",
     "lp:build": "npm --prefix lp-builder run build",
+    "vectorcraft": "node vectorcraft/scripts/serve.mjs",
     "vectorcraft:build": "node vectorcraft/scripts/build-web.mjs",
     "print:install": "cd print-studio/web && pnpm install",
     "print:build": "cd print-studio/web && pnpm run bundle",

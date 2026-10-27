@@ -1,7 +1,8 @@
-// Monta o VectorCraft embutido no Design System:
-//   design-system/src/embedded/vectorcraft.html        (barra Gove + carregador)
-//   design-system/src/embedded/vectorcraft/            (editor em WebAssembly: .js do wasm-bindgen
-//                                                       e o .wasm em gzip, dividido em partes)
+// Monta o VectorCraft, ferramenta interna de revisão e diagramação dos arquivos dos apps
+// (não faz parte do Design System):
+//   vectorcraft/dist/index.html          (barra Gove + carregador)
+//   vectorcraft/dist/vectorcraft/        (editor em WebAssembly: .js do wasm-bindgen, o .wasm em
+//                                         gzip dividido em partes e as fontes da marca)
 //
 // Uso:
 //   node vectorcraft/scripts/build-web.mjs                 só a página (reaproveita o .wasm já montado)
@@ -19,10 +20,10 @@ import { createRequire } from 'node:module';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '../..');
 const WEB = join(ROOT, 'vectorcraft/web');
-const OUT_HTML = join(ROOT, 'design-system/src/embedded/vectorcraft.html');
-const OUT_DIR = join(ROOT, 'design-system/src/embedded/vectorcraft');
+const OUT_HTML = join(ROOT, 'vectorcraft/dist/index.html');
+const OUT_DIR = join(ROOT, 'vectorcraft/dist/vectorcraft');
 const NAME = 'vectorcraft-web';
-// Cada arquivo de apoio do artefato tem limite de 15 MB: o .wasm vai em gzip, em partes menores
+// .wasm em gzip, em partes de 12 MB: cabe no git sem arquivos grandes demais
 const PART_BYTES = 12 * 1024 * 1024;
 const PARTS = join(OUT_DIR, 'parts.json');
 
@@ -67,7 +68,7 @@ if (srcIdx > 0) {
   const gz = gzipSync(raw, { level: 9 });
   const parts = [];
   for (let i = 0; i * PART_BYTES < gz.length; i++) {
-    // Extensão .wasm: tipo servido pelo artefato (o conteúdo é gzip; o carregador lê os bytes)
+    // Extensão .wasm: servido como application/wasm (o conteúdo é gzip; o carregador lê os bytes)
     const name = `${NAME}_bg.gz.part${String(i).padStart(2, '0')}.wasm`;
     writeFileSync(join(OUT_DIR, name), gz.subarray(i * PART_BYTES, (i + 1) * PART_BYTES));
     parts.push(name);

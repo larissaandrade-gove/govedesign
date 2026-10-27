@@ -1,9 +1,8 @@
-// VectorCraft no Gove Design System: barra de produção gráfica (abrir peça,
+// VectorCraft, ferramenta interna da Gove: barra de produção gráfica (abrir peça,
 // amostras CMYK GOVE/BB, converter para CMYK, checar e exportar PDF/X-1a) sobre
 // o editor vetorial, comandado pela API `window.vectorcraft`.
 import { FONT_FILES } from '../../print-studio/shared/tokens.js';
 import { PALETTES } from './palettes.js';
-import { takeHandoff } from '../../shared/handoff.js';
 
 const $ = (id) => document.getElementById(id);
 const vc = () => window.vectorcraft;
@@ -185,20 +184,6 @@ $('gv-export').addEventListener('click', guard(() => exportPdfx('x4')));
 $('gv-export-x1a').addEventListener('click', guard(() => exportPdfx('x1a')));
 $('gv-report-close').addEventListener('click', () => ($('gv-report').hidden = true));
 
-// Peça enviada pelo Print Studio (ou outro app do ecossistema)
-async function receive() {
-  const h = await takeHandoff('vectorcraft');
-  if (!h?.files?.length) return;
-  for (const f of h.files) await openBytes(f.name, f.bytes);
-  const n = h.files.length;
-  toast(`${n === 1 ? `Peça recebida${h.from ? ` do ${h.from}` : ''}: ${h.files[0].name}` : `${n} peças recebidas${h.from ? ` do ${h.from}` : ''}, uma por aba`}.`);
-}
-window.addEventListener('message', (e) => {
-  if (e.origin !== location.origin || e.data?.type !== 'gove:vectorcraft-open') return;
-  guard(() => openBytes(e.data.name, e.data.bytes))();
-});
-window.addEventListener('focus', guard(receive));
-
 /** Montserrat e as fontes BB: o texto das peças do Print Studio abre na fonte certa. */
 async function loadBrandFonts() {
   const api = await ready();
@@ -216,8 +201,5 @@ async function loadBrandFonts() {
 }
 
 export function started() {
-  guard(async () => {
-    await loadBrandFonts();
-    await receive();
-  })();
+  guard(loadBrandFonts)();
 }

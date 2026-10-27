@@ -39,7 +39,7 @@ try {
     loading.replaceChildren(
       Object.assign(document.createElement('strong'), { textContent: 'O VectorCraft não abriu neste navegador.' }),
       Object.assign(document.createElement('span'), {
-        textContent: 'Ele precisa de WebAssembly e WebGPU ou WebGL2. Abra no Chrome, Edge ou Safari atualizados, ou pelo servidor do projeto (/design-system/apps/vectorcraft.html).',
+        textContent: 'Ele precisa de WebAssembly e WebGPU ou WebGL2. Abra no Chrome, Edge ou Safari atualizados, ou rode `npm run vectorcraft` nesta máquina.',
       }),
     );
   }

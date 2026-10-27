@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, DownloadSimple, SealCheck, Tray, Broom, SpinnerGap, PenNib, Trash } from '@phosphor-icons/react';
-import { unzipSync } from 'fflate';
-import { putHandoff } from '../../../../shared/handoff.js';
+import { ArrowLeft, DownloadSimple, SealCheck, Tray, Broom, SpinnerGap, Trash } from '@phosphor-icons/react';
 import { StatusIcon, type Level } from '@/components/studio/CheckList';
 import { layoutShort } from '@/components/studio/LayoutGlyph';
 import { toast } from 'sonner';
@@ -17,40 +15,13 @@ type Props = { queue: QueueItem[]; onRemove: (key: string) => void; onClear: () 
 const layoutName = (id: string) => LAYOUTS.find((l: { id: string }) => l.id === id)?.name ?? id;
 const RANK: Record<Level, number> = { ok: 0, warn: 1, error: 2 };
 
-/** Dentro do Design System troca para a página do VectorCraft; fora dele, abre numa aba nova. */
-function openVectorCraft() {
-  try {
-    if (window.parent !== window && window.parent.location.origin === location.origin) {
-      window.parent.location.hash = '#app-vectorcraft';
-      return;
-    }
-  } catch {
-    /* pai de outra origem */
-  }
-  window.open(new URL('../design-system/apps/vectorcraft.html', location.href).href, '_blank', 'noopener');
-}
 export function Fila({ queue, onRemove, onClear }: Props) {
   const [checking, setChecking] = useState(false);
   const [report, setReport] = useState<{ pecas: PreflightPeca[]; ok: boolean } | null>(null);
   const [ack, setAck] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [refining, setRefining] = useState<string | null>(null);
   const total = queue.reduce((n, q) => n + q.layouts.length, 0);
 
-  /** Gera os PDFs da linha e abre no VectorCraft (uma aba por layout) para o refino vetorial. */
-  async function refine(q: QueueItem) {
-    setRefining(q.key);
-    try {
-      const zip = unzipSync(new Uint8Array(await (await api.exportZip([q])).arrayBuffer()));
-      const files = Object.entries(zip).map(([name, bytes]) => ({ name, bytes }));
-      await putHandoff('vectorcraft', { from: 'Print Studio', files });
-      openVectorCraft();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setRefining(null);
-    }
-  }
 
   async function verify() {
     setChecking(true);
@@ -141,17 +112,6 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                   </span>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                title="Abre os PDFs desta linha no VectorCraft para ajustes vetoriais e fechamento em PDF/X-1a"
-                aria-label={`Refinar ${q.municipioNome} no VectorCraft`}
-                disabled={refining !== null}
-                onClick={() => refine(q)}
-              >
-                {refining === q.key ? <SpinnerGap className="animate-spin" aria-hidden /> : <PenNib aria-hidden />}
-                Refinar no VectorCraft
-              </Button>
               <Button variant="ghost" size="icon" title="Remover da fila" aria-label={`Remover ${q.municipioNome} da fila`} onClick={() => onRemove(q.key)} className="hover:bg-destructive/10 hover:text-destructive">
                 <Trash />
               </Button>

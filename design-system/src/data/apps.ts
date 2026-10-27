@@ -1,4 +1,4 @@
-import { type Icon as IconType, Layout, LinkSimple, PenNib, Printer, Sparkle } from '@phosphor-icons/react';
+import { type Icon as IconType, Layout, LinkSimple, Printer, Sparkle } from '@phosphor-icons/react';
 import criativos1 from '../assets/apps/criativos-1.webp';
 import criativos2 from '../assets/apps/criativos-2.webp';
 import links1 from '../assets/apps/links-1.webp';
@@ -116,22 +116,5 @@ export const APPS: GoveApp[] = [
       { src: print1, caption: 'Editor com preview fiel ao PDF, sangria e área de segurança.' },
       { src: print2, caption: 'Verificação antes do download: sangria, fontes, CMYK e QR code.' },
     ],
-  },
-  {
-    id: 'vectorcraft',
-    desktopOnly: true,
-    tag: 'Impresso',
-    name: 'VectorCraft',
-    route: '/design-system/apps/vectorcraft.html',
-    icon: PenNib,
-    summary: 'Editor vetorial para refinar as peças antes da gráfica: abre o PDF do Print Studio (ou SVG, AI, EPS), aplica as amostras CMYK GOVE ou Banco do Brasil e fecha o arquivo em PDF/X-4 (ou X-1a).',
-    tagline: 'Refino vetorial e fechamento PDF/X.',
-    features: ['Abre PDF, AI, EPS e SVG', 'Amostras CMYK GOVE e BB', 'Conversão para CMYK', 'PDF/X-4 e X-1a com sangria e marcas de corte'],
-    stack: ['Rust', 'WebAssembly', 'WebGPU/WebGL2'],
-    folder: 'vectorcraft/',
-    run: 'npm run vectorcraft:build  →  http://localhost:3040/design-system/apps/vectorcraft.html',
-    sameServer: true,
-    embeddedNote: 'Roda aqui no navegador (WebAssembly; precisa de WebGPU ou WebGL2). No Print Studio, “Refinar no VectorCraft” traz a peça para cá.',
-    shots: [],
   },
 ];

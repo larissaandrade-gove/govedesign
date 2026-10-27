@@ -20,7 +20,7 @@ function copyEmbedded(): Plugin {
       mkdirSync(out, { recursive: true });
       for (const id of embedded) {
         copyFileSync(resolve(EMBED_DIR, `${id}.html`), resolve(out, `${id}.html`));
-        // Arquivos de apoio do app (ex.: o .wasm do VectorCraft) em src/embedded/<id>/
+        // Arquivos de apoio do app em src/embedded/<id>/, quando houver
         if (existsSync(resolve(EMBED_DIR, id))) cpSync(resolve(EMBED_DIR, id), resolve(out, id), { recursive: true });
       }
     },
