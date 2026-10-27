@@ -693,7 +693,7 @@ function serviceCircles({ services, right, left, y, d, gap, s, color = 'branco' 
     const cx = right - (n - i) * D - (n - 1 - i) * G;
     els.push({ type: 'circle', x: cx, y, w: D, h: D, stroke: color, lineWidth: 0.55 * s });
     const ic = D * 0.56;
-    els.push({ type: 'icon', paths: svc.paths, x: cx + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, stroke: color, lineWidth: 1.6, opacity: 1 });
+    els.push({ type: 'icon', paths: svc.paths, x: cx + (D - ic) / 2, y: y + (D - ic) / 2, w: ic, h: ic, fill: color, opacity: 1 });
   });
   return block('servicos', 'Ícones de serviços', els);
 }
@@ -958,7 +958,7 @@ function placeWatermark(spec, blocks) {
       const box = { x: BLEED_MM - size * 0.22, y, w: size, h: size };
       if (!avoid.some((p) => boxesIntersect(p, box))) {
         return block('marca-dagua', "Ícone do WhatsApp (fundo)", [
-          { type: 'icon', paths: WHATSAPP_OUTLINE.paths, inner: WHATSAPP_OUTLINE.inner, ...box, stroke: 'branco', lineWidth: Math.max(0.6, 24 * (1.1 / size)), opacity: 0.2, decorative: true },
+          { type: 'icon', paths: WHATSAPP_OUTLINE.paths, ...box, fill: 'branco', opacity: 0.2, decorative: true },
         ], { movable: false, exempt: true });
       }
     }

@@ -1,5 +1,5 @@
 // Miniatura proporcional do formato da peça (identifica o layout sem texto longo).
-import { FileText, Presentation, Sticker } from 'lucide-react';
+import { FileText, Presentation, Sticker } from '@phosphor-icons/react';
 
 const ICON: Record<string, typeof FileText> = { 'adesivo-5x10': Sticker, 'display-a6': Presentation };
 

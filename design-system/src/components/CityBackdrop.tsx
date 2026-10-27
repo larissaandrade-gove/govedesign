@@ -15,9 +15,9 @@ const PALETTES = {
     antenna: 'rgba(255, 90, 120, 0.9)',
     neonAlpha: 0.9,
   },
-  // Dia: prédios em tintas de lilás sobre o branco, janelas discretas
+  // Dia: prédios em tintas de lavanda sobre o branco, janelas discretas
   light: {
-    // Dia: Lilás claro e Ciano da identidade visual
+    // Dia: Lavanda claro e Ciano da identidade visual
     haze: ['rgba(162, 120, 218, 0)', 'rgba(162, 120, 218, 0.14)', 'rgba(90, 194, 205, 0.18)'],
     layers: ['#E4F4F6', '#E6DAF6', '#C9B2EC'],
     windows: ['rgba(90, 194, 205, 0.75)', 'rgba(255, 255, 255, 0.95)', 'rgba(162, 120, 218, 0.6)', 'rgba(90, 194, 205, 0.5)'],

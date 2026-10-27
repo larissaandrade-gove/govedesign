@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Copy, Eye, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Check, Copy, Eye, SpinnerGap, PencilSimple, Trash, X } from "@phosphor-icons/react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { buildShortUrl } from "@/lib/short-domain";
@@ -218,7 +218,7 @@ function LinksPage() {
                         onClick={() => startEdit(row)}
                         className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                       >
-                        <Pencil className="size-4" />
+                        <PencilSimple className="size-4" />
                       </button>
                       <button
                         type="button"
@@ -227,7 +227,7 @@ function LinksPage() {
                         onClick={() => setDeleting(row)}
                         className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Trash2 className="size-4" />
+                        <Trash className="size-4" />
                       </button>
                     </div>
                   </td>
@@ -374,7 +374,7 @@ function LinksPage() {
                 onClick={handleSave}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                {update.isPending && <Loader2 className="size-3.5 animate-spin" />}
+                {update.isPending && <SpinnerGap className="size-3.5 animate-spin" />}
                 Salvar alterações
               </button>
               <button
@@ -409,7 +409,7 @@ function LinksPage() {
               onClick={() => remove.mutate(deleting.id)}
               className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {remove.isPending && <Loader2 className="size-3.5 animate-spin" />}
+              {remove.isPending && <SpinnerGap className="size-3.5 animate-spin" />}
               Excluir definitivamente
             </button>
             <button

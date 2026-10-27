@@ -3,20 +3,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   ArrowRight,
-  CalendarDays,
+  CalendarDots,
   Check,
   Copy,
-  Download,
+  DownloadSimple,
   Eye,
   Globe,
-  Link2,
-  Loader2,
-  MousePointerClick,
-  Pencil,
+  Link as LinkIcon,
+  SpinnerGap,
+  CursorClick,
+  PencilSimple,
   Plus,
   Power,
-  Trash2,
-} from "lucide-react";
+  Trash,
+} from "@phosphor-icons/react";
 
 import { buildShortUrl } from "@/lib/short-domain";
 import { allLinksQuery, clickStatsQuery, type ShortLinkRow } from "@/lib/links-queries";
@@ -154,7 +154,7 @@ export function LinksPage() {
           title="Exportar CSV"
           className="icon-btn"
         >
-          <Download className="size-5" aria-hidden />
+          <DownloadSimple className="size-5" aria-hidden />
         </button>
       </header>
 
@@ -179,16 +179,16 @@ export function LinksPage() {
             <thead>
               <tr className="border-b border-border">
                 <th scope="col" className={th}>
-                  <IconHeader icon={Link2} label="Identificador" />
+                  <IconHeader icon={LinkIcon} label="Identificador" />
                 </th>
                 <th scope="col" className={`${th} hidden w-[34%] min-[900px]:table-cell`}>
                   <IconHeader icon={Globe} label="URL original" />
                 </th>
                 <th scope="col" className={`${th} w-16`}>
-                  <IconHeader icon={MousePointerClick} label="Cliques" />
+                  <IconHeader icon={CursorClick} label="Cliques" />
                 </th>
                 <th scope="col" className={`${th} hidden w-28 min-[900px]:table-cell`}>
-                  <IconHeader icon={CalendarDays} label="Criado em" />
+                  <IconHeader icon={CalendarDots} label="Criado em" />
                 </th>
                 <th scope="col" className={`${th} w-12 min-[900px]:w-24`}>
                   <IconHeader icon={Power} label="Status" />
@@ -250,7 +250,7 @@ export function LinksPage() {
                         onClick={() => startEdit(row)}
                         className="icon-btn"
                       >
-                        <Pencil className="size-5" aria-hidden />
+                        <PencilSimple className="size-5" aria-hidden />
                       </button>
                       <button
                         type="button"
@@ -259,7 +259,7 @@ export function LinksPage() {
                         onClick={() => setDeleting(row)}
                         className="icon-btn icon-btn-danger"
                       >
-                        <Trash2 className="size-5" aria-hidden />
+                        <Trash className="size-5" aria-hidden />
                       </button>
                     </div>
                   </td>
@@ -395,7 +395,7 @@ export function LinksPage() {
                 Cancelar
               </button>
               <button type="button" disabled={update.isPending} onClick={handleSave} className="btn btn-cta">
-                {update.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                {update.isPending && <SpinnerGap className="size-4 animate-spin" aria-hidden />}
                 Salvar alterações
               </button>
             </div>
@@ -429,7 +429,7 @@ export function LinksPage() {
               onClick={() => remove.mutate(deleting.id)}
               className="btn btn-danger"
             >
-              {remove.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {remove.isPending && <SpinnerGap className="size-4 animate-spin" aria-hidden />}
               Excluir definitivamente
             </button>
           </div>

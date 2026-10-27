@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Info, LayoutDashboard, Link2, Moon, Plus, Sun } from "lucide-react";
+import { Info, SquaresFour, Link as LinkIcon, Moon, Plus, Sun } from "@phosphor-icons/react";
 import { currentTheme, isEmbedded, setStandaloneTheme, type Theme } from "@gove/runtime";
 
 import { getShortDomainLabel } from "../lib/short-domain";
@@ -8,8 +8,8 @@ import { clicksCol, linksCol, ready, storageMode } from "../lib/store";
 import { GoveLogo } from "./GoveLogo";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/links", label: "Meus links", icon: Link2 },
+  { to: "/dashboard", label: "Dashboard", icon: SquaresFour },
+  { to: "/links", label: "Meus links", icon: LinkIcon },
   { to: "/criar-link", label: "Criar link", icon: Plus },
 ] as const;
 
@@ -163,8 +163,17 @@ export function ArtifactShell({ children }: { children: ReactNode }) {
                       "aria-current": "page",
                     }}
                   >
-                    <item.icon className="size-5 shrink-0" aria-hidden />
-                    <span className="sr-only min-[900px]:not-sr-only">{item.label}</span>
+                    {({ isActive }) => (
+                      <>
+                        {/* Peso fill só no item ativo (regra de ícones do Design System). */}
+                        <item.icon
+                          weight={isActive ? "fill" : "regular"}
+                          className="size-5 shrink-0"
+                          aria-hidden
+                        />
+                        <span className="sr-only min-[900px]:not-sr-only">{item.label}</span>
+                      </>
+                    )}
                   </Link>
                 </li>
               ))}

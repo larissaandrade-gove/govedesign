@@ -5,7 +5,14 @@
  */
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { CalendarCheck, ChevronDown, ListChecks, Megaphone, Wand2, type LucideIcon } from "lucide-react";
+import {
+  CalendarCheck,
+  CaretDown,
+  ListChecks,
+  Megaphone,
+  MagicWand,
+  type Icon as PhosphorIcon,
+} from "@phosphor-icons/react";
 
 import type { CreativeFormat } from "@/lib/creative/renderer";
 
@@ -13,11 +20,11 @@ import type { CreativeFormat } from "@/lib/creative/renderer";
 export const RESPONSIVE_LABEL = "sr-only min-[900px]:not-sr-only";
 
 /** Abas do gerador: cada função com nome e uma linha do que faz. */
-const TABS: { to: "/" | "/studio" | "/follow-ups"; modelo?: string; label: string; hint: string; icon: LucideIcon }[] = [
+const TABS: { to: "/" | "/studio" | "/follow-ups"; modelo?: string; label: string; hint: string; icon: PhosphorIcon }[] = [
   { to: "/", label: "Mídia paga", hint: "Anúncios em lote para redes", icon: Megaphone },
   { to: "/follow-ups", modelo: "evento", label: "Eventos", hint: "Confirmação de presença com foto", icon: CalendarCheck },
   { to: "/follow-ups", modelo: "atualizacao", label: "Atualizações", hint: "Novidades de produto", icon: ListChecks },
-  { to: "/studio", label: "Studio de cards", hint: "Um card por vez, layout livre", icon: Wand2 },
+  { to: "/studio", label: "Studio de cards", hint: "Um card por vez, layout livre", icon: MagicWand },
 ];
 
 export function AppHeader({ actions }: { actions?: ReactNode }) {
@@ -41,11 +48,16 @@ export function AppHeader({ actions }: { actions?: ReactNode }) {
                 activeProps={{ className: "border-primary bg-primary/10 text-foreground", "aria-current": "page" }}
                 inactiveProps={{ className: "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground" }}
               >
-                <Icon className="size-5 shrink-0" aria-hidden="true" />
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-sm font-semibold leading-tight">{label}</span>
-                  <span className="hidden truncate text-xs leading-tight text-muted-foreground min-[900px]:block">{hint}</span>
-                </span>
+                {({ isActive }) => (
+                  <>
+                    {/* Aba ativa: ícone preenchido (peso fill só no estado selecionado). */}
+                    <Icon className="size-5 shrink-0" weight={isActive ? "fill" : "regular"} aria-hidden="true" />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-sm font-semibold leading-tight">{label}</span>
+                      <span className="hidden truncate text-xs leading-tight text-muted-foreground min-[900px]:block">{hint}</span>
+                    </span>
+                  </>
+                )}
               </Link>
             </li>
           ))}
@@ -119,7 +131,7 @@ export function Section({
   onToggle,
   children,
 }: {
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   title: string;
   summary?: string | undefined;
   open: boolean;
@@ -141,7 +153,7 @@ export function Section({
             {summary}
           </span>
         )}
-        <ChevronDown
+        <CaretDown
           className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
         />

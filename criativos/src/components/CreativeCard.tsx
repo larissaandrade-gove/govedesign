@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, Palette, RefreshCw, ShieldCheck, TriangleAlert, Type } from "lucide-react";
+import { DownloadSimple, Palette, ArrowsClockwise, ShieldCheck, Warning, TextT } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { validateCreative, type ComplianceReport } from "@/lib/creative/brand";
@@ -105,7 +105,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
             </span>
           ) : report ? (
             <span className="inline-flex items-center text-amber-700" title={failing}>
-              <TriangleAlert className="size-5" aria-hidden="true" />
+              <Warning className="size-5" aria-hidden="true" />
               <span className="sr-only">Fora do manual: {failing}</span>
             </span>
           ) : null}
@@ -119,7 +119,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           aria-label={`Baixar PNG do criativo ${index + 1}`}
           title="Baixar PNG"
         >
-          <Download aria-hidden="true" />
+          <DownloadSimple aria-hidden="true" />
         </Button>
         <Button
           size="icon"
@@ -129,7 +129,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           aria-label={`Copiar texto alternativo do criativo ${index + 1}`}
           title="Copiar texto alternativo (alt)"
         >
-          <Type aria-hidden="true" />
+          <TextT aria-hidden="true" />
         </Button>
         <Button
           size="icon"
@@ -149,7 +149,7 @@ export function CreativeCard({ spec, index, onReload, onRecolor }: Props) {
           aria-label={`Recarregar combinação do card ${index + 1}`}
           title="Sortear novo criativo"
         >
-          <RefreshCw aria-hidden="true" />
+          <ArrowsClockwise aria-hidden="true" />
         </Button>
       </div>
     </article>

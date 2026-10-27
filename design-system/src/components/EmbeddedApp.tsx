@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Minimize2 } from 'lucide-react';
+import { ArrowsIn, SpinnerGap } from '@phosphor-icons/react';
 
 /**
  * Roda um app do ecossistema dentro do design system: cada app é um HTML
@@ -44,7 +44,7 @@ export function EmbeddedApp({ id, name, reloadKey, full, onExitFull, hash = '' }
       />
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-background text-text-secondary" role="status">
-          <Loader2 className="size-6 animate-spin" aria-hidden />
+          <SpinnerGap className="size-6 animate-spin" aria-hidden />
           <span className="sr-only">Carregando {name}</span>
         </div>
       )}
@@ -56,7 +56,7 @@ export function EmbeddedApp({ id, name, reloadKey, full, onExitFull, hash = '' }
           title="Sair da tela cheia (Esc)"
           className="absolute bottom-space-2 right-space-2 flex size-11 items-center justify-center rounded-full border border-secondary bg-background/95 text-text-primary shadow-md backdrop-blur"
         >
-          <Minimize2 className="size-5" aria-hidden />
+          <ArrowsIn className="size-5" aria-hidden />
         </button>
       )}
     </section>

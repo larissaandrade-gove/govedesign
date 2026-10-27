@@ -1,15 +1,15 @@
-import { FileText, MonitorSmartphone, Presentation, Printer, Mail, Megaphone } from 'lucide-react';
+import { Devices, Envelope, FileText, Megaphone, PresentationChart, Printer } from '@phosphor-icons/react';
 import guide from '../../../docs/diretrizes-gove.md?raw';
 import { DocActions } from './DocActions';
 import { Reveal } from './Reveal';
 import { SectionHeader } from './SectionHeader';
 
 const COVERS = [
-  { icon: Presentation, label: 'Apresentações' },
+  { icon: PresentationChart, label: 'Apresentações' },
   { icon: Megaphone, label: 'Mídia social e anúncios' },
   { icon: Printer, label: 'Impressos' },
-  { icon: Mail, label: 'E-mails' },
-  { icon: MonitorSmartphone, label: 'Interfaces e páginas' },
+  { icon: Envelope, label: 'E-mails' },
+  { icon: Devices, label: 'Interfaces e páginas' },
   { icon: FileText, label: 'Documentos' },
 ];
 

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Loader2, Pencil, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, SpinnerGap, PencilSimple, X } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -185,7 +185,7 @@ function LinkDetailPage() {
                     onClick={startEditUrl}
                     className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    <Pencil className="size-3.5" />
+                    <PencilSimple className="size-3.5" />
                     Editar
                   </button>
                 )}
@@ -211,7 +211,7 @@ function LinkDetailPage() {
                       onClick={handleSaveUrl}
                       className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
                     >
-                      {updateUrl.isPending && <Loader2 className="size-3.5 animate-spin" />}
+                      {updateUrl.isPending && <SpinnerGap className="size-3.5 animate-spin" />}
                       Salvar destino
                     </button>
                     <button
@@ -247,7 +247,7 @@ function LinkDetailPage() {
                 onClick={() => toggle.mutate(!row.is_active)}
                 className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors hover:bg-secondary disabled:opacity-60"
               >
-                {toggle.isPending && <Loader2 className="size-3.5 animate-spin" />}
+                {toggle.isPending && <SpinnerGap className="size-3.5 animate-spin" />}
                 {row.is_active ? "Desativar link" : "Ativar link"}
               </button>
             </div>

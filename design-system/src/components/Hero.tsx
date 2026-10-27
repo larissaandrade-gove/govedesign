@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@phosphor-icons/react';
 import { Button } from './ui/Button';
 import { CityBackdrop } from './CityBackdrop';
 import { fadeUp, stagger } from '../lib/motion';
@@ -19,7 +19,7 @@ export function Hero() {
 
   return (
     <section ref={ref} id="inicio" className={`relative isolate overflow-hidden bg-gradient-to-br from-background from-35% ${dark ? 'to-primary' : 'to-secondary'}`}>
-      {/* Cidade (noturna no escuro, em tons de lilás no claro) com overlay para manter a leitura */}
+      {/* Cidade (noturna no escuro, em tons de lavanda no claro) com overlay para manter a leitura */}
       <motion.div style={{ y: cityY }} className="absolute inset-x-0 bottom-0 -z-10 h-[85%]">
         <CityBackdrop className={`h-full w-full ${dark ? 'opacity-80' : 'opacity-70'}`} seed={11} theme={theme} />
       </motion.div>

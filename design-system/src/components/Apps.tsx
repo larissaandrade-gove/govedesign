@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { appHref } from '../lib/router';
 import { APP_TAGS, appsFor, type AppTag } from '../data/apps';
 import { useMobile } from '../lib/useMobile';
@@ -40,10 +40,10 @@ export function Apps() {
         <SectionHeader id="aplicacoes" title="Aplicações" />
         <div className="mb-space-4 flex gap-space-1">
           <button type="button" className={arrow} onClick={() => move(-1)} disabled={edge.start} aria-label="Aplicações anteriores" title="Anteriores">
-            <ChevronLeft className="size-5" aria-hidden />
+            <CaretLeft className="size-5" aria-hidden />
           </button>
           <button type="button" className={arrow} onClick={() => move(1)} disabled={edge.end} aria-label="Próximas aplicações" title="Próximas">
-            <ChevronRight className="size-5" aria-hidden />
+            <CaretRight className="size-5" aria-hidden />
           </button>
         </div>
       </div>
@@ -82,7 +82,7 @@ export function Apps() {
                 <span className="font-display text-body-large font-bold text-text-primary">{name}</span>
                 <span className="text-caption text-text-secondary">{tagline}</span>
               </span>
-              <ChevronRight className="size-5 shrink-0 text-text-muted lg:hidden" aria-hidden />
+              <CaretRight className="size-5 shrink-0 text-text-muted lg:hidden" aria-hidden />
             </a>
           </li>
         ))}

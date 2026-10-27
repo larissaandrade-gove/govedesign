@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, Globe, Link2, MousePointerClick, Plus, Power } from "lucide-react";
+import { CheckCircle, Globe, Link as LinkIcon, CursorClick, Plus, Power } from "@phosphor-icons/react";
 
 import { clickStatsQuery, dashboardStatsQuery, recentLinksQuery } from "@/lib/links-queries";
 import { IconHeader, StatusBadge } from "../components/LinkTools";
@@ -16,9 +16,9 @@ export function DashboardPage() {
   const clicks = useQuery(clickStatsQuery);
 
   const indicators = [
-    { label: "Total de links", value: stats.data?.totalLinks ?? 0, icon: Link2 },
-    { label: "Links ativos", value: stats.data?.activeLinks ?? 0, icon: CircleCheck },
-    { label: "Total de cliques", value: stats.data?.totalClicks ?? 0, icon: MousePointerClick },
+    { label: "Total de links", value: stats.data?.totalLinks ?? 0, icon: LinkIcon },
+    { label: "Links ativos", value: stats.data?.activeLinks ?? 0, icon: CheckCircle },
+    { label: "Total de cliques", value: stats.data?.totalClicks ?? 0, icon: CursorClick },
   ];
 
   const rows = links.data ?? [];
@@ -61,9 +61,9 @@ export function DashboardPage() {
               aria-hidden
               className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_5rem_6rem] gap-4 border-b border-border px-5 py-2.5 text-muted-foreground min-[900px]:grid"
             >
-              <IconHeader icon={Link2} label="Identificador" />
+              <IconHeader icon={LinkIcon} label="Identificador" />
               <IconHeader icon={Globe} label="URL original" />
-              <IconHeader icon={MousePointerClick} label="Cliques" />
+              <IconHeader icon={CursorClick} label="Cliques" />
               <span className="text-right">
                 <IconHeader icon={Power} label="Status" />
               </span>
@@ -86,7 +86,7 @@ export function DashboardPage() {
                         className="inline-flex items-center gap-1 font-mono text-sm text-muted-foreground tabular-nums"
                         title={`${count} cliques`}
                       >
-                        <MousePointerClick className="size-3.5 min-[900px]:hidden" aria-hidden />
+                        <CursorClick className="size-3.5 min-[900px]:hidden" aria-hidden />
                         {count}
                         <span className="sr-only"> cliques</span>
                       </span>

@@ -1,27 +1,27 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronLeft,
-  Columns2,
-  Columns3,
-  FileCode2,
+  CaretLeft,
+  Columns,
+  Kanban,
+  FileCode,
   Image as ImageIcon,
-  LayoutPanelTop,
-  Loader2,
+  SquareHalfBottom,
+  SpinnerGap,
   Monitor,
-  MousePointerClick,
-  PanelRight,
-  RectangleHorizontal,
-  Save,
-  Settings2,
-  Smartphone,
-  SquareStack,
+  CursorClick,
+  SidebarSimple,
+  Rectangle,
+  FloppyDisk,
+  SlidersHorizontal,
+  DeviceMobile,
+  Cards,
   Timer,
-  Type as TypeIcon,
-  Upload,
-  Video as VideoIcon,
+  TextT,
+  UploadSimple,
+  VideoCamera,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getPage, savePage } from "@/lib/gove/storage";
 import { Canvas } from "@/components/gove/Canvas";
@@ -203,7 +203,7 @@ function EditorPage() {
   if (!page) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
+        <SpinnerGap className="size-6 animate-spin text-muted-foreground" aria-hidden />
       </main>
     );
   }
@@ -259,17 +259,17 @@ function EditorPage() {
     setPage((current) => (current && selectedId ? finalize(moveSibling(current, selectedId, dir)) : current));
 
   const blocks = [
-    { label: "Seção", icon: LayoutPanelTop, action: () => setPage((p) => (p ? finalize(addSection(p, makeSection({ children: [makeRow(1)] }))) : p)) },
-    { label: "Linha (1 col.)", icon: RectangleHorizontal, action: () => insertRow(1) },
-    { label: "Linha (2 col.)", icon: Columns2, action: () => insertRow(2) },
-    { label: "Linha (3 col.)", icon: Columns3, action: () => insertRow(3) },
-    { label: "Texto", icon: TypeIcon, action: () => insertLeaf(makeText()) },
-    { label: "Botão (CTA)", icon: MousePointerClick, action: () => insertLeaf(makeButton()) },
+    { label: "Seção", icon: SquareHalfBottom, action: () => setPage((p) => (p ? finalize(addSection(p, makeSection({ children: [makeRow(1)] }))) : p)) },
+    { label: "Linha (1 col.)", icon: Rectangle, action: () => insertRow(1) },
+    { label: "Linha (2 col.)", icon: Columns, action: () => insertRow(2) },
+    { label: "Linha (3 col.)", icon: Kanban, action: () => insertRow(3) },
+    { label: "Texto", icon: TextT, action: () => insertLeaf(makeText()) },
+    { label: "Botão (CTA)", icon: CursorClick, action: () => insertLeaf(makeButton()) },
     { label: "Imagem", icon: ImageIcon, action: () => insertLeaf(makeImage()) },
-    { label: "Card com ícone", icon: SquareStack, action: () => insertLeaf(makeCard()) },
-    { label: "Vídeo (embed)", icon: VideoIcon, action: () => insertLeaf(makeVideo()) },
+    { label: "Card com ícone", icon: Cards, action: () => insertLeaf(makeCard()) },
+    { label: "Vídeo (embed)", icon: VideoCamera, action: () => insertLeaf(makeVideo()) },
     { label: "Contagem regressiva", icon: Timer, action: () => insertLeaf(makeCountdown()) },
-    { label: "Formulário RD Station", icon: FileCode2, action: () => insertLeaf(makeRdForm()) },
+    { label: "Formulário RD Station", icon: FileCode, action: () => insertLeaf(makeRdForm()) },
   ];
 
   const savedLabel = savedAt
@@ -290,7 +290,7 @@ function EditorPage() {
           aria-label="Voltar para Projetos"
           title="Voltar para Projetos"
         >
-          <ChevronLeft className="!size-6" aria-hidden />
+          <CaretLeft className="!size-6" aria-hidden />
         </Button>
         <Input
           value={nome}
@@ -307,7 +307,7 @@ function EditorPage() {
             aria-label="Desktop"
             title="Desktop"
           >
-            <Monitor aria-hidden />
+            <Monitor weight={!mobile ? "fill" : "regular"} aria-hidden />
             <span className={`sr-only min-[900px]:not-sr-only`}>Desktop</span>
           </Button>
           <Button
@@ -318,7 +318,7 @@ function EditorPage() {
             aria-label="Mobile"
             title="Mobile"
           >
-            <Smartphone aria-hidden />
+            <DeviceMobile weight={mobile ? "fill" : "regular"} aria-hidden />
             <span className={`sr-only min-[900px]:not-sr-only`}>Mobile</span>
           </Button>
         </div>
@@ -345,7 +345,7 @@ function EditorPage() {
             aria-label="Propriedades"
             title="Propriedades"
           >
-            <PanelRight aria-hidden />
+            <SidebarSimple mirrored weight={panelOpen ? "fill" : "regular"} aria-hidden />
           </Button>
           <Button
             variant="ghost"
@@ -354,7 +354,7 @@ function EditorPage() {
             aria-label="Exportar HTML"
             title="Exportar HTML"
           >
-            <Upload aria-hidden />
+            <UploadSimple aria-hidden />
           </Button>
           <Button
             variant="cta"
@@ -364,7 +364,7 @@ function EditorPage() {
             aria-label="Salvar"
             title={savedLabel || "Salvar"}
           >
-            <Save aria-hidden />
+            <FloppyDisk aria-hidden />
             <span className={`sr-only min-[900px]:not-sr-only`}>Salvar</span>
           </Button>
         </div>
@@ -386,7 +386,7 @@ function EditorPage() {
             title="Configurações da página"
             className={`mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border text-left text-sm font-semibold transition-colors hover:bg-secondary min-[900px]:mb-4 min-[900px]:justify-start min-[900px]:px-3`}
           >
-            <Settings2 className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+            <SlidersHorizontal className="size-5 shrink-0 text-muted-foreground" aria-hidden />
             <span className={`sr-only min-[900px]:not-sr-only`}>Página{bb ? " · BB" : ""}</span>
           </button>
           <h2 className={`sr-only min-[900px]:not-sr-only min-[900px]:mb-3 min-[900px]:block text-xs font-bold tracking-wide uppercase text-muted-foreground`}>

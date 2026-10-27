@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { SpinnerGap, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -147,7 +147,7 @@ export function PexelsPicker({
   return (
     <div className="space-y-2">
       <div className="relative">
-        <Search
+        <MagnifyingGlass
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
@@ -189,7 +189,7 @@ export function PexelsPicker({
                   />
                   {picking === p.id && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/40">
-                      <Loader2 className="size-5 animate-spin text-white" aria-hidden="true" />
+                      <SpinnerGap className="size-5 animate-spin text-white" aria-hidden="true" />
                     </span>
                   )}
                 </button>
@@ -223,7 +223,7 @@ export function PexelsPicker({
                 disabled={searching}
                 onClick={() => void run(query.trim(), next)}
               >
-                {searching ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+                {searching ? <SpinnerGap className="animate-spin" aria-hidden="true" /> : null}
                 Mais fotos
               </Button>
             )}

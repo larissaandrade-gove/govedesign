@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { ImagePlus, Trash2, UserRound } from "lucide-react";
+import { ImageSquare, Trash, User } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ export function ExpertFields({
   return (
     <section className="rounded-xl border border-border bg-card">
       <div className="flex min-h-12 items-center gap-3 px-3">
-        <UserRound className="size-5 shrink-0 text-primary" aria-hidden="true" />
+        <User className="size-5 shrink-0 text-primary" aria-hidden="true" />
         <Label
           htmlFor={`${id}-enabled`}
           className="flex min-h-12 flex-1 cursor-pointer items-center text-sm font-semibold"
@@ -64,7 +64,7 @@ export function ExpertFields({
               />
             )}
             <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
-              <ImagePlus className="size-5" aria-hidden="true" />
+              <ImageSquare className="size-5" aria-hidden="true" />
               <span>{value.photo ? "Trocar foto" : "Foto do especialista"}</span>
               <input
                 id={`${id}-photo`}
@@ -97,7 +97,7 @@ export function ExpertFields({
                 title="Remover foto"
                 onClick={() => onChange({ ...value, photo: null })}
               >
-                <Trash2 className="size-4" aria-hidden="true" />
+                <Trash className="size-4" aria-hidden="true" />
               </Button>
             )}
           </div>

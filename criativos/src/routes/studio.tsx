@@ -1,23 +1,23 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck,
+  SealCheck,
   Check,
-  Download,
-  ImagePlus,
-  Layers,
-  LayoutTemplate,
+  DownloadSimple,
+  ImageSquare,
+  Stack,
+  Layout,
   Moon,
   Palette,
-  Search,
+  MagnifyingGlass,
   ShieldCheck,
   Sun,
-  Trash2,
-  TriangleAlert,
-  Type,
-  Upload,
+  Trash,
+  Warning,
+  TextT,
+  UploadSimple,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -504,7 +504,7 @@ function Studio() {
                 aria-label="Copiar texto alternativo"
                 title="Copiar texto alternativo (alt)"
               >
-                <Type aria-hidden="true" />
+                <TextT aria-hidden="true" />
               </Button>
               <Button
                 size="lg"
@@ -512,7 +512,7 @@ function Studio() {
                 onClick={download}
                 disabled={!report?.pass || expertBlocked}
               >
-                <Download aria-hidden="true" />
+                <DownloadSimple aria-hidden="true" />
                 Baixar PNG
               </Button>
             </div>
@@ -525,7 +525,7 @@ function Studio() {
                 {report.pass ? (
                   <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
                 ) : (
-                  <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+                  <Warning className="size-4 shrink-0" aria-hidden="true" />
                 )}
                 {report.pass ? "Conforme com o manual de marca" : failing}
               </p>
@@ -537,7 +537,7 @@ function Studio() {
         <aside aria-label="Ajustes" className="order-2 space-y-3">
           <IdentitySwitch value={identity} onChange={changeIdentity} />
           <Section
-            icon={Type}
+            icon={TextT}
             title="Textos"
             open={open.texts}
             onToggle={() => toggleSection("texts")}
@@ -639,7 +639,7 @@ function Studio() {
           <ExpertFields value={expert} onChange={onExpertChange} />
 
           <Section
-            icon={LayoutTemplate}
+            icon={Layout}
             title="Diagramação"
             summary={
               (expert.enabled ? EXPERT_LAYOUTS : STUDIO_LAYOUTS).find((l) => l.key === layout)
@@ -669,7 +669,7 @@ function Studio() {
           </Section>
 
           <Section
-            icon={ImagePlus}
+            icon={ImageSquare}
             title="Fundo"
             summary={
               bg.kind === "upload"
@@ -732,7 +732,7 @@ function Studio() {
                 dragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
               }`}
             >
-              <Upload className="size-5 shrink-0" aria-hidden="true" />
+              <UploadSimple className="size-5 shrink-0" aria-hidden="true" />
               Enviar ou arrastar imagem
               <input
                 type="file"
@@ -803,7 +803,7 @@ function Studio() {
                           : "text-muted-foreground hover:bg-card hover:text-foreground"
                       }`}
                     >
-                      <Icon className="size-4" aria-hidden="true" />
+                      <Icon className="size-4" weight={tone === t ? "fill" : "regular"} aria-hidden="true" />
                     </button>
                   );
                 })}
@@ -819,7 +819,7 @@ function Studio() {
                       : "text-muted-foreground hover:bg-card hover:text-foreground"
                   }`}
                 >
-                  <Layers className="size-4" aria-hidden="true" />
+                  <Stack className="size-4" weight={remix ? "fill" : "regular"} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -828,7 +828,7 @@ function Studio() {
                   onClick={() => setBg({ kind: "preset", key: "vivid-deep" })}
                   className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-card hover:text-foreground"
                 >
-                  <Trash2 className="size-4" aria-hidden="true" />
+                  <Trash className="size-4" aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -836,7 +836,7 @@ function Studio() {
           </Section>
 
           <Section
-            icon={BadgeCheck}
+            icon={SealCheck}
             title="Logomarca"
             summary={
               isBB && bbLogoResult

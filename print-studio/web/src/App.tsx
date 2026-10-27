@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image as ImageIcon, LayoutTemplate, ListOrdered, Loader2, MapPin, type LucideIcon } from 'lucide-react';
+import { Image as ImageIcon, Layout, ListNumbers, SpinnerGap, MapPin, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Toaster } from '@/components/ui/sonner';
 import { api, type LogosFixos, type Municipio, type QueueItem } from '@/lib/api';
 import { loadPrintFonts } from '@/lib/studio';
@@ -50,10 +50,10 @@ export default function App() {
   }, [queue]);
 
   const pieces = queue.reduce((n, q) => n + q.layouts.length, 0);
-  const tabs: { id: Tab; label: string; icon: LucideIcon; count?: number }[] = [
-    { id: 'editor', label: 'Editor de layout', icon: LayoutTemplate },
+  const tabs: { id: Tab; label: string; icon: PhosphorIcon; count?: number }[] = [
+    { id: 'editor', label: 'Editor de layout', icon: Layout },
     { id: 'municipios', label: 'Municípios', icon: MapPin },
-    { id: 'fila', label: 'Fila de exportação', icon: ListOrdered, count: pieces },
+    { id: 'fila', label: 'Fila de exportação', icon: ListNumbers, count: pieces },
     { id: 'config', label: 'Logos fixos', icon: ImageIcon },
   ];
 
@@ -85,7 +85,7 @@ export default function App() {
                   current ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <Icon className="size-5 shrink-0" aria-hidden />
+                <Icon weight={current ? 'fill' : 'regular'} className="size-5 shrink-0" aria-hidden />
                 <span className="sr-only min-[900px]:not-sr-only min-[900px]:whitespace-nowrap">{label}</span>
                 {count ? (
                   <span
@@ -105,7 +105,7 @@ export default function App() {
         {fontError && <p className="p-6 text-destructive" role="alert">Não foi possível carregar a fonte Montserrat. Recarregue a página.</p>}
         {!fontsReady && !fontError && (
           <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground" role="status">
-            <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando fontes…
+            <SpinnerGap className="size-4 animate-spin" aria-hidden /> Carregando fontes…
           </p>
         )}
         {fontsReady && (

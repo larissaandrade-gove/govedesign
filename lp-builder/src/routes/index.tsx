@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, FilePlus2, LogOut, Pencil, Trash2 } from "lucide-react";
+import { Clock, FilePlus, SignOut, PencilSimple, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { HERO_PRESETS, pageFromPreset, type HeroPresetId } from "@/lib/gove/presets";
 import { createPage, deletePage, listPages, type StoredPage } from "@/lib/gove/storage";
@@ -75,7 +75,7 @@ function Dashboard() {
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
             <Button variant="ghost" size="iconTouch" onClick={signOut} aria-label="Sair" title="Sair">
-              <LogOut aria-hidden />
+              <SignOut aria-hidden />
             </Button>
           </div>
         </div>
@@ -91,7 +91,7 @@ function Dashboard() {
             aria-label="Nova Landing Page"
             title="Nova Landing Page"
           >
-            <FilePlus2 aria-hidden />
+            <FilePlus aria-hidden />
             <span className="hidden min-[480px]:inline">Nova Landing Page</span>
           </Button>
         </div>
@@ -142,7 +142,7 @@ function Dashboard() {
                     title="Editar"
                     onClick={() => navigate({ to: "/editor/$id", params: { id: page.id } })}
                   >
-                    <Pencil aria-hidden />
+                    <PencilSimple aria-hidden />
                   </Button>
                   <Button
                     variant="ghost"
@@ -152,7 +152,7 @@ function Dashboard() {
                     className="hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => handleRemove(page.id)}
                   >
-                    <Trash2 aria-hidden />
+                    <Trash aria-hidden />
                   </Button>
                 </div>
               </li>

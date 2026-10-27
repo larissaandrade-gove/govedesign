@@ -1,4 +1,4 @@
-import { LayoutTemplate, Link2, PenTool, Printer, ScanSearch, Sparkles, type LucideIcon } from 'lucide-react';
+import { type Icon as IconType, Layout, LinkSimple, PenNib, Printer, Scan, Sparkle } from '@phosphor-icons/react';
 import revisor1 from '../assets/apps/revisor-1.webp';
 import revisor2 from '../assets/apps/revisor-2.webp';
 import criativos1 from '../assets/apps/criativos-1.webp';
@@ -18,7 +18,7 @@ export type GoveApp = {
   id: string;
   name: string;
   route: string;
-  icon: LucideIcon;
+  icon: IconType;
   summary: string;
   /** Uma linha de benefício para cartões e listas. */
   tagline: string;
@@ -50,7 +50,7 @@ export const APPS: GoveApp[] = [
     tag: 'Marca',
     name: 'Revisor de identidade visual',
     route: '/revisor/',
-    icon: ScanSearch,
+    icon: Scan,
     summary: 'Audita peças de marketing e apresentações contra os tokens de marca e entrega um relatório com o que corrigir.',
     tagline: 'Audita peças contra a marca.',
     features: ['Paleta por Delta-E', 'Montserrat e gradientes', 'Margens, logo e ícones', 'Relatório HTML + ZIP'],
@@ -69,7 +69,7 @@ export const APPS: GoveApp[] = [
     tag: 'Mídia',
     name: 'Gerador de criativos',
     route: '/criativos',
-    icon: Sparkles,
+    icon: Sparkle,
     summary: 'Mídia paga, eventos, atualizações de produto e Studio de cards num só lugar, nas identidades GOVE ou Banco do Brasil, com as travas de marca aplicadas.',
     tagline: 'Mídia paga, eventos e atualizações.',
     features: ['Mídia paga em lote', 'Eventos', 'Atualizações', 'Studio de cards', 'GOVE ou Banco do Brasil'],
@@ -88,7 +88,7 @@ export const APPS: GoveApp[] = [
     tag: 'Web',
     name: 'Gove Links',
     route: '/links',
-    icon: Link2,
+    icon: LinkSimple,
     summary: 'Encurta links das campanhas e registra cada clique, sem guardar IP ou dados pessoais.',
     tagline: 'Links curtos com cliques e QR.',
     features: ['Links curtos', 'Cliques por dispositivo e país', 'Dashboard', 'Domínio próprio'],
@@ -104,7 +104,7 @@ export const APPS: GoveApp[] = [
     tag: 'Web',
     name: 'LP Builder',
     route: '/lp',
-    icon: LayoutTemplate,
+    icon: Layout,
     summary: 'Monta landing pages visualmente com blocos prontos e exporta o HTML para a plataforma final.',
     tagline: 'Landing pages em minutos.',
     features: ['Presets de Hero', 'Contagem regressiva', 'Formulário RD Station', 'Desktop e mobile'],
@@ -144,7 +144,7 @@ export const APPS: GoveApp[] = [
     tag: 'Impresso',
     name: 'VectorCraft',
     route: '/design-system/apps/vectorcraft.html',
-    icon: PenTool,
+    icon: PenNib,
     summary: 'Editor vetorial para refinar as peças antes da gráfica: abre o PDF do Print Studio (ou SVG, AI, EPS), aplica as amostras CMYK GOVE ou Banco do Brasil e fecha o arquivo em PDF/X-4 (ou X-1a).',
     tagline: 'Refino vetorial e fechamento PDF/X.',
     features: ['Abre PDF, AI, EPS e SVG', 'Amostras CMYK GOVE e BB', 'Conversão para CMYK', 'PDF/X-4 e X-1a com sangria e marcas de corte'],

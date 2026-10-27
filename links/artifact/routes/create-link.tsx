@@ -5,7 +5,7 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Copy, Loader2, Plus } from "lucide-react";
+import { Check, Copy, SpinnerGap, Plus } from "@phosphor-icons/react";
 
 import { buildShortUrl, getShortDomainLabel } from "@/lib/short-domain";
 import { createShortLink, sanitizeSlug, SlugTakenError, type CreatedLink } from "@/lib/short-links";
@@ -162,7 +162,7 @@ export function CreateLinkPage() {
             )}
 
             <button type="submit" disabled={mutation.isPending} className="btn btn-cta w-full sm:w-auto">
-              {mutation.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {mutation.isPending && <SpinnerGap className="size-4 animate-spin" aria-hidden />}
               {mutation.isPending ? "Encurtando…" : "Encurtar link"}
             </button>
           </form>

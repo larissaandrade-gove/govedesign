@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Lock } from "lucide-react";
+import { Lock } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/gove/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

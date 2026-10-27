@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ImageOff, Loader2, Upload } from 'lucide-react';
+import { ImageBroken, SpinnerGap, UploadSimple } from '@phosphor-icons/react';
 import { StatusIcon } from '@/components/studio/CheckList';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,7 @@ export function Configuracoes({ logos, onChanged }: Props) {
                   <img src={api.logoFixoUrl(chave, l.atualizado)} alt={titulo} className="max-h-full max-w-full object-contain" />
                 ) : (
                   <span className="flex flex-col items-center gap-1 text-xs text-[#5B6770]">
-                    <ImageOff className="size-6" aria-hidden /> Nenhum arquivo
+                    <ImageBroken className="size-6" aria-hidden /> Nenhum arquivo
                   </span>
                 )}
               </div>
@@ -63,7 +63,7 @@ export function Configuracoes({ logos, onChanged }: Props) {
                 </span>
                 <Button asChild variant="secondary" disabled={busy === chave}>
                   <label className="cursor-pointer">
-                    {busy === chave ? <Loader2 className="animate-spin" aria-hidden /> : <Upload aria-hidden />} {busy === chave ? 'Enviando…' : l ? 'Substituir' : 'Enviar'}
+                    {busy === chave ? <SpinnerGap className="animate-spin" aria-hidden /> : <UploadSimple aria-hidden />} {busy === chave ? 'Enviando…' : l ? 'Substituir' : 'Enviar'}
                     <input type="file" accept=".png,.svg,image/png,image/svg+xml" className="sr-only" aria-label={`${l ? 'Substituir' : 'Enviar'} ${titulo}`} onChange={(e) => e.target.files?.[0] && upload(chave, e.target.files[0])} />
                   </label>
                 </Button>

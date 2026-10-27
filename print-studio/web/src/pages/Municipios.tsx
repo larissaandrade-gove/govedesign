@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, ImageOff, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Check, ImageBroken, PencilSimple, Plus, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -40,7 +40,7 @@ export function Municipios({ municipios, onChanged }: Props) {
       <h1 className="sr-only">Municípios</h1>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1 sm:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input type="search" aria-label="Buscar município" placeholder="Buscar" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
         </div>
         <Button onClick={() => (setEditing(null), setFormOpen(true))} className="ml-auto bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
@@ -77,7 +77,7 @@ export function Municipios({ municipios, onChanged }: Props) {
                     </div>
                   ) : (
                     <span className="flex h-10 w-16 items-center justify-center rounded border border-dashed border-destructive/60 text-destructive" title="Sem logo">
-                      <ImageOff className="size-4" aria-hidden />
+                      <ImageBroken className="size-4" aria-hidden />
                       <span className="sr-only">Sem logo</span>
                     </span>
                   )}
@@ -97,10 +97,10 @@ export function Municipios({ municipios, onChanged }: Props) {
                 <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{new Date(m.data_atualizacao).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell className="whitespace-nowrap text-right">
                   <Button variant="ghost" size="icon" title="Editar" aria-label={`Editar ${m.nome_municipio}`} onClick={() => (setEditing(m), setFormOpen(true))}>
-                    <Pencil />
+                    <PencilSimple />
                   </Button>
                   <Button variant="ghost" size="icon" title="Excluir" aria-label={`Excluir ${m.nome_municipio}`} onClick={() => setRemoving(m)} className="hover:bg-destructive/10 hover:text-destructive">
-                    <Trash2 />
+                    <Trash />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -120,7 +120,7 @@ export function Municipios({ municipios, onChanged }: Props) {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRemoving(null)}>Cancelar</Button>
             <Button variant="destructive" onClick={remove}>
-              <Trash2 aria-hidden /> Excluir
+              <Trash aria-hidden /> Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

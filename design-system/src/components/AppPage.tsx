@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronLeft, ChevronRight, Copy, Info, Maximize2, RotateCcw, Terminal } from 'lucide-react';
+import { ArrowCounterClockwise, ArrowLeft, ArrowsOut, CaretLeft, CaretRight, Check, Copy, Info, TerminalWindow } from '@phosphor-icons/react';
 import { APPS } from '../data/apps';
 import { appHref } from '../lib/router';
 import { fadeUp, stagger } from '../lib/motion';
@@ -9,7 +9,7 @@ import { EmbeddedApp, hasEmbedded } from './EmbeddedApp';
 /** Botão só de ícone: 44×44, rótulo acessível e dica. */
 function IconButton({ label, onClick, href, children, pressed }: { label: string; onClick?: () => void; href?: string; children: React.ReactNode; pressed?: boolean }) {
   const cls =
-    'flex size-11 shrink-0 items-center justify-center rounded-md text-text-primary no-underline transition-colors hover:bg-secondary/60 aria-pressed:bg-secondary/70 aria-expanded:bg-secondary/70';
+    'flex size-11 shrink-0 items-center justify-center rounded-full text-text-primary no-underline transition-colors hover:bg-secondary/60 aria-pressed:bg-secondary/70 aria-expanded:bg-secondary/70';
   return href ? (
     <a href={href} aria-label={label} title={label} className={cls}>
       {children}
@@ -59,26 +59,30 @@ export function AppPage({ appId }: { appId: string }) {
   }
 
   return (
-    <article className="gutter pb-[96px] pt-[64px] lg:pb-space-4 lg:pt-space-2" aria-labelledby="app-title">
+    <article className="gutter pb-space-3 pt-[72px] lg:pb-space-4 lg:pt-space-2" aria-labelledby="app-title">
       <motion.div key={app.id} variants={stagger} initial="hidden" animate="visible" className="flex flex-col gap-space-2">
         {/* Barra de ferramentas do app */}
         <motion.header variants={fadeUp} className="relative flex items-center gap-space-1" ref={infoRef}>
-          <IconButton label="Voltar para Aplicações" href="#aplicacoes">
-            <ChevronLeft className="size-6" aria-hidden />
-          </IconButton>
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
-            <Icon className="size-5" />
+          {/* No celular, voltar e o nome do app ficam na top app bar (Sidebar) */}
+          <span className="hidden lg:contents">
+            <IconButton label="Voltar para Aplicações" href="#aplicacoes">
+              <ArrowLeft className="size-6" aria-hidden />
+            </IconButton>
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
+              <Icon className="size-5" />
+            </span>
           </span>
-          <h1 id="app-title" className="mr-auto min-w-0 truncate font-display text-[20px] font-extrabold leading-tight sm:text-h3">
+          <h1 id="app-title" className="sr-only mr-auto min-w-0 truncate font-display text-h3 lg:not-sr-only">
             {app.name}
           </h1>
+          <span className="flex-1 lg:hidden" aria-hidden />
           {/* No celular, a troca de app fica na aba Apps: sobra espaço para o nome */}
           <span className="hidden sm:contents">
             <IconButton label={`Anterior: ${prev.name}`} href={appHref(prev.id)}>
-              <ChevronLeft className="size-5" aria-hidden />
+              <CaretLeft className="size-5" aria-hidden />
             </IconButton>
             <IconButton label={`Próximo: ${next.name}`} href={appHref(next.id)}>
-              <ChevronRight className="size-5" aria-hidden />
+              <CaretRight className="size-5" aria-hidden />
             </IconButton>
           </span>
           <span className="mx-1 hidden h-6 w-px bg-secondary sm:block" aria-hidden />
@@ -88,11 +92,11 @@ export function AppPage({ appId }: { appId: string }) {
           {hasEmbedded(embedId) && (
             <>
               <IconButton label="Recarregar" onClick={() => setReloadKey((n) => n + 1)}>
-                <RotateCcw className="size-5" aria-hidden />
+                <ArrowCounterClockwise className="size-5" aria-hidden />
               </IconButton>
               <span className="hidden sm:contents">
                 <IconButton label="Tela cheia" onClick={() => setFull(true)}>
-                  <Maximize2 className="size-5" aria-hidden />
+                  <ArrowsOut className="size-5" aria-hidden />
                 </IconButton>
               </span>
             </>
@@ -114,7 +118,7 @@ export function AppPage({ appId }: { appId: string }) {
               </ul>
               <p className="text-caption text-text-secondary">{app.embeddedNote}</p>
               <div className="flex items-center gap-space-1 rounded-md bg-surface py-1 pl-space-2 pr-1">
-                <Terminal className="size-4 shrink-0 text-text-muted" aria-hidden />
+                <TerminalWindow className="size-4 shrink-0 text-text-muted" aria-hidden />
                 <code className="token min-w-0 flex-1 select-all truncate" title={app.run}>
                   {app.run.split('  →')[0]}
                 </code>

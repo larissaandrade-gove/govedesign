@@ -6,21 +6,21 @@
  * muda de cor entre o tema claro (padrão) e o escuro. Nunca usar preto puro (#000).
  */
 export const colors = {
-  background: { name: 'Fundo', usage: 'Fundo de toda a interface: Branco no claro, Roxo Noite no escuro.' },
-  surface: { name: 'Superfície', usage: 'Cards, modais e popovers: Gelo no claro, Grafite no escuro.' },
+  background: { name: 'Fundo', usage: 'Fundo de toda a interface: Branco no claro, Noite no escuro.' },
+  surface: { name: 'Superfície', usage: 'Cards, modais e popovers: Branco no claro, Grafite no escuro.' },
   secondary: { name: 'Sutil', usage: 'Bordas, divisores e preenchimentos de hover. Contraste baixo: sempre com outra pista visual.' },
   'text-primary': { name: 'Texto forte', usage: 'Títulos e ênfases.' },
   'text-secondary': { name: 'Texto', usage: 'Corpo de texto e parágrafos.' },
   'text-muted': { name: 'Texto apagado', usage: 'Somente desabilitado e placeholder.' },
-  primary: { name: 'Roxo Gove', usage: 'Botões principais e elementos de marca. Texto sobre ele: on-primary (branco).' },
-  accent: { name: 'Amarelo Ouro', usage: 'Uma ação importante por tela. Texto sobre ele: on-accent (Roxo Noite).' },
-  highlight: { name: 'Destaque', usage: 'Ícones e textos em destaque: Roxo Gove no claro, Amarelo Ouro no escuro.' },
-  link: { name: 'Link', usage: 'Links e itens ativos em texto: Roxo Gove no claro, Lilás no escuro.' },
-  lilac: { name: 'Lilás', usage: 'Bordas em hover e brilho neon. Não usar como texto sobre o branco.' },
+  primary: { name: 'Roxo', usage: 'Botões principais e elementos de marca. Texto sobre ele: on-primary (branco).' },
+  accent: { name: 'Amarelo', usage: 'Uma ação importante por tela. Texto sobre ele: on-accent (Noite).' },
+  highlight: { name: 'Destaque', usage: 'Ícones e textos em destaque: Roxo no claro, Amarelo no escuro.' },
+  link: { name: 'Link', usage: 'Links e itens ativos em texto: Roxo no claro, Ciano no escuro (8,2:1 sobre o Noite).' },
+  lilac: { name: 'Lavanda', usage: 'Bordas em hover e brilho neon. Não usar como texto sobre o branco.' },
   cyan: { name: 'Ciano', usage: 'Destaques informativos e séries de gráficos.' },
   blue: { name: 'Azul', usage: 'Elementos informativos e séries de gráficos secundárias.' },
-  'on-primary': { name: 'Sobre o primary', usage: 'Texto e ícones sobre o Roxo Gove.' },
-  'on-accent': { name: 'Sobre o accent', usage: 'Texto e ícones sobre o Amarelo Ouro.' },
+  'on-primary': { name: 'Sobre o primary', usage: 'Texto e ícones sobre o Roxo.' },
+  'on-accent': { name: 'Sobre o accent', usage: 'Texto e ícones sobre o Amarelo.' },
   success: { name: 'Sucesso', usage: 'Somente estado de interface (concluído, enviado). Nunca em peças de marca.' },
   error: { name: 'Erro', usage: 'Somente estado de interface (campo inválido, falha). Nunca em peças de marca.' },
 };
@@ -33,7 +33,7 @@ export const themes = {
   light: {
     background: '#FFFFFF',
     surface: '#F4F4F4',
-    secondary: '#E3D8F3', // bordas e preenchimentos sutis (tinta do Lilás)
+    secondary: '#E3D8F3', // bordas e preenchimentos sutis (tinta do Lavanda)
     'text-primary': '#20133D',
     'text-secondary': '#2F3539',
     'text-muted': '#5B6770',
@@ -50,20 +50,21 @@ export const themes = {
     error: '#B42318',
   },
   dark: {
+    // Tema Noturno do design system Gove: a paleta não tem um segundo branco (hierarquia por tamanho e peso)
     background: '#20133D',
     surface: '#2F3539',
     secondary: '#351F65',
-    'text-primary': '#FFFFFF',
+    'text-primary': '#F4F4F4',
     'text-secondary': '#F4F4F4',
     'text-muted': '#5B6770',
     primary: '#3D0099',
     accent: '#FFC72C',
     highlight: '#FFC72C',
-    link: '#A278DA',
+    link: '#5AC2CD', // Lavanda só em texto grande sobre o Noite
     lilac: '#A278DA',
     cyan: '#5AC2CD',
     blue: '#16499F',
-    'on-primary': '#FFFFFF',
+    'on-primary': '#F4F4F4',
     'on-accent': '#20133D',
     success: '#75E0A7',
     error: '#FDA29B',
@@ -84,10 +85,10 @@ export const themeShadows = {
   dark: {
     sm: '0 2px 4px rgba(0,0,0,0.5)',
     md: '0 8px 16px rgba(0,0,0,0.6)',
-    'glow-purple': '0 0 20px rgba(162, 120, 218, 0.4)',
-    'glow-purple-strong': '0 0 30px rgba(162, 120, 218, 0.6)',
+    'glow-purple': '0 0 20px rgba(162, 120, 218, 0.45)',
+    'glow-purple-strong': '0 0 28px rgba(162, 120, 218, 0.65)',
     'glow-yellow': '0 0 15px rgba(255, 199, 44, 0.5)',
-    'glow-yellow-strong': '0 0 28px rgba(255, 199, 44, 0.75)',
+    'glow-yellow-strong': '0 0 24px rgba(255, 199, 44, 0.7)',
     'card-hover': '0 8px 16px rgba(0,0,0,0.6), 0 0 20px rgba(162, 120, 218, 0.4)',
   },
 };
@@ -103,12 +104,12 @@ export const fonts = {
   sans: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
 };
 
-/** Escala tipográfica: [tamanho, { altura de linha, peso, tracking }]. */
+/** Escala tipográfica Major Third (1.250): [tamanho, { altura de linha, peso, tracking }] — design system Gove. */
 export const typeScale = {
-  display: ['64px', { lineHeight: '1.05', fontWeight: '900', letterSpacing: '-0.02em' }],
-  h1: ['48px', { lineHeight: '1.1', fontWeight: '800', letterSpacing: '-0.015em' }],
-  h2: ['32px', { lineHeight: '1.2', fontWeight: '700' }],
-  h3: ['24px', { lineHeight: '1.3', fontWeight: '700' }],
+  display: ['64px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
+  h1: ['48px', { lineHeight: '1.2', fontWeight: '700', letterSpacing: '-0.015em' }],
+  h2: ['32px', { lineHeight: '1.3', fontWeight: '600' }],
+  h3: ['24px', { lineHeight: '1.4', fontWeight: '600' }],
   'body-large': ['18px', { lineHeight: '1.6', fontWeight: '400' }],
   body: ['16px', { lineHeight: '1.5', fontWeight: '400' }],
   caption: ['14px', { lineHeight: '1.4', fontWeight: '500' }],

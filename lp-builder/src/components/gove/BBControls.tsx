@@ -3,7 +3,7 @@
  * seletor de identidade, esquemas BB, amostras só da paleta, cor de texto
  * automática (com a razão de contraste), logomarca e checagem BB.
  */
-import { AlertTriangle, CheckCircle2, Wand2 } from "lucide-react";
+import { Warning, CheckCircle, MagicWand } from "@phosphor-icons/react";
 import {
   BB_LOGO_RULES,
   BB_PALETTE,
@@ -163,9 +163,9 @@ export function TextColorField({
         role={ok ? undefined : "alert"}
       >
         {ok ? (
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+          <CheckCircle className="mt-0.5 size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
         ) : (
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <Warning className="mt-0.5 size-4 shrink-0" aria-hidden />
         )}
         <span>
           {bbName(value)} sobre {bgName}: {fmtRatio(ratio)}:1{" "}
@@ -377,7 +377,7 @@ export function BBStatus({ issues, onAutoFix }: { issues: AuditIssue[]; onAutoFi
   if (!issues.length)
     return (
       <p className="flex items-center gap-2 rounded-xl bg-secondary px-3 py-2 text-sm font-semibold">
-        <CheckCircle2 className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+        <CheckCircle className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
         Identidade BB ok: textos 4,5:1+ e só cores da paleta.
       </p>
     );
@@ -387,7 +387,7 @@ export function BBStatus({ issues, onAutoFix }: { issues: AuditIssue[]; onAutoFi
       className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3"
     >
       <p className="flex items-center gap-2 text-sm font-bold text-destructive">
-        <AlertTriangle className="size-4 shrink-0" aria-hidden />
+        <Warning className="size-4 shrink-0" aria-hidden />
         {issues.length} pendência(s) da identidade BB
       </p>
       <ul className="max-h-48 space-y-1 overflow-y-auto text-xs text-destructive">
@@ -398,7 +398,7 @@ export function BBStatus({ issues, onAutoFix }: { issues: AuditIssue[]; onAutoFi
         ))}
       </ul>
       <Button variant="cta" size="touch" className="w-full" onClick={onAutoFix}>
-        <Wand2 aria-hidden /> Corrigir automaticamente
+        <MagicWand aria-hidden /> Corrigir automaticamente
       </Button>
     </div>
   );

@@ -1,6 +1,6 @@
 import { findClaude } from '../lib/claude';
 import { useEffect, useState, type ReactNode } from 'react';
-import { LogIn, ShieldAlert } from 'lucide-react';
+import { ShieldWarning, SignIn } from '@phosphor-icons/react';
 import { GoveLogo } from './GoveLogo';
 
 type State = 'checking' | 'ok' | 'signed-out' | 'guest';
@@ -48,7 +48,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
           </p>
         ) : (
           <>
-            {state === 'guest' ? <ShieldAlert className="size-8 text-[#FFC72C]" aria-hidden /> : <LogIn className="size-8 text-[#FFC72C]" aria-hidden />}
+            {state === 'guest' ? <ShieldWarning className="size-8 text-[#FFC72C]" aria-hidden /> : <SignIn className="size-8 text-[#FFC72C]" aria-hidden />}
             <h1 className="font-display text-h3">{state === 'guest' ? 'Acesso só para a equipe Gove' : 'Entre com sua conta Gove'}</h1>
             <p className="text-body text-[#E9E1F7]">{state === 'guest' ? 'Peça acesso à área de design.' : 'Entre no claude.ai com seu e-mail @gove.digital e abra esta página de novo.'}</p>
           </>

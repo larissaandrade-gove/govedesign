@@ -20,12 +20,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{
 <header style="display: flex; align-items: center; gap: 4px; padding: 12px 12px 12px 8px; border-bottom: 1px solid #E3D8F3">
 <sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
 <button type="button" onClick="{{back}}" aria-label="Voltar para as frentes" style="width: 44px; height: 44px; border: 0; background: transparent; color: #20133D; display: flex; align-items: center; justify-content: center; cursor: pointer">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+<svg width="22" height="22"  aria-hidden="true" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path></svg>
 </button>
 </sc-if>
 <h1 style="flex: 1; margin: 0 0 0 8px; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 22px; color: #20133D">{{heading}}</h1>
 <a href="Main.dc.html" aria-label="Fechar" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #5B6770">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+<svg width="22" height="22"  aria-hidden="true" viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path></svg>
 </a>
 </header>
 
@@ -35,7 +35,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{
 <button type="button" onClick="{{f.pick}}" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 16px; border: 2px solid #E3D8F3; background: #FFFFFF; text-align: left; cursor: pointer; font-family: Inter, sans-serif">
 <span style="display: flex; align-items: center; gap: 12px">
 <span style="width: 44px; height: 44px; border-radius: 10px; background: #E3D8F3; color: #3D0099; display: flex; align-items: center; justify-content: center">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg>
+<svg width="20" height="20"  aria-hidden="true" viewBox="0 0 256 256" fill="currentColor"><path d="{{f.d}}"></path></svg>
 </span>
 <span style="font-weight: 600; font-size: 18px; color: #20133D">{{f.label}}</span>
 </span>
@@ -86,7 +86,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{
 
 <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
 <p style="margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 18px; color: #20133D">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E7A46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM8 12l3 3 5-6"></path></svg>
+<svg width="24" height="24"  aria-hidden="true" viewBox="0 0 256 256" fill="currentColor"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path></svg>
 DS-7Q4K2M · {{label}}
 </p>
 <p style="margin: 0; font-size: 15px; color: #2F3539">Entrega a partir de {{date}}. RAR, e-mail e agenda atualizados.</p>
@@ -114,10 +114,10 @@ class Component extends DCLogic {
       return `${wd}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
     };
     const FRONTS = [
-      { id: 'redesign', label: 'Redesign', text: 'Ajuste de diagramação e cores de peças existentes. Envie a peça atual.', days: 6, pieces: ['Post', 'Carrossel', 'Banner', 'Folder'], formats: ['Post 1:1', 'Story 9:16', '16:9', 'A4'], d: 'M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' },
-      { id: 'video', label: 'Edição de vídeo', text: 'Corte e edição de vídeos de eventos da Gove. Envie o link dos arquivos brutos.', days: 12, pieces: ['Aftermovie', 'Reels', 'Depoimento'], formats: ['16:9', 'Story 9:16', 'Post 1:1'], d: 'M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4zM4 11l16-4M4 11L3 7l15-4 1 4' },
-      { id: 'impressos', label: 'Documentação impressa', text: 'Arquivos para gráfica em formatos especiais ou estratégicos.', days: 6, pieces: ['Folder', 'Cartilha', 'Convite', 'Certificado'], formats: ['A4', 'A5', 'A3', '21×21 cm'], d: 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z' },
-      { id: 'brindes', label: 'Brindes e outros materiais', text: 'Marca aplicada em garrafas, mochilas, itens tech e afins. Envie o link de cada item.', days: 6, pieces: ['Garrafa', 'Mochila', 'Caneca', 'Camiseta'], formats: ['Área de gravação', '5×5 cm', '8×4 cm'], d: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z' },
+      { id: 'redesign', label: 'Redesign', text: 'Ajuste de diagramação e cores de peças existentes. Envie a peça atual.', days: 6, pieces: ['Post', 'Carrossel', 'Banner', 'Folder'], formats: ['Post 1:1', 'Story 9:16', '16:9', 'A4'], d: 'M248,92.68a15.86,15.86,0,0,0-4.69-11.31L174.63,12.68a16,16,0,0,0-22.63,0L123.57,41.11l-58,21.77A16.06,16.06,0,0,0,55.35,75.23L32.11,214.68A8,8,0,0,0,40,224a8.4,8.4,0,0,0,1.32-.11l139.44-23.24a16,16,0,0,0,12.35-10.17l21.77-58L243.31,104A15.87,15.87,0,0,0,248,92.68Zm-69.87,92.19L63.32,204l47.37-47.37a28,28,0,1,0-11.32-11.32L52,192.7,71.13,77.86,126,57.29,198.7,130ZM112,132a12,12,0,1,1,12,12A12,12,0,0,1,112,132Zm96-15.32L139.31,48l24-24L232,92.68Z' },
+      { id: 'video', label: 'Edição de vídeo', text: 'Corte e edição de vídeos de eventos da Gove. Envie o link dos arquivos brutos.', days: 12, pieces: ['Aftermovie', 'Reels', 'Depoimento'], formats: ['16:9', 'Story 9:16', 'Post 1:1'], d: 'M216,104H102.09L210,75.51a8,8,0,0,0,5.68-9.84l-8.16-30a15.93,15.93,0,0,0-19.42-11.13L35.81,64.74a15.75,15.75,0,0,0-9.7,7.4,15.51,15.51,0,0,0-1.55,12L32,111.56c0,.14,0,.29,0,.44v88a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V112A8,8,0,0,0,216,104ZM192.16,40l6,22.07-22.62,6L147.42,51.83Zm-66.69,17.6,28.12,16.24-36.94,9.75L88.53,67.37Zm-79.4,44.62-6-22.08,26.5-7L94.69,89.4ZM208,200H48V120H208v80Z' },
+      { id: 'impressos', label: 'Documentação impressa', text: 'Arquivos para gráfica em formatos especiais ou estratégicos.', days: 6, pieces: ['Folder', 'Cartilha', 'Convite', 'Certificado'], formats: ['A4', 'A5', 'A3', '21×21 cm'], d: 'M214.67,72H200V40a8,8,0,0,0-8-8H64a8,8,0,0,0-8,8V72H41.33C27.36,72,16,82.77,16,96v80a8,8,0,0,0,8,8H56v32a8,8,0,0,0,8,8H192a8,8,0,0,0,8-8V184h32a8,8,0,0,0,8-8V96C240,82.77,228.64,72,214.67,72ZM72,48H184V72H72ZM184,208H72V160H184Zm40-40H200V152a8,8,0,0,0-8-8H64a8,8,0,0,0-8,8v16H32V96c0-4.41,4.19-8,9.33-8H214.67c5.14,0,9.33,3.59,9.33,8Zm-24-52a12,12,0,1,1-12-12A12,12,0,0,1,200,116Z' },
+      { id: 'brindes', label: 'Brindes e outros materiais', text: 'Marca aplicada em garrafas, mochilas, itens tech e afins. Envie o link de cada item.', days: 6, pieces: ['Garrafa', 'Mochila', 'Caneca', 'Camiseta'], formats: ['Área de gravação', '5×5 cm', '8×4 cm'], d: 'M216,72H180.92c.39-.33.79-.65,1.17-1A29.53,29.53,0,0,0,192,49.57,32.62,32.62,0,0,0,158.44,16,29.53,29.53,0,0,0,137,25.91a54.94,54.94,0,0,0-9,14.48,54.94,54.94,0,0,0-9-14.48A29.53,29.53,0,0,0,97.56,16,32.62,32.62,0,0,0,64,49.57,29.53,29.53,0,0,0,73.91,71c.38.33.78.65,1.17,1H40A16,16,0,0,0,24,88v32a16,16,0,0,0,16,16v64a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V136a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72ZM149,36.51a13.69,13.69,0,0,1,10-4.5h.49A16.62,16.62,0,0,1,176,49.08a13.69,13.69,0,0,1-4.5,10c-9.49,8.4-25.24,11.36-35,12.4C137.7,60.89,141,45.5,149,36.51Zm-64.09.36A16.63,16.63,0,0,1,96.59,32h.49a13.69,13.69,0,0,1,10,4.5c8.39,9.48,11.35,25.2,12.39,34.92-9.72-1-25.44-4-34.92-12.39a13.69,13.69,0,0,1-4.5-10A16.6,16.6,0,0,1,84.87,36.87ZM40,88h80v32H40Zm16,48h64v64H56Zm144,64H136V136h64Zm16-80H136V88h80v32Z' },
     ];
     const s = this.state;
     const front = FRONTS.find((f) => f.id === s.front);

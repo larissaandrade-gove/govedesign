@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, Film, Palette, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { DownloadSimple, FilmStrip, Palette, ArrowsClockwise, ShieldCheck, Warning } from "@phosphor-icons/react";
 import { FormatChip } from "@/components/AppChrome";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -190,7 +190,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
           </span>
         ) : report ? (
           <span className="inline-flex shrink-0 items-center pr-1 text-amber-700" title={failing}>
-            <TriangleAlert className="size-5" aria-hidden="true" />
+            <Warning className="size-5" aria-hidden="true" />
             <span className="sr-only">Fora do manual: {failing}</span>
           </span>
         ) : null}
@@ -202,7 +202,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
           disabled={!!busy}
           className="min-h-11 min-w-0 flex-1"
         >
-          <Download aria-hidden="true" />
+          <DownloadSimple aria-hidden="true" />
           MP4 {FORMAT_LABEL[preview]}
         </Button>
         <Button
@@ -214,7 +214,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
           aria-label={`Baixar os 3 formatos do vídeo ${index + 1}`}
           title="Gera os 3 formatos em MP4"
         >
-          <Film aria-hidden="true" />
+          <FilmStrip aria-hidden="true" />
         </Button>
         <Button
           size="icon"
@@ -236,7 +236,7 @@ export function VideoCard({ spec, index, onReload, onRecolor }: Props) {
           aria-label={`Recarregar combinação do vídeo ${index + 1}`}
           title="Sortear nova combinação de texto"
         >
-          <RefreshCw aria-hidden="true" />
+          <ArrowsClockwise aria-hidden="true" />
         </Button>
       </div>
     </article>

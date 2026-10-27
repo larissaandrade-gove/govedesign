@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
-import { Download, ExternalLink, Loader2, X, type LucideIcon } from "lucide-react";
+import { DownloadSimple, ArrowSquareOut, SpinnerGap, X, type Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { saveFile } from "@gove/runtime";
 
 import { buildShortUrl } from "../lib/short-domain";
@@ -62,9 +62,9 @@ export function TestLinkButton({
       className="icon-btn"
     >
       {pending ? (
-        <Loader2 className="size-5 animate-spin" aria-hidden />
+        <SpinnerGap className="size-5 animate-spin" aria-hidden />
       ) : (
-        <ExternalLink className="size-5" aria-hidden />
+        <ArrowSquareOut className="size-5" aria-hidden />
       )}
     </button>
   );
@@ -143,7 +143,7 @@ export function QrPanel({ slug }: { slug: string }) {
               onClick={() => download(kind)}
               className="btn btn-secondary"
             >
-              <Download className="size-4" aria-hidden />
+              <DownloadSimple className="size-4" aria-hidden />
               {kind.toUpperCase()}
             </button>
           ))}
@@ -234,7 +234,7 @@ export function StatusBadge({ active, compact = false }: { active: boolean; comp
 }
 
 /** Rótulo de coluna como ícone, com o texto para leitores de tela e tooltip. */
-export function IconHeader({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+export function IconHeader({ icon: Icon, label }: { icon: PhosphorIcon; label: string }) {
   return (
     <span title={label} className="inline-flex items-center gap-1.5">
       <Icon className="size-4" aria-hidden />
@@ -259,7 +259,7 @@ export function ActiveSwitch({
     <div className="flex min-h-11 items-center justify-between gap-4">
       <span className="text-sm font-medium">Link ativo</span>
       <span className="flex items-center gap-2">
-        {pending && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />}
+        {pending && <SpinnerGap className="size-4 animate-spin text-muted-foreground" aria-hidden />}
         <button
           type="button"
           role="switch"

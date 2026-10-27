@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { Warning, ArrowDown, ArrowUp, Trash } from "@phosphor-icons/react";
 import { IconPicker } from "./IconPicker";
 import { PexelsSearch, creditFor } from "./PexelsSearch";
 import { checkContrast } from "@/lib/gove/contrast";
@@ -125,7 +125,7 @@ function ColorField({
       </div>
       {warning ? (
         <p role="alert" className="flex items-start gap-2 text-xs font-semibold text-destructive">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <Warning className="mt-0.5 size-4 shrink-0" aria-hidden />
           {warning}
         </p>
       ) : null}
@@ -607,7 +607,7 @@ export function PropertiesPanel({
             className="hover:bg-destructive/10 hover:text-destructive"
             onClick={onDelete}
           >
-            <Trash2 aria-hidden />
+            <Trash aria-hidden />
           </Button>
         </div>
       </div>
@@ -835,7 +835,7 @@ export function PropertiesPanel({
             <Input value={node.alt} onChange={(e) => onChange({ alt: e.target.value })} />
             {!node.alt.trim() ? (
               <p role="alert" className="flex items-center gap-2 text-xs font-semibold text-destructive">
-                <AlertTriangle className="size-4" aria-hidden /> Informe o alt text antes de exportar.
+                <Warning className="size-4" aria-hidden /> Informe o alt text antes de exportar.
               </p>
             ) : null}
           </Field>
@@ -947,7 +947,7 @@ export function PropertiesPanel({
             <Input value={node.title} onChange={(e) => onChange({ title: e.target.value })} />
             {!node.title.trim() ? (
               <p role="alert" className="flex items-center gap-2 text-xs font-semibold text-destructive">
-                <AlertTriangle className="size-4" aria-hidden /> Informe o título antes de exportar.
+                <Warning className="size-4" aria-hidden /> Informe o título antes de exportar.
               </p>
             ) : null}
           </Field>

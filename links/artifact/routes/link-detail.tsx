@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronLeft, Copy, Download, Loader2, Pencil, QrCode } from "lucide-react";
+import { Check, CaretLeft, Copy, DownloadSimple, SpinnerGap, PencilSimple, QrCode } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { buildShortUrl } from "@/lib/short-domain";
@@ -100,7 +100,7 @@ export function LinkDetailPage() {
           title="Voltar para Meus links"
           className="icon-btn -ml-3"
         >
-          <ChevronLeft className="size-6" aria-hidden />
+          <CaretLeft className="size-6" aria-hidden />
         </Link>
         <h1 className="min-w-0 break-words text-2xl font-bold tracking-tight sm:text-3xl">
           {row?.internal_name || (row ? `/${row.slug}` : link.isPending ? "Carregando…" : "Link não encontrado")}
@@ -183,7 +183,7 @@ export function LinkDetailPage() {
                     title="Editar destino"
                     className="icon-btn -mr-3"
                   >
-                    <Pencil className="size-5" aria-hidden />
+                    <PencilSimple className="size-5" aria-hidden />
                   </button>
                 )}
               </div>
@@ -220,7 +220,7 @@ export function LinkDetailPage() {
                       onClick={handleSaveUrl}
                       className="btn btn-cta"
                     >
-                      {updateUrl.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                      {updateUrl.isPending && <SpinnerGap className="size-4 animate-spin" aria-hidden />}
                       Salvar destino
                     </button>
                   </div>
@@ -260,7 +260,7 @@ export function LinkDetailPage() {
                 title="Exportar CSV"
                 className="icon-btn"
               >
-                <Download className="size-5" aria-hidden />
+                <DownloadSimple className="size-5" aria-hidden />
               </button>
             </div>
             {exportError && (

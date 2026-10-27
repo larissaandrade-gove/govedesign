@@ -62,7 +62,7 @@ export function IconPicker({
                 className="flex min-h-11 items-center justify-center rounded-lg border border-border p-2 hover:bg-secondary"
                 style={{ borderColor: value === name ? "var(--gove-primary)" : undefined }}
               >
-                <Icon className="size-5" aria-hidden />
+                <Icon className="size-5" weight={value === name ? "fill" : "regular"} aria-hidden />
               </button>
             );
           })}

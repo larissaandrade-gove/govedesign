@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowDown, ArrowUp, ChevronDown, GripVertical, ImageOff, ImagePlus, LayoutTemplate, ListPlus, Loader2, LocateFixed, MapPin, Move, MoveHorizontal,
-  Globe, MoveVertical, Palette, Phone, Plus, RefreshCw, RotateCcw, Shapes, Smartphone, Trash2, TriangleAlert, Type, type LucideIcon,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, CaretDown, DotsSixVertical, ImageBroken, ImageSquare, Layout as LayoutIcon, ListPlus, SpinnerGap, Crosshair, MapPin, ArrowsOutCardinal, ArrowsHorizontal, Globe, ArrowsVertical, Palette, Phone, Plus, ArrowsClockwise, ArrowCounterClockwise, Shapes, DeviceMobile, Trash, Warning, TextT, type Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -32,7 +29,7 @@ type Props = {
 /** Captura do site: celular de 390×844 pt com densidade 3 (server/capture.js). */
 const CAPTURE_SIZE = { width: 1170, height: 2532 };
 
-type SectionProps = { title: string; icon: LucideIcon; aside?: React.ReactNode; collapsible?: boolean; children: React.ReactNode };
+type SectionProps = { title: string; icon: PhosphorIcon; aside?: React.ReactNode; collapsible?: boolean; children: React.ReactNode };
 
 /** Seção do painel. `collapsible` = divulgação progressiva (fechada por padrão). */
 function Section({ title, icon: Icon, aside, collapsible, children }: SectionProps) {
@@ -48,7 +45,7 @@ function Section({ title, icon: Icon, aside, collapsible, children }: SectionPro
         <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 py-1 [&::-webkit-details-marker]:hidden">
           {head}
           {aside}
-          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+          <CaretDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="space-y-3 pb-4">{children}</div>
       </details>
@@ -294,7 +291,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
           <p className="text-xs text-muted-foreground">{MODELS.find((it) => it.id === model)?.hint}.</p>
           {portal && municipio && !site && (
             <p className="flex gap-1.5 text-xs font-medium text-warning" role="status">
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Cadastre o site do domicílio eletrônico de {municipio.nome_municipio} (Municípios › Editar).
+              <Warning className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Cadastre o site do domicílio eletrônico de {municipio.nome_municipio} (Municípios › Editar).
             </p>
           )}
         </Section>
@@ -344,14 +341,14 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               </p>
               {bbLogoMissing && (
                 <p className="flex gap-1.5 text-xs font-medium text-warning" role="status">
-                  <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Envie a logomarca BB em “Logos fixos”: é obrigatória nesta identidade.
+                  <Warning className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Envie a logomarca BB em “Logos fixos”: é obrigatória nesta identidade.
                 </p>
               )}
             </>
           )}
         </Section>
 
-        <Section title="Layouts" icon={LayoutTemplate}>
+        <Section title="Layouts" icon={LayoutIcon}>
           <div className="grid grid-cols-4 gap-2" role="group" aria-label="Layouts a gerar">
             {LAYOUTS.map((l: L) => {
               const on = selected.includes(l.id);
@@ -412,7 +409,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               )}
               {!municipio.tem_logo && (
                 <span className="flex items-center gap-1.5 text-warning">
-                  <ImageOff className="size-3.5" aria-hidden /> sem logo
+                  <ImageBroken className="size-3.5" aria-hidden /> sem logo
                 </span>
               )}
             </p>
@@ -463,9 +460,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
           {services.length > 1 && (
             <details className="group rounded-md border border-border">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-sm text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-                <GripVertical className="size-4" aria-hidden />
+                <DotsSixVertical className="size-4" aria-hidden />
                 <span className="flex-1">Ordem</span>
-                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
+                <CaretDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
               </summary>
               <ol className="space-y-1 px-1 pb-1" aria-label="Ordem dos ícones">
                 {services.map((id, i) => {
@@ -479,7 +476,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
                       onDrop={() => dragFrom.current != null && moveService(dragFrom.current, i)}
                       className="flex items-center gap-2 rounded-md bg-background/60 pl-2 text-sm"
                     >
-                      <GripVertical className="size-4 cursor-grab text-muted-foreground" aria-hidden />
+                      <DotsSixVertical className="size-4 cursor-grab text-muted-foreground" aria-hidden />
                       <ServiceIcon paths={s.paths} size={16} />
                       <span className="flex-1 truncate">{s.label}</span>
                       <Button variant="ghost" size="icon" aria-label={`Subir ${s.label}`} title="Subir" onClick={() => moveService(i, i - 1)} disabled={i === 0}>
@@ -496,7 +493,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
           )}
         </Section>
 
-        <Section title="Tela do celular" icon={Smartphone}>
+        <Section title="Tela do celular" icon={DeviceMobile}>
           <>
           {portal && (
             <div className="space-y-2 rounded-md border border-border p-3">
@@ -512,7 +509,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" disabled={!site || !municipio || capturing} onClick={() => municipio && captureSite(municipio)}>
-                  {capturing ? <Loader2 className="animate-spin" aria-hidden /> : <RefreshCw aria-hidden />}
+                  {capturing ? <SpinnerGap className="animate-spin" aria-hidden /> : <ArrowsClockwise aria-hidden />}
                   {municipio?.captura_imagem_id ? 'Atualizar captura' : 'Capturar do site'}
                 </Button>
                 {mockup?.source === 'envio' && municipio?.captura_imagem_id && (
@@ -534,11 +531,11 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               {mockup ? (
                 <img src={api.imagemUrl(mockup.id)} alt={mockup.source === 'captura' ? 'Captura do site para o mockup' : 'Imagem enviada para o mockup'} className="h-full w-full object-cover" style={{ objectPosition: `${mockup.focus.x * 100}% ${mockup.focus.y * 100}%` }} />
               ) : (
-                <ImagePlus className="size-5" aria-hidden />
+                <ImageSquare className="size-5" aria-hidden />
               )}
               {uploading && (
                 <span className="absolute inset-0 flex items-center justify-center bg-background/70">
-                  <Loader2 className="size-5 animate-spin" aria-hidden />
+                  <SpinnerGap className="size-5 animate-spin" aria-hidden />
                 </span>
               )}
               <span className="sr-only">{uploading ? 'Enviando…' : mockup ? 'Trocar imagem' : 'Enviar imagem'}</span>
@@ -548,7 +545,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
               <>
                 <p className="flex-1 text-xs tabular-nums text-muted-foreground">{mockup.width}×{mockup.height} px</p>
                 <Button variant="ghost" size="icon" aria-label="Remover imagem" title="Remover imagem" onClick={() => setMockup(null)}>
-                  <Trash2 />
+                  <Trash />
                 </Button>
               </>
             ) : (
@@ -559,7 +556,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
             <div className="space-y-1">
               {(['x', 'y'] as const).map((axis) => {
                 const label = axis === 'x' ? 'Enquadramento horizontal' : 'Enquadramento vertical';
-                const AxisIcon = axis === 'x' ? MoveHorizontal : MoveVertical;
+                const AxisIcon = axis === 'x' ? ArrowsHorizontal : ArrowsVertical;
                 return (
                   <div key={axis} className="flex items-center gap-3" title={label}>
                     <AxisIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -582,7 +579,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
         {activeLayout && (
           <Section
             title="Textos"
-            icon={Type}
+            icon={TextT}
             collapsible
             aside={<span className="truncate text-xs text-muted-foreground">{activeName}</span>}
           >
@@ -606,7 +603,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
                 title="Restaurar textos padrão"
                 onClick={() => setTexts((t) => ({ ...t, [activeLayout]: {} }))}
               >
-                <RotateCcw />
+                <ArrowCounterClockwise />
               </Button>
             </div>
           </Section>
@@ -643,7 +640,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
                 title="Restaurar posições originais"
                 onClick={() => setOverrides((o) => ({ ...o, [activeLayout]: {} }))}
               >
-                <LocateFixed />
+                <Crosshair />
               </Button>
             )}
             <Button onClick={addToQueue} className="bg-accent font-semibold text-accent-foreground shadow-[0_0_15px_rgba(255,199,44,0.35)] hover:bg-accent/90">
@@ -663,7 +660,7 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
             </div>
             {result && (
               <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Move className="size-3.5 shrink-0" aria-hidden />
+                <ArrowsOutCardinal className="size-3.5 shrink-0" aria-hidden />
                 Arraste os blocos; eles ficam dentro da área de segurança (tracejado amarelo).
               </p>
             )}

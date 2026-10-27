@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Copy, Download, Wand2 } from "lucide-react";
+import { Warning, CheckCircle, Copy, DownloadSimple, MagicWand } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,7 +73,7 @@ export function ExportDialog({
           bbBlocked ? (
             <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3">
               <p className="flex items-center gap-2 text-sm font-bold text-destructive">
-                <AlertTriangle className="size-4" aria-hidden />
+                <Warning className="size-4" aria-hidden />
                 Identidade BB: {bbIssues.length} pendência(s) bloqueiam a exportação
               </p>
               <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-destructive">
@@ -85,13 +85,13 @@ export function ExportDialog({
               </ul>
               {onAutoFix ? (
                 <Button variant="cta" size="touch" className="mt-2" onClick={onAutoFix}>
-                  <Wand2 aria-hidden /> Corrigir automaticamente
+                  <MagicWand aria-hidden /> Corrigir automaticamente
                 </Button>
               ) : null}
             </div>
           ) : (
             <p className="flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-3 text-sm font-semibold">
-              <CheckCircle2 className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+              <CheckCircle className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
               Identidade BB aprovada: textos 4,5:1+, só cores da paleta, fontes BB embutidas.
             </p>
           )
@@ -100,7 +100,7 @@ export function ExportDialog({
         {errors.length > 0 ? (
           <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3">
             <p className="flex items-center gap-2 text-sm font-bold text-destructive">
-              <AlertTriangle className="size-4" aria-hidden />
+              <Warning className="size-4" aria-hidden />
               Check de acessibilidade: {errors.length} pendência(s) antes de exportar
             </p>
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-destructive">
@@ -123,7 +123,7 @@ export function ExportDialog({
         ) : (
           <details className="rounded-xl bg-secondary text-sm">
             <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 font-semibold text-foreground">
-              <CheckCircle2 className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
+              <CheckCircle className="size-4 shrink-0 text-[var(--gove-primary)]" aria-hidden />
               Check de acessibilidade aprovado
             </summary>
             <p className="px-3 pb-3 text-muted-foreground">
@@ -150,7 +150,7 @@ export function ExportDialog({
             aria-label={downloadLabel}
             title={downloadLabel}
           >
-            <Download aria-hidden />
+            <DownloadSimple aria-hidden />
           </Button>
           <Button variant="cta" size="touch" onClick={copy} disabled={blocked}>
             <Copy aria-hidden /> {copied ? "Copiado!" : "Copiar código"}

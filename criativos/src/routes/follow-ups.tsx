@@ -2,20 +2,20 @@ import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
-  BadgeCheck,
+  SealCheck,
   Check,
   Circle,
-  Download,
-  ImagePlus,
-  ListOrdered,
+  DownloadSimple,
+  ImageSquare,
+  ListNumbers,
   Plus,
   ShieldCheck,
-  Trash2,
-  TriangleAlert,
-  Type,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+  Trash,
+  Warning,
+  TextT,
+  Lightning,
+  type Icon as PhosphorIcon,
+} from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,11 +79,11 @@ export const Route = createFileRoute("/follow-ups")({
   component: Followups,
 });
 
-const MARKERS: { key: FollowupMarker; label: string; icon: LucideIcon }[] = [
+const MARKERS: { key: FollowupMarker; label: string; icon: PhosphorIcon }[] = [
   { key: "check", label: "Check", icon: Check },
-  { key: "zap", label: "Raio", icon: Zap },
+  { key: "zap", label: "Raio", icon: Lightning },
   { key: "arrow", label: "Seta", icon: ArrowRight },
-  { key: "number", label: "Números", icon: ListOrdered },
+  { key: "number", label: "Números", icon: ListNumbers },
   { key: "dot", label: "Marcador simples", icon: Circle },
 ];
 
@@ -306,7 +306,7 @@ function Followups() {
                 onClick={download}
                 disabled={!result || blocking.length > 0}
               >
-                <Download aria-hidden="true" />
+                <DownloadSimple aria-hidden="true" />
                 Baixar PNG
               </Button>
             </div>
@@ -316,7 +316,7 @@ function Followups() {
                 className={`flex items-center gap-2 text-xs ${failing.length ? "text-amber-700" : "text-emerald-700"}`}
               >
                 {failing.length ? (
-                  <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+                  <Warning className="size-4 shrink-0" aria-hidden="true" />
                 ) : (
                   <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
                 )}
@@ -331,7 +331,7 @@ function Followups() {
         <aside aria-label="Ajustes" className="order-2 space-y-3">
           <IdentitySwitch value={identity} onChange={changeIdentity} />
           <Section
-            icon={Type}
+            icon={TextT}
             title="Conteúdo"
             open={open.content}
             onToggle={() => toggleSection("content")}
@@ -380,7 +380,7 @@ function Followups() {
                           setProduct((p) => ({ ...p, items: p.items.filter((_, k) => k !== i) }))
                         }
                       >
-                        <Trash2 aria-hidden="true" />
+                        <Trash aria-hidden="true" />
                       </Button>
                     </div>
                   ))}
@@ -417,7 +417,11 @@ function Followups() {
                             : "border-border bg-card text-muted-foreground hover:bg-muted"
                         }`}
                       >
-                        <Icon className="size-5" aria-hidden="true" />
+                        <Icon
+                          className="size-5"
+                          weight={product.marker === m.key ? "fill" : "regular"}
+                          aria-hidden="true"
+                        />
                       </button>
                     );
                   })}
@@ -445,7 +449,7 @@ function Followups() {
               <>
                 <div className="flex items-center gap-2">
                   <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
-                    <ImagePlus className="size-5" aria-hidden="true" />
+                    <ImageSquare className="size-5" aria-hidden="true" />
                     {event.photo ? "Trocar foto" : "Foto do colaborador"}
                     <input
                       type="file"
@@ -467,7 +471,7 @@ function Followups() {
                         setPhotoCredit(null);
                       }}
                     >
-                      <Trash2 aria-hidden="true" />
+                      <Trash aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -541,7 +545,7 @@ function Followups() {
           </Section>
 
           <Section
-            icon={ImagePlus}
+            icon={ImageSquare}
             title="Fundo"
             summary={
               isBB ? findBBScheme(bbSchemeId).label : FOLLOWUP_BGS.find((p) => p.key === bgPreset)?.label
@@ -590,7 +594,7 @@ function Followups() {
             </p>
             <div className="flex items-center gap-2">
               <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
-                <ImagePlus className="size-5" aria-hidden="true" />
+                <ImageSquare className="size-5" aria-hidden="true" />
                 {bgImage ? "Trocar foto de fundo" : "Foto de fundo"}
                 <input
                   type="file"
@@ -617,7 +621,7 @@ function Followups() {
                   title="Remover foto de fundo"
                   onClick={() => setBgImage(null)}
                 >
-                  <Trash2 aria-hidden="true" />
+                  <Trash aria-hidden="true" />
                 </Button>
               )}
             </div>
@@ -630,7 +634,7 @@ function Followups() {
           </Section>
 
           <Section
-            icon={BadgeCheck}
+            icon={SealCheck}
             title="Logomarca"
             summary={
               isBB && result?.bbLogo

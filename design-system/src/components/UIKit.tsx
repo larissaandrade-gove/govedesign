@@ -1,4 +1,4 @@
-import { ArrowRight, Mail, Workflow } from 'lucide-react';
+import { ArrowRight, Envelope, FlowArrow } from '@phosphor-icons/react';
 import guide from '../../../docs/componentes-gove.md?raw';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -23,10 +23,10 @@ export function UIKit() {
             <Button variant="primary">Conhecer a plataforma</Button>
             <Button variant="secondary">Falar com um especialista</Button>
           </div>
-          <Input label="E-mail profissional" type="email" placeholder="nome@prefeitura.gov.br" icon={<Mail className="size-4" aria-hidden />} />
+          <Input label="E-mail profissional" type="email" placeholder="nome@prefeitura.gov.br" icon={<Envelope className="size-4" aria-hidden />} />
           <Card>
             <span className="mb-space-2 flex size-12 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
-              <Workflow className="size-6" />
+              <FlowArrow className="size-6" />
             </span>
             <h3 className="text-h3">IA e Automações</h3>
             <p className="text-body text-text-secondary">Agentes que interpretam dados e orquestram decisões.</p>

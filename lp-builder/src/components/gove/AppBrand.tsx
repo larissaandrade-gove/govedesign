@@ -1,4 +1,4 @@
-import { LayoutTemplate } from "lucide-react";
+import { Layout } from "@phosphor-icons/react";
 
 /**
  * Marca do app no cabeçalho. No build do artefato este módulo é trocado por
@@ -11,7 +11,7 @@ export function AppBrand() {
         className="flex size-9 items-center justify-center rounded-xl"
         style={{ backgroundColor: "var(--gove-primary)" }}
       >
-        <LayoutTemplate className="size-5" color="#FFFFFF" aria-hidden />
+        <Layout className="size-5" color="#FFFFFF" aria-hidden />
       </span>
       <span className="text-lg font-bold">GOVE LP Builder</span>
     </div>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Copy, Loader2 } from "lucide-react";
+import { Check, Copy, SpinnerGap } from "@phosphor-icons/react";
 
 import { buildShortUrl, getShortDomainLabel } from "@/lib/short-domain";
 import {
@@ -212,7 +212,7 @@ function CreateLinkPage() {
               disabled={mutation.isPending}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {mutation.isPending && <Loader2 className="size-3.5 animate-spin" />}
+              {mutation.isPending && <SpinnerGap className="size-3.5 animate-spin" />}
               {mutation.isPending ? "Encurtando..." : "Encurtar link"}
             </button>
           </form>

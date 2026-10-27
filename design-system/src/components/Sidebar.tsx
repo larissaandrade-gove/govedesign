@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AppWindow, BadgeCheck, Blocks, BookOpenCheck, Home, PanelLeft, Palette, Search, Ticket, Type } from 'lucide-react';
-import { groupOf, openSearch } from '../lib/useMobile';
+import {
+  AppWindow, ArrowLeft, BookOpenText, House, List, MagnifyingGlass, Palette, Plus, SealCheck, SquaresFour, TextAa, Ticket, type Icon as IconType,
+} from '@phosphor-icons/react';
+import { groupOf, openNewRequest, openSearch } from '../lib/useMobile';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { appHref, type View } from '../lib/router';
@@ -9,25 +11,36 @@ import { ThemeToggle } from './ThemeToggle';
 import { GoveLogo } from './GoveLogo';
 import { LogoutButton } from './LogoutButton';
 
-export const SECTIONS = [
-  { id: 'inicio', label: 'Início', icon: Home },
+/**
+ * Navegação no padrão Material Design 3:
+ * - computador: navigation drawer (aberta) que recolhe para navigation rail, com o FAB "Nova solicitação";
+ * - celular: top app bar (título, voltar e busca), navigation bar com 4 destinos e FAB no Início.
+ * Item ativo: indicador em pílula (secondary) e ícone no peso fill — o regular é o padrão.
+ */
+export const SECTIONS: { id: string; label: string; icon: IconType }[] = [
+  { id: 'inicio', label: 'Início', icon: House },
   { id: 'aplicacoes', label: 'Aplicações', icon: AppWindow },
   { id: 'solicitacoes', label: 'Solicitações', icon: Ticket },
   { id: 'cores', label: 'Cores', icon: Palette },
-  { id: 'logomarca', label: 'Logomarca', icon: BadgeCheck },
-  { id: 'tipografia', label: 'Tipografia', icon: Type },
-  { id: 'componentes', label: 'Componentes', icon: Blocks },
-  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenCheck },
+  { id: 'logomarca', label: 'Logomarca', icon: SealCheck },
+  { id: 'tipografia', label: 'Tipografia', icon: TextAa },
+  { id: 'componentes', label: 'Componentes', icon: SquaresFour },
+  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenText },
+];
+const PRIMARY = SECTIONS.slice(0, 3);
+const BRAND = SECTIONS.slice(3);
+
+/** Destinos da navigation rail (computador recolhido) e da navigation bar (celular, sem Solicitações). */
+const DESTINATIONS = [
+  { id: 'inicio', label: 'Início', icon: House, href: '#inicio' },
+  { id: 'aplicacoes', label: 'Apps', icon: AppWindow, href: '#aplicacoes' },
+  { id: 'solicitacoes', label: 'Pedidos', icon: Ticket, href: '#solicitacoes', railOnly: true },
+  { id: 'cores', label: 'Cores', icon: Palette, href: '#cores' },
+  { id: 'guias', label: 'Guias', icon: BookOpenText, href: '#tipografia' },
 ];
 
-/** Abas do celular: Início, Apps, Buscar (centro), Cores e Guias — o mesmo do app mobile. */
-const TABS = [
-  { id: 'inicio', label: 'Início', icon: Home, href: '#inicio' },
-  { id: 'aplicacoes', label: 'Apps', icon: AppWindow, href: '#aplicacoes' },
-  { id: 'buscar', label: 'Buscar', icon: Search, href: '' },
-  { id: 'cores', label: 'Cores', icon: Palette, href: '#cores' },
-  { id: 'guias', label: 'Guias', icon: BookOpenCheck, href: '#tipografia' },
-];
+/** Título da top app bar em cada destino do celular. */
+const TITLES: Record<string, string> = { aplicacoes: 'Aplicações', cores: 'Cores', guias: 'Guias' };
 
 const RAIL_KEY = 'gove-rail';
 
@@ -52,7 +65,10 @@ function useActiveSection(view: View) {
   return view.kind === 'app' ? `app-${view.appId}` : active;
 }
 
-/** Barra lateral recolhida ou aberta; lembrada neste navegador. */
+/** Destino da rail para a seção ativa (no computador, Solicitações tem destino próprio). */
+const railGroup = (active: string) => (active.startsWith('app-') ? 'aplicacoes' : active === 'solicitacoes' ? 'solicitacoes' : groupOf(active));
+
+/** Drawer aberta ou rail; lembrada neste navegador. */
 export function useRail(): [boolean, () => void] {
   const [open, setOpen] = useState(() => {
     try {
@@ -62,7 +78,7 @@ export function useRail(): [boolean, () => void] {
     }
   });
   useEffect(() => {
-    document.documentElement.style.setProperty('--rail', open ? '248px' : '76px');
+    document.documentElement.style.setProperty('--rail', open ? '264px' : '88px');
     try {
       window.localStorage.setItem(RAIL_KEY, open ? 'open' : 'closed');
     } catch {
@@ -72,126 +88,191 @@ export function useRail(): [boolean, () => void] {
   return [open, () => setOpen((o) => !o)];
 }
 
+/** Tocar no destino que já está ativo volta ao topo (comportamento MD3). */
+function reselect(on: boolean) {
+  return (e: React.MouseEvent) => {
+    if (!on) return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+}
 
-/** Item de navegação: ícone sempre; nome visível com a barra aberta, senão dica e rótulo acessível. */
-function NavItem({ href, label, icon: Icon, on, open, small = false }: { href: string; label: string; icon: typeof Home; on: boolean; open: boolean; small?: boolean }) {
+/** Item da navigation drawer: pílula de 56px; o ativo ganha o indicador e o ícone fill. */
+function DrawerItem({ href, label, icon: Icon, on, small = false }: { href: string; label: string; icon: IconType; on: boolean; small?: boolean }) {
   return (
     <a
       href={href}
       aria-current={on ? 'page' : undefined}
-      aria-label={open ? undefined : label}
-      title={open ? undefined : label}
-      className={`group relative flex min-h-11 items-center gap-space-2 rounded-md no-underline transition-colors duration-200 ${open ? 'px-space-2' : 'justify-center px-0'} ${
-        small ? 'text-caption' : 'text-body'
-      } ${on ? 'bg-secondary/70 text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'}`}
+      className={`relative flex items-center gap-space-2 rounded-full px-space-2 no-underline transition-colors duration-200 ${small ? 'min-h-11 text-caption' : 'min-h-14 text-body'} ${
+        on ? 'font-semibold text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
+      }`}
     >
-      {on && <motion.span layoutId="nav-active" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-accent" transition={{ duration: 0.3, ease: EASE }} />}
-      <Icon className={`${small ? 'size-[18px]' : 'size-5'} shrink-0 ${on ? 'text-highlight' : ''}`} aria-hidden />
-      {open && <span className="truncate">{label}</span>}
+      {on && <motion.span layoutId="drawer-indicator" className="absolute inset-0 rounded-full bg-secondary" transition={{ duration: 0.3, ease: EASE }} aria-hidden />}
+      <Icon weight={on ? 'fill' : 'regular'} className={`relative shrink-0 ${small ? 'size-[18px]' : 'size-6'}`} aria-hidden />
+      <span className="relative truncate">{label}</span>
     </a>
   );
 }
 
+/** Destino da navigation rail / navigation bar: ícone dentro do indicador e rótulo embaixo. */
+function Destination({ href, label, icon: Icon, on, wide = false }: { href: string; label: string; icon: IconType; on: boolean; wide?: boolean }) {
+  return (
+    <a
+      href={href}
+      aria-current={on ? 'page' : undefined}
+      onClick={reselect(on)}
+      className={`group flex min-h-14 flex-col items-center justify-center gap-1 text-[12px] font-medium leading-4 no-underline ${on ? 'text-text-primary' : 'text-text-secondary'}`}
+    >
+      <span className={`relative flex h-8 items-center justify-center rounded-full ${wide ? 'w-16' : 'w-14'}`}>
+        {on ? (
+          <motion.span layoutId={wide ? 'bar-indicator' : 'rail-indicator'} className="absolute inset-0 rounded-full bg-secondary" transition={{ duration: 0.3, ease: EASE }} aria-hidden />
+        ) : (
+          <span className="absolute inset-0 rounded-full transition-colors group-hover:bg-secondary/40" aria-hidden />
+        )}
+        <Icon weight={on ? 'fill' : 'regular'} className="relative size-6" aria-hidden />
+      </span>
+      <span className={on ? 'font-semibold' : undefined}>{label}</span>
+    </a>
+  );
+}
+
+/** FAB "Nova solicitação": a ação principal do Design System (accent, um por tela). */
+function Fab({ extended }: { extended: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={openNewRequest}
+      aria-label={extended ? undefined : 'Nova solicitação'}
+      title={extended ? undefined : 'Nova solicitação'}
+      className={`flex h-14 shrink-0 items-center justify-center gap-space-1 rounded-lg bg-accent font-semibold text-on-accent shadow-glow-yellow transition-[box-shadow,transform] duration-200 hover:scale-[1.02] hover:shadow-glow-yellow-strong ${
+        extended ? 'px-space-2 text-body' : 'w-14'
+      }`}
+    >
+      <Plus className="size-6" aria-hidden />
+      {extended && 'Nova solicitação'}
+    </button>
+  );
+}
+
+const iconButton = 'flex size-12 shrink-0 items-center justify-center rounded-full text-text-primary no-underline transition-colors hover:bg-secondary/50';
+
 export function Sidebar({ view }: { view: View }) {
   const active = useActiveSection(view);
   const [open, toggle] = useRail();
-  const tabActive = view.kind === 'app' ? 'aplicacoes' : groupOf(view.section);
+  const appView = view.kind === 'app';
+  const group = appView ? 'aplicacoes' : groupOf(view.section);
+  const app = appView ? APPS.find((a) => a.id === view.appId) : null;
+  const title = app ? app.name : TITLES[group];
 
   return (
     <>
-      {/* Computador: barra lateral que recolhe para só ícones */}
+      {/* Computador: navigation drawer que recolhe para navigation rail */}
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden flex-col gap-space-2 overflow-hidden border-r border-secondary/70 bg-background/90 px-space-1 py-space-2 backdrop-blur-md transition-[width] duration-300 ease-entry lg:flex"
-        style={{ width: 'var(--rail, 248px)' }}
+        className="fixed inset-y-0 left-0 z-30 hidden flex-col gap-space-2 overflow-hidden border-r border-secondary/70 bg-background/90 py-space-2 backdrop-blur-md transition-[width] duration-300 ease-entry lg:flex"
+        style={{ width: 'var(--rail, 264px)' }}
         aria-label="Navegação"
       >
-        {/* Topo fixo: logomarca e recolher */}
-        <div className={`flex shrink-0 items-center gap-space-1 pb-space-1 ${open ? 'justify-between pl-space-1' : 'flex-col'}`}>
-          <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
-            {open ? <GoveLogo kind="logotipo" height={26} /> : <GoveLogo kind="simbolo" height={32} />}
-          </a>
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={open ? 'Recolher barra lateral' : 'Expandir barra lateral'}
-            title={open ? 'Recolher barra lateral' : 'Expandir barra lateral'}
-            aria-expanded={open}
-            className="flex size-11 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-secondary/50 hover:text-text-primary"
-          >
-            <PanelLeft className="size-5" aria-hidden />
+        <div className={`flex shrink-0 items-center gap-space-1 ${open ? 'justify-between pl-space-3 pr-space-1' : 'flex-col'}`}>
+          {open && (
+            <a href="#inicio" className="flex items-center no-underline" aria-label="Gove Design System — início">
+              <GoveLogo kind="logotipo" height={26} />
+            </a>
+          )}
+          <button type="button" onClick={toggle} aria-label={open ? 'Recolher menu' : 'Abrir menu'} title={open ? 'Recolher menu' : 'Abrir menu'} aria-expanded={open} className={iconButton}>
+            <List className="size-6" aria-hidden />
           </button>
         </div>
-        {/* Só a lista de seções rola */}
-        <nav aria-label="Seções do design system" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-          <ul className="flex flex-col gap-1">
-            {SECTIONS.map(({ id, label, icon }) => (
-              <li key={id}>
-                <NavItem href={`#${id}`} label={label} icon={icon} on={active === id} open={open} />
-                {id === 'aplicacoes' && (
-                  <ul className={`mt-1 flex flex-col gap-0.5 ${open ? 'ml-[22px] border-l border-secondary pl-space-1' : 'my-1 border-y border-secondary py-1'}`} aria-label="Aplicações">
-                    {APPS.map((app) => (
-                      <li key={app.id}>
-                        <NavItem href={appHref(app.id)} label={app.name} icon={app.icon} on={active === `app-${app.id}`} open={open} small />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
+        <div className={`flex shrink-0 ${open ? 'px-space-2' : 'justify-center'}`}>
+          <Fab extended={open} />
+        </div>
+
+        {open ? (
+          <nav aria-label="Seções do design system" className="min-h-0 flex-1 overflow-y-auto px-space-1">
+            <ul className="flex flex-col">
+              {PRIMARY.map(({ id, label, icon }) => (
+                <li key={id}>
+                  <DrawerItem href={`#${id}`} label={label} icon={icon} on={active === id} />
+                </li>
+              ))}
+            </ul>
+            <hr className="mx-space-2 my-space-1 border-secondary" />
+            <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-apps">Apps</p>
+            <ul className="flex flex-col" aria-labelledby="nav-apps">
+              {APPS.map((a) => (
+                <li key={a.id}>
+                  <DrawerItem href={appHref(a.id)} label={a.name} icon={a.icon} on={active === `app-${a.id}`} small />
+                </li>
+              ))}
+            </ul>
+            <hr className="mx-space-2 my-space-1 border-secondary" />
+            <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-marca">Marca</p>
+            <ul className="flex flex-col" aria-labelledby="nav-marca">
+              {BRAND.map(({ id, label, icon }) => (
+                <li key={id}>
+                  <DrawerItem href={`#${id}`} label={label} icon={icon} on={active === id} />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : (
+          <nav aria-label="Destinos" className="flex min-h-0 flex-1 flex-col gap-space-1 overflow-y-auto pt-space-1">
+            {DESTINATIONS.map((d) => (
+              <Destination key={d.id} href={d.href} label={d.label} icon={d.icon} on={railGroup(active) === d.id} />
             ))}
-          </ul>
-        </nav>
-        {/* Rodapé fixo: tema e sair */}
-        <div className="flex shrink-0 flex-col gap-space-1 border-t border-secondary/70 pt-space-2">
+          </nav>
+        )}
+
+        <div className={`flex shrink-0 flex-col gap-space-1 border-t border-secondary/70 pt-space-2 ${open ? 'px-space-2' : 'items-center'}`}>
           <ThemeToggle compact={!open} />
           <LogoutButton compact={!open} />
         </div>
       </aside>
 
-      {/* Celular: barra superior enxuta + barra de abas */}
+      {/* Celular: top app bar */}
       <header
-        className="gutter fixed inset-x-0 top-0 z-30 flex h-[56px] items-center justify-between border-b border-secondary/70 bg-background/90 backdrop-blur-md lg:hidden"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-1 border-b border-secondary/70 bg-background/95 px-1 backdrop-blur-md lg:hidden"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'max(4px, env(safe-area-inset-left, 0px))', paddingRight: 'max(4px, env(safe-area-inset-right, 0px))' }}
       >
-        <a href="#inicio" className="flex items-center gap-space-1 no-underline" aria-label="Gove Design System — início">
-          <GoveLogo kind="logotipo" height={24} />
-        </a>
-        <span className="flex gap-space-1">
-          <ThemeToggle compact />
-          <LogoutButton compact />
-        </span>
+        {appView ? (
+          <a href="#aplicacoes" aria-label="Voltar para Aplicações" title="Voltar" className={iconButton}>
+            <ArrowLeft className="size-6" aria-hidden />
+          </a>
+        ) : null}
+        {title ? (
+          <h1 className={`min-w-0 flex-1 truncate font-display text-[22px] font-semibold leading-7 text-text-primary ${appView ? '' : 'pl-space-1'}`}>{title}</h1>
+        ) : (
+          <a href="#inicio" className="flex flex-1 items-center pl-space-1 no-underline" aria-label="Gove Design System — início">
+            <GoveLogo kind="logotipo" height={24} />
+          </a>
+        )}
+        {/* No Início a busca é a search bar do topo da tela */}
+        {!appView && group !== 'inicio' && (
+          <button type="button" onClick={openSearch} aria-label="Buscar" title="Buscar" className={iconButton}>
+            <MagnifyingGlass className="size-6" aria-hidden />
+          </button>
+        )}
+        <ThemeToggle compact />
+        <LogoutButton compact />
       </header>
-      <nav
-        aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 items-center rounded-t-[28px] bg-background/95 px-space-1 pt-space-1 shadow-[0_-8px_24px_rgba(32,19,61,0.08)] backdrop-blur-md lg:hidden"
-        style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
-      >
-        {TABS.map(({ id, label, icon: Icon, href }) => {
-          if (id === 'buscar')
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={openSearch}
-                aria-label={label}
-                className="mx-auto -mt-7 flex size-14 rotate-45 items-center justify-center rounded-[18px] bg-accent text-on-accent shadow-glow-yellow"
-              >
-                <Icon className="size-6 -rotate-45" aria-hidden />
-              </button>
-            );
-          const on = tabActive === id;
-          return (
-            <a
-              key={id}
-              href={href}
-              aria-current={on ? 'page' : undefined}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-medium no-underline transition-colors ${on ? 'text-highlight' : 'text-text-secondary'}`}
-            >
-              <Icon className="size-6" aria-hidden />
-              {label}
-            </a>
-          );
-        })}
-      </nav>
+
+      {/* Celular: navigation bar (fora das telas de app, que usam o voltar da top app bar) */}
+      {!appView && (
+        <nav
+          aria-label="Navegação principal"
+          className="fixed inset-x-0 bottom-0 z-30 grid h-20 grid-cols-4 items-center border-t border-secondary/70 bg-background/95 backdrop-blur-md lg:hidden"
+          style={{ height: 'calc(80px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          {DESTINATIONS.filter((d) => !d.railOnly).map((d) => (
+            <Destination key={d.id} href={d.href} label={d.label} icon={d.icon} on={group === d.id} wide />
+          ))}
+        </nav>
+      )}
+      {/* FAB do Início no celular: 16px acima da navigation bar */}
+      {!appView && group === 'inicio' && (
+        <div className="fixed right-space-2 z-30 lg:hidden" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
+          <Fab extended />
+        </div>
+      )}
     </>
   );
 }

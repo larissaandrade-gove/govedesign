@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, FileCheck2, Inbox, ListX, Loader2, PenTool, Trash2 } from 'lucide-react';
+import { ArrowLeft, DownloadSimple, SealCheck, Tray, Broom, SpinnerGap, PenNib, Trash } from '@phosphor-icons/react';
 import { unzipSync } from 'fflate';
 import { putHandoff } from '../../../../shared/handoff.js';
 import { StatusIcon, type Level } from '@/components/studio/CheckList';
@@ -107,11 +107,11 @@ export function Fila({ queue, onRemove, onClear }: Props) {
         <div className="ml-auto flex gap-2">
           {queue.length > 0 && (
             <Button variant="ghost" size="icon" aria-label="Limpar fila" title="Limpar fila" onClick={onClear} className="hover:bg-destructive/10 hover:text-destructive">
-              <ListX />
+              <Broom />
             </Button>
           )}
           <Button disabled={!queue.length || checking} onClick={verify} className="bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
-            {checking ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <FileCheck2 className="size-5" aria-hidden />}
+            {checking ? <SpinnerGap className="size-5 animate-spin" aria-hidden /> : <SealCheck className="size-5" aria-hidden />}
             {checking ? 'Gerando e verificando…' : `Verificar e exportar ${total} peça(s)`}
           </Button>
         </div>
@@ -119,7 +119,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
 
       {queue.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          <Inbox className="size-8" aria-hidden />
+          <Tray className="size-8" aria-hidden />
           <p>Fila vazia. No Editor, use “Adicionar à fila”.</p>
         </div>
       ) : (
@@ -149,11 +149,11 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                 disabled={refining !== null}
                 onClick={() => refine(q)}
               >
-                {refining === q.key ? <Loader2 className="animate-spin" aria-hidden /> : <PenTool aria-hidden />}
+                {refining === q.key ? <SpinnerGap className="animate-spin" aria-hidden /> : <PenNib aria-hidden />}
                 Refinar no VectorCraft
               </Button>
               <Button variant="ghost" size="icon" title="Remover da fila" aria-label={`Remover ${q.municipioNome} da fila`} onClick={() => onRemove(q.key)} className="hover:bg-destructive/10 hover:text-destructive">
-                <Trash2 />
+                <Trash />
               </Button>
             </li>
           ))}
@@ -225,7 +225,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
               <ArrowLeft />
             </Button>
             <Button disabled={exporting || (!report?.ok && !ack)} onClick={download} className="bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
-              {exporting ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Download className="size-5" aria-hidden />}
+              {exporting ? <SpinnerGap className="size-5 animate-spin" aria-hidden /> : <DownloadSimple className="size-5" aria-hidden />}
               {exporting ? 'Gerando .zip…' : 'Baixar .zip'}
             </Button>
           </DialogFooter>

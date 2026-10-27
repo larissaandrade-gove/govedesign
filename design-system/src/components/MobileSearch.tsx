@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Search, X } from 'lucide-react';
+import { MagnifyingGlass, Plus, X } from '@phosphor-icons/react';
 import { appsFor } from '../data/apps';
 import { appHref } from '../lib/router';
 import { openNewRequest } from '../lib/useMobile';
@@ -44,7 +44,7 @@ export function MobileSearch() {
       <div className="flex h-full flex-col">
         <div className="flex items-center gap-space-1 border-b border-secondary px-space-2 py-space-1" style={{ paddingTop: 'max(8px, env(safe-area-inset-top, 0px))' }}>
           <label className="flex min-h-12 flex-1 items-center gap-space-1 rounded-full bg-secondary/60 px-space-2">
-            <Search className="size-5 shrink-0 text-highlight" aria-hidden />
+            <MagnifyingGlass className="size-5 shrink-0 text-highlight" aria-hidden />
             <span className="sr-only">Buscar</span>
             <input ref={input} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Apps, cores, guias…" className="w-full bg-transparent text-body text-text-primary placeholder:text-text-muted focus:outline-none" />
           </label>

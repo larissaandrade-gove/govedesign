@@ -84,34 +84,21 @@ function drawText(p, e) {
   }
 }
 
+/** Ícone Phosphor (viewBox 256, preenchido) na caixa do elemento: ícones de serviço e marca d'água. */
 function drawIcon(p, e) {
   p.save();
   p.translate(e.x, e.y);
-  p.scale(e.w / 24, e.h / 24);
-  const lw = (e.lineWidth ?? 2) * (e.lineScale ?? 1);
-  for (const d of e.paths) p.stroke(d, e.stroke, lw, { opacity: e.opacity ?? 1 });
-  if (e.inner) {
-    p.translate(...e.inner.offset);
-    p.scale(e.inner.scale, e.inner.scale);
-    for (const d of e.inner.paths) p.stroke(d, e.stroke, lw / e.inner.scale, { opacity: e.opacity ?? 1 });
-  }
+  p.scale(e.w / 256, e.h / 256);
+  for (const d of e.paths) p.fill(d, e.fill, { opacity: e.opacity ?? 1 });
   p.restore();
 }
 
+/** Glifo grande do WhatsApp (Phosphor, peso fill). */
 function drawGlyph(p, e) {
   p.save();
   p.translate(e.x, e.y);
-  p.scale(e.w / 24, e.h / 24);
-  p.fill(e.bubble, e.fill, { rule: 'evenodd' });
-  if (e.handset) {
-    const { paths, scale, offset } = e.handset;
-    p.translate(...offset);
-    p.scale(scale, scale);
-    for (const d of paths) {
-      p.fill(d, e.fill);
-      p.stroke(d, e.fill, 1.2);
-    }
-  }
+  p.scale(e.w / 256, e.h / 256);
+  for (const d of e.paths) p.fill(d, e.fill);
   p.restore();
 }
 

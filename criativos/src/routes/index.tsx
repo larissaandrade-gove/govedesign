@@ -2,24 +2,24 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck,
-  Download,
-  Film,
-  ImageIcon,
-  ImagePlus,
-  LayoutTemplate,
-  LogOut,
+  SealCheck,
+  DownloadSimple,
+  FilmStrip,
+  Image as ImageIcon,
+  ImageSquare,
+  Layout,
+  SignOut,
   Moon,
   Palette,
-  RectangleVertical,
-  Search,
+  Rectangle,
+  MagnifyingGlass,
   Shapes,
-  Sparkles,
+  Sparkle,
   Sun,
-  Type,
-  UserRound,
+  TextT,
+  User,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -674,7 +674,7 @@ function Index() {
             aria-label="Sair"
             title="Sair"
           >
-            <LogOut aria-hidden="true" />
+            <SignOut aria-hidden="true" />
           </Button>
         }
       />
@@ -691,7 +691,7 @@ function Index() {
               {(
                 [
                   { key: "image", label: "Imagem", hint: "PNG estático", icon: ImageIcon },
-                  { key: "video", label: "Vídeo", hint: "MP4 15s, 3 formatos", icon: Film },
+                  { key: "video", label: "Vídeo", hint: "MP4 15s, 3 formatos", icon: FilmStrip },
                 ] as const
               ).map((m) => {
                 const Icon = m.icon;
@@ -708,7 +708,7 @@ function Index() {
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Icon className="size-5" aria-hidden="true" />
+                    <Icon className="size-5" weight={mode === m.key ? "fill" : "regular"} aria-hidden="true" />
                     {m.label}
                   </button>
                 );
@@ -737,7 +737,7 @@ function Index() {
             <ExpertFields value={expert} onChange={setExpert} />
 
             <Section
-              icon={Type}
+              icon={TextT}
               title="Textos"
               open={openSections.textVariables}
               onToggle={() => toggleSection("textVariables")}
@@ -820,7 +820,7 @@ function Index() {
             </Section>
 
             <Section
-              icon={ImagePlus}
+              icon={ImageSquare}
               title="Fundo"
               summary={
                 useImage
@@ -837,7 +837,7 @@ function Index() {
               {useImage ? (
                 <>
                   <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
-                    <ImagePlus className="size-5" aria-hidden="true" />
+                    <ImageSquare className="size-5" aria-hidden="true" />
                     Adicionar imagens
                     <input
                       id="bg-file"
@@ -880,7 +880,7 @@ function Index() {
                                     : "text-muted-foreground hover:bg-card hover:text-foreground"
                                 }`}
                               >
-                                <Icon className="size-4" aria-hidden="true" />
+                                <Icon className="size-4" weight={b.tone === t ? "fill" : "regular"} aria-hidden="true" />
                               </button>
                             );
                           })}
@@ -979,7 +979,7 @@ function Index() {
             </Section>
 
             <Section
-              icon={BadgeCheck}
+              icon={SealCheck}
               title="Logomarca"
               summary={`${
                 enabledLogos.filter(
@@ -1007,7 +1007,7 @@ function Index() {
             </Section>
 
             <Section
-              icon={LayoutTemplate}
+              icon={Layout}
               title="Diagramações"
               summary={
                 expert.enabled ? "Especialista" : `${enabledLayouts.length}/${LAYOUTS.length}`
@@ -1017,7 +1017,7 @@ function Index() {
             >
               {expert.enabled && (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <UserRound className="size-4 shrink-0" aria-hidden="true" />
+                  <User className="size-4 shrink-0" aria-hidden="true" />
                   Material colaborativo ativo: layouts exclusivos de especialista.
                 </p>
               )}
@@ -1088,7 +1088,7 @@ function Index() {
               onClick={generate}
               className="sticky bottom-3 z-10 min-h-12 w-full text-base shadow-lg"
             >
-              <Sparkles aria-hidden="true" />
+              <Sparkle aria-hidden="true" />
               {mode === "video" ? "Gerar 4 vídeos" : "Gerar 8 versões"}
             </Button>
           </div>
@@ -1097,9 +1097,9 @@ function Index() {
             {specs.length === 0 ? (
               <div className="flex min-h-60 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card p-6 text-center sm:min-h-80 lg:sticky lg:top-20">
                 {mode === "video" ? (
-                  <Film className="size-8 text-muted-foreground" aria-hidden="true" />
+                  <FilmStrip className="size-8 text-muted-foreground" aria-hidden="true" />
                 ) : (
-                  <RectangleVertical className="size-8 text-muted-foreground" aria-hidden="true" />
+                  <Rectangle className="size-8 rotate-90 text-muted-foreground" aria-hidden="true" />
                 )}
                 <p className="text-sm text-muted-foreground">
                   {mode === "video"
@@ -1139,7 +1139,7 @@ function Index() {
                     className="min-h-11"
                     title={`Baixar os ${specs.length} criativos em PNG`}
                   >
-                    <Download aria-hidden="true" />
+                    <DownloadSimple aria-hidden="true" />
                     Baixar todos
                   </Button>
                 </div>

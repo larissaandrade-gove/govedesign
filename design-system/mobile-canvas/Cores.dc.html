@@ -20,7 +20,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #FFC72C;outline-offset:2p
 <header style="background: #3D0099; border-radius: 0 0 32px 32px; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px">
 <div style="display: flex; align-items: center; gap: 4px">
 <a href="Main.dc.html" aria-label="Voltar para o início" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+<svg width="24" height="24"  aria-hidden="true" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path></svg>
 </a>
 <h1 style="margin: 0; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 24px; color: #FFFFFF">Cores</h1>
 </div>
@@ -58,7 +58,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #FFC72C;outline-offset:2p
 </span>
 <span style="font-family: ui-monospace, monospace; font-size: 12px; color: #2F3539">{{c.hex}}</span>
 <button type="button" onClick="{{c.toggle}}" aria-expanded="{{c.open}}" aria-label="Detalhes de {{c.name}}" style="width: 44px; height: 44px; border: 0; background: transparent; color: #5B6770; display: flex; align-items: center; justify-content: center; cursor: pointer">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: {{c.rot}}"><path d="M6 9l6 6 6-6"></path></svg>
+<svg width="18" height="18"  aria-hidden="true" style="transform: {{c.rot}}" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
 </button>
 </div>
 <sc-if value="{{c.isOpen}}" hint-placeholder-val="{{ false }}">
@@ -97,26 +97,19 @@ a:focus-visible,button:focus-visible{outline:2px solid #FFC72C;outline-offset:2p
 <sc-if value="{{isLogo}}" hint-placeholder-val="{{ false }}">
 <div style="display: flex; flex-direction: column; gap: 12px">
 <div style="border-radius: 24px; background: #FFFFFF; padding: 28px; display: flex; justify-content: center; box-shadow: 0 4px 12px rgba(32,19,61,0.06)"><img src="/_blob/3c0ba613a16cb3f688df66fc82439380" alt="Logotipo roxo sobre branco" style="height: 40px; width: auto"></div>
-<div style="border-radius: 24px; background: #20133D; padding: 28px; display: flex; justify-content: center"><img src="/_blob/fc530f879f699d6fe98563c5000569f4" alt="Logotipo branco e amarelo sobre Roxo Noite" style="height: 40px; width: auto"></div>
+<div style="border-radius: 24px; background: #20133D; padding: 28px; display: flex; justify-content: center"><img src="/_blob/fc530f879f699d6fe98563c5000569f4" alt="Logotipo branco e amarelo sobre Noite" style="height: 40px; width: auto"></div>
 <div style="border-radius: 24px; background: #3D0099; padding: 22px; display: flex; justify-content: center"><img src="/_blob/67ef8fef05bec5a45132bca311aa4cce" alt="Símbolo branco sobre Roxo Gove" style="height: 52px; width: auto"></div>
 <p style="margin: 0; font-size: 13px; line-height: 1.45">Cada cor da logo precisa de 4,5:1 com o fundo. Símbolo em espaços quadrados; logotipo em faixas.</p>
 </div>
 </sc-if>
 </main>
 
-<nav aria-label="Navegação principal" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FFFFFF; border-radius: 28px 28px 0 0; box-shadow: 0 -8px 24px rgba(32,19,61,0.08); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 8px 12px">
-<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
-<sc-if value="{{t.center}}" hint-placeholder-val="{{ false }}">
-<a href="{{t.href}}" aria-label="{{t.label}}" style="justify-self: center; width: 60px; height: 60px; margin-top: -34px; border-radius: 20px; transform: rotate(45deg); background: #FFC72C; box-shadow: 0 8px 20px rgba(255,199,44,0.55); display: flex; align-items: center; justify-content: center; color: #20133D">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(-45deg)"><path d="{{t.d}}"></path></svg>
-</a>
-</sc-if>
-<sc-if value="{{t.side}}" hint-placeholder-val="{{ true }}">
-<a href="{{t.href}}" aria-current="{{t.current}}" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{t.color}}; font-size: 11px; font-weight: 600">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+<nav aria-label="Navegação principal" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #FFFFFF; border-top: 1px solid #E3D8F3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<a href="{{t.href}}" aria-current="{{t.current}}" style="min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: {{t.color}}; font-size: 12px; font-weight: {{t.weight}}">
+<span style="width: 64px; height: 32px; border-radius: 9999px; background: {{t.pill}}; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="{{t.d}}"></path></svg></span>
 {{t.label}}
 </a>
-</sc-if>
 </sc-for>
 </nav>
 </div>
@@ -128,31 +121,28 @@ class Component extends DCLogic {
     this.state = { view: 'compass', step: 'context', open: null, topic: null, words: [] };
   }
   renderVals() {
-    const ICON = {
-      home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
-      apps: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
-      search: 'M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14zM20 20l-4-4',
-      palette: 'M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.5-1.6 0-.9-.6-1.4-.6-2.2 0-.9.7-1.6 1.6-1.6H17a4 4 0 0 0 4-4c0-4.7-4-8.6-9-8.6zM7.5 11.5h.01M10 7.5h.01M15 7.5h.01',
-      book: 'M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2zM20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2zM15 9l1.5 1.5L19 8',
-    };
-    const tabs = [['home', 'Início', 'Main.dc.html'], ['apps', 'Apps', 'Aplicacoes.dc.html'], ['search', 'Buscar', 'Main.dc.html'], ['palette', 'Cores', 'Cores.dc.html'], ['book', 'Guias', 'Guias.dc.html']]
-      .map(([id, label, href]) => ({ label, href, d: ICON[id], center: id === 'search', side: id !== 'search', current: id === 'palette' ? 'page' : 'false', color: id === 'palette' ? '#3D0099' : '#5B6770' }));
+    // Ícones Phosphor (viewBox 256): regular nos destinos, fill no ativo (navigation bar MD3)
+    const ICON = { home: 'M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z', apps: 'M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM80,84A12,12,0,1,1,68,72,12,12,0,0,1,80,84Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,120,84Z', palette: 'M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z', book: 'M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64ZM160,88h40a8,8,0,0,1,0,16H160a8,8,0,0,1,0-16Zm48,40a8,8,0,0,1-8,8H160a8,8,0,0,1,0-16h40A8,8,0,0,1,208,128Zm0,32a8,8,0,0,1-8,8H160a8,8,0,0,1,0-16h40A8,8,0,0,1,208,160Z' };
+    const FILL = { home: 'M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z', apps: 'M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM68,96A12,12,0,1,1,80,84,12,12,0,0,1,68,96Zm40,0a12,12,0,1,1,12-12A12,12,0,0,1,108,96Z', palette: 'M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89ZM84,168a12,12,0,1,1,12-12A12,12,0,0,1,84,168Zm0-56a12,12,0,1,1,12-12A12,12,0,0,1,84,112Zm44-24a12,12,0,1,1,12-12A12,12,0,0,1,128,88Zm44,24a12,12,0,1,1,12-12A12,12,0,0,1,172,112Z', book: 'M232,48H168a32,32,0,0,0-32,32v87.73a8.17,8.17,0,0,1-7.47,8.25,8,8,0,0,1-8.53-8V80A32,32,0,0,0,88,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,23.94,7.9,7.9,0,0,0,5.12,7.55A8,8,0,0,0,136,232a24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM208,168H168.27a8.17,8.17,0,0,1-8.25-7.47,8,8,0,0,1,8-8.53h39.73a8.17,8.17,0,0,1,8.25,7.47A8,8,0,0,1,208,168Zm0-32H168.27a8.17,8.17,0,0,1-8.25-7.47,8,8,0,0,1,8-8.53h39.73a8.17,8.17,0,0,1,8.25,7.47A8,8,0,0,1,208,136Zm0-32H168.27A8.17,8.17,0,0,1,160,96.53,8,8,0,0,1,168,88h39.73A8.17,8.17,0,0,1,216,95.47,8,8,0,0,1,208,104Z' };
+    const active = 'palette';
+    const tabs = [['home', 'Início', 'Main.dc.html'], ['apps', 'Apps', 'Aplicacoes.dc.html'], ['palette', 'Cores', 'Cores.dc.html'], ['book', 'Guias', 'Guias.dc.html']]
+      .map(([id, label, href]) => ({ label, href, d: id === active ? FILL[id] : ICON[id], current: id === active ? 'page' : 'false', color: id === active ? '#20133D' : '#2F3539', pill: id === active ? '#E3D8F3' : 'transparent', weight: id === active ? '600' : '500' }));
     const C = [
-      ['#F4F4F4', 'Gelo', 'principal', 49, 49, 'Neutralidade e clareza: cria o palco para as outras cores.'],
-      ['#20133D', 'Roxo Noite', 'principal', 63, 83, 'Autoridade e credibilidade; fundo do tema escuro.'],
-      ['#FFC72C', 'Amarelo Ouro', 'principal', 54, 11, 'Energia e otimismo; uma ação principal por tela.'],
-      ['#3D0099', 'Roxo Gove', 'principal', 71, 92, 'Marca e inovação digital; botões principais.'],
-      ['#351F65', 'Roxo Profundo', 'secundária', 62, 80, 'Sofisticação premium; bordas no escuro.'],
+      ['#F4F4F4', 'Branco', 'principal', 49, 49, 'Neutralidade e clareza: cria o palco para as outras cores.'],
+      ['#20133D', 'Noite', 'principal', 63, 83, 'Autoridade e credibilidade; fundo do tema escuro.'],
+      ['#FFC72C', 'Amarelo', 'principal', 54, 11, 'Energia e otimismo; uma ação principal por tela.'],
+      ['#3D0099', 'Roxo', 'principal', 71, 92, 'Marca e inovação digital; botões principais.'],
+      ['#351F65', 'Roxo profundo', 'secundária', 62, 80, 'Sofisticação premium; bordas no escuro.'],
       ['#2F3539', 'Grafite', 'secundária', 43, 60, 'Base estrutural; texto de corpo no claro.'],
-      ['#5B6770', 'Cinza Azulado', 'secundária', 45, 57, 'Técnica e equilíbrio; texto secundário.'],
+      ['#5B6770', 'Cinza técnico', 'secundária', 45, 57, 'Técnica e equilíbrio; texto secundário.'],
       ['#5AC2CD', 'Ciano', 'secundária', 30, 68, 'Frescor e descoberta; informação e gráficos.'],
-      ['#A278DA', 'Lilás', 'secundária', 59, 69, 'Acolhimento e criatividade; humaniza a interface.'],
-      ['#16499F', 'Azul', 'secundária', 38, 89, 'Confiança e segurança; links e gráficos.'],
+      ['#A278DA', 'Lavanda', 'secundária', 59, 69, 'Acolhimento e criatividade; humaniza a interface.'],
+      ['#16499F', 'Azul confiança', 'secundária', 38, 89, 'Confiança e segurança; links e gráficos.'],
     ];
     const TOPICS = [
       ['Cidadania', [['#A278DA', 46], ['#F4F4F4', 38], ['#2F3539', 16]]],
       ['Saúde e ambiente', [['#5AC2CD', 45], ['#F4F4F4', 28], ['#3D0099', 14], ['#20133D', 13]]],
-      ['Educação e tecnologia', [['#3D0099', 53], ['#A278DA', 21], ['#F4F4F4', 14], ['#5AC2CD', 12]]],
+      ['Educação e tecnologia', [['#A278DA', 46], ['#F4F4F4', 38], ['#5AC2CD', 16]]],
       ['Economia', [['#16499F', 53], ['#FFC72C', 21], ['#F4F4F4', 14], ['#2F3539', 12]]],
       ['Segurança', [['#20133D', 53], ['#5B6770', 21], ['#F4F4F4', 14], ['#5AC2CD', 12]]],
       ['Gestão pública', [['#F4F4F4', 41], ['#351F65', 31], ['#FFC72C', 14], ['#16499F', 13]]],

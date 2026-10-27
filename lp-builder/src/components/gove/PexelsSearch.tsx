@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
+import { CaretLeft, CaretRight, SpinnerGap, MagnifyingGlass } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,7 +122,7 @@ export function PexelsSearch({
           aria-label="Buscar fotos"
           title="Buscar fotos"
         >
-          {loading ? <Loader2 className="animate-spin" aria-hidden /> : <Search aria-hidden />}
+          {loading ? <SpinnerGap className="animate-spin" aria-hidden /> : <MagnifyingGlass aria-hidden />}
         </Button>
       </form>
       <select
@@ -188,7 +188,7 @@ export function PexelsSearch({
                 aria-label="Página anterior"
                 title="Página anterior"
               >
-                <ChevronLeft aria-hidden />
+                <CaretLeft aria-hidden />
               </Button>
               <span className="text-xs text-muted-foreground" aria-live="polite">
                 {result.page} / {pages}
@@ -202,7 +202,7 @@ export function PexelsSearch({
                 aria-label="Próxima página"
                 title="Próxima página"
               >
-                <ChevronRight aria-hidden />
+                <CaretRight aria-hidden />
               </Button>
             </div>
           </>

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { Menu, X, LogOut } from "lucide-react";
+import { List, X, SignOut } from "@phosphor-icons/react";
 
 import { GoveMark } from "./GoveMark";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-label="Sair"
               className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground md:flex"
             >
-              <LogOut className="size-3.5" />
+              <SignOut className="size-3.5" />
               Sair
             </button>
             <button
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setOpen((v) => !v)}
               className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:text-foreground md:hidden"
             >
-              {open ? <X className="size-4" /> : <Menu className="size-4" />}
+              {open ? <X className="size-4" /> : <List className="size-4" />}
             </button>
           </div>
         </nav>
@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={handleSignOut}
               className="flex items-center gap-2 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              <LogOut className="size-3.5" />
+              <SignOut className="size-3.5" />
               Sair
             </button>
           </div>

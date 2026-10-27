@@ -30,8 +30,8 @@ Guia condensado dos componentes base do Gove Design System (React + Tailwind). U
 ## Campo de texto
 
 - Rótulo sempre visível acima (14 px, semibold); dica ou erro abaixo.
-- Altura 48 px, raio 8 px, borda sutil; foco com borda Roxo Gove e brilho roxo.
-- Placeholder em Cinza Azulado — nunca no lugar do rótulo.
+- Altura 48 px, raio 8 px, borda sutil; foco com borda Roxo e brilho roxo.
+- Placeholder em Cinza técnico — nunca no lugar do rótulo.
 
 ```tsx
 <Input label="E-mail profissional" type="email" placeholder="nome@prefeitura.gov.br" />
@@ -39,15 +39,18 @@ Guia condensado dos componentes base do Gove Design System (React + Tailwind). U
 
 ## Card
 
-- Superfície (Gelo no claro, Grafite no escuro), borda sutil, raio 16 px, padding 24 px.
-- Hover em cards clicáveis: sobe 4 px, borda Lilás e sombra média.
+- Superfície (Branco no claro, Grafite no escuro), borda sutil, raio 16 px, padding 24 px.
+- Hover em cards clicáveis: sobe 4 px, borda Lavanda e sombra média.
 - Um ícone em placa de 48 px, título H3 e no máximo duas linhas de texto.
 
 ## Navegação
 
-- Computador: barra lateral recolhível (248 px aberta, 76 px só com ícones e dica).
-- Celular: barra de abas inferior com até 5 itens, ícone 24 px + nome curto.
-- Abas de seção: controle segmentado; abaixo de 900 px, só ícones.
+Padrão Material Design 3. Item ativo: indicador em pílula (cor `secondary`) e ícone Phosphor no peso **fill**; os demais no peso regular.
+
+- Computador: navigation drawer (264 px) com seções e títulos de grupo; recolhe para navigation rail (88 px) com ícone + rótulo em cada destino. A ação principal fica no FAB do topo (amarelo, "Nova solicitação").
+- Celular: top app bar (64 px) com o título do destino, seta de voltar nas telas internas e ações à direita (busca, tema); navigation bar (80 px) com 3 a 5 destinos, ícone 24 px + rótulo; FAB 16 px acima dela para a ação principal.
+- Visões dentro de um destino: tabs primárias (indicador de 3 px sob o rótulo), fixas abaixo da top app bar.
+- Tocar de novo no destino ativo volta ao topo.
 
 ## Listas, tabelas e status
 
@@ -58,7 +61,8 @@ Guia condensado dos componentes base do Gove Design System (React + Tailwind). U
 ## Instruções para IA
 
 ```text
-Componentes Gove: botões de 48–56 px de altura e raio 8 px — um único botão de ação amarelo (#FFC72C, texto #20133D) por tela, primário roxo (#3D0099, texto branco), secundário em contorno; ícones lineares de 2 px em áreas de 44 × 44 px com rótulo acessível.
+Componentes Gove: botões de 48–56 px de altura e raio 8 px — um único botão de ação amarelo (#FFC72C, texto #20133D) por tela, primário roxo (#3D0099, texto branco), secundário em contorno; ícones Phosphor (regular; fill só no item ativo) em áreas de 44 × 44 px com rótulo acessível.
 Campos com rótulo visível acima, 48 px de altura, foco roxo. Cards com raio 16 px, padding 24 px, superfície #F4F4F4 (claro) ou #2F3539 (escuro).
 Grade de 8 px, foco visível, status com ícone + texto, detalhes secundários recolhidos.
+Navegação Material Design 3: drawer/rail no computador; top app bar + navigation bar (3–5 destinos) + FAB no celular; indicador em pílula e ícone fill no ativo.
 ```

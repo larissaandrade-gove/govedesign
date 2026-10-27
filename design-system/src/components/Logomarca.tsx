@@ -1,15 +1,15 @@
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 import { LOGOS, LOGO_MIN_CONTRAST, contrast } from '../../../brand/logos.js';
 import { GoveLogo, logoSrc } from './GoveLogo';
 import { Reveal, RevealItem, StaggerGrid } from './Reveal';
 import { SectionHeader } from './SectionHeader';
 
 const BACKGROUNDS = [
-  { name: 'Branco', hex: '#FFFFFF' },
-  { name: 'Gelo', hex: '#F4F4F4' },
-  { name: 'Amarelo Ouro', hex: '#FFC72C' },
-  { name: 'Roxo Gove', hex: '#3D0099' },
-  { name: 'Roxo Noite', hex: '#20133D' },
+  { name: 'Branco puro', hex: '#FFFFFF' },
+  { name: 'Branco', hex: '#F4F4F4' },
+  { name: 'Amarelo', hex: '#FFC72C' },
+  { name: 'Roxo', hex: '#3D0099' },
+  { name: 'Noite', hex: '#20133D' },
   { name: 'Grafite', hex: '#2F3539' },
 ];
 

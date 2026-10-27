@@ -4,7 +4,7 @@
  * navegador), esquemas BB e o espaço da logomarca BB oficial.
  */
 import { useCallback, useEffect, useState } from "react";
-import { Check, ImagePlus, Trash2, TriangleAlert } from "lucide-react";
+import { Check, ImageSquare, Trash, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -232,7 +232,7 @@ export function BBLogoSlot({
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 text-sm font-medium text-primary transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted">
-          <ImagePlus className="size-5 shrink-0" aria-hidden="true" />
+          <ImageSquare className="size-5 shrink-0" aria-hidden="true" />
           {logo ? "Trocar logomarca BB" : "Logomarca BB (arquivo oficial)"}
           <input
             type="file"
@@ -253,7 +253,7 @@ export function BBLogoSlot({
             onClick={onClear}
             className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <Trash2 className="size-4" aria-hidden="true" />
+            <Trash className="size-4" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -272,7 +272,7 @@ export function BBLogoSlot({
           role="status"
           className="inline-flex items-start gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-900"
         >
-          <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden="true" />
+          <Warning className="mt-px size-4 shrink-0" aria-hidden="true" />
           {BB_LOGO_WARNING}
         </p>
       )}

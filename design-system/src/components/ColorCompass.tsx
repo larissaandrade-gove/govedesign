@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronDown, Copy, MapPin, MessageCircle, User } from 'lucide-react';
+import { CaretDown, ChatCircle, Check, Copy, MapPin, User } from '@phosphor-icons/react';
 import { ATTRIBUTES, BRAND_COLORS, QUESTIONS, TOPICS, colorByHex, type BrandColor } from '../data/colorCompass';
 
-const AXIS_ICON = { Pessoa: User, Situação: MessageCircle, Lugar: MapPin } as const;
+const AXIS_ICON = { Pessoa: User, Situação: ChatCircle, Lugar: MapPin } as const;
 const STEPS = ['Contexto', 'Pauta', 'Tom'] as const;
 const MAX_WORDS = 3;
 
@@ -255,7 +255,7 @@ function ColorItem({ c }: { c: BrandColor }) {
           title={open ? 'Ocultar detalhes' : 'Mostrar detalhes'}
           className="flex size-11 shrink-0 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
         >
-          <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+          <CaretDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
         </button>
       </div>
       {open && (

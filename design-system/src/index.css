@@ -44,6 +44,10 @@
   .eyebrow {
     @apply font-sans text-caption uppercase tracking-[0.14em] text-highlight;
   }
+  /* Celular, telas Cores e Guias: o título já está na top app bar (MD3) */
+  .m-titled .section-title {
+    @apply sr-only;
+  }
   .token {
     font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
     @apply text-caption text-text-secondary;

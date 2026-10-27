@@ -139,7 +139,7 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
         "font-family": fonts.body,
         margin: "0 0 16px",
       });
-      const icon = `<div style="${styleString({ color: leaf.iconColor, "font-size": "24px", "margin-bottom": "8px" })}">${lucideSvg(leaf.icon, leaf.iconColor)}</div>`;
+      const icon = `<div style="${styleString({ color: leaf.iconColor, "font-size": "24px", "margin-bottom": "8px" })}">${iconSvg(leaf.icon, leaf.iconColor)}</div>`;
       const h3 = ctx.bb ? `font-family:${fonts.heading};` : "";
       return `<div style="${card}">${icon}<h3 style="margin:0 0 8px;${h3}font-size:${leaf.size + 4}px;font-weight:700;">${esc(leaf.title)}</h3><p style="margin:0;font-size:${leaf.size}px;line-height:1.5;">${esc(leaf.description)}</p></div>`;
     }
@@ -180,9 +180,9 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
   }
 }
 
-/** SVG simples e genérico para o ícone (sem dependências externas no export). */
-function lucideSvg(_name: string, color: string) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+/** SVG simples e genérico para o ícone (sem dependências externas no export): o "Check" do Phosphor, peso regular. */
+function iconSvg(_name: string, color: string) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 256 256" fill="${color}" aria-hidden="true"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>`;
 }
 
 function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string {

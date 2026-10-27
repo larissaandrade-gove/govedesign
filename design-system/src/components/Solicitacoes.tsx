@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { AlertCircle, ArrowLeft, CalendarClock, CalendarPlus, CheckCircle2, Clapperboard, Clock, ExternalLink, Gift, ListChecks, Mail, PenTool, Plus, Printer, Send, Sheet, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowSquareOut, CalendarCheck, CalendarPlus, CheckCircle, Clock, Envelope, FilmSlate, Gift, ListChecks, PaperPlaneTilt, PenNib, Plus, Printer, Table, UserCircle, WarningCircle, X } from '@phosphor-icons/react';
 import {
   DESCRIPTION_MIN,
   RAR_URL,
@@ -17,7 +17,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { SectionHeader } from './SectionHeader';
 
-const ICONS: Record<string, typeof Gift> = { redesign: PenTool, video: Clapperboard, impressos: Printer, brindes: Gift };
+const ICONS: Record<string, typeof Gift> = { redesign: PenNib, video: FilmSlate, impressos: Printer, brindes: Gift };
 const MANUAL_KEY = 'gove:solicitante';
 
 type Form = {
@@ -96,8 +96,8 @@ function StatusChips({ t }: { t: StoredTicket }) {
   const s = t.status ?? { rar: 'pendente', email: 'pendente', calendar: 'pendente' };
   return (
     <span className="flex flex-wrap gap-1">
-      <Chip icon={Sheet} label="RAR" step={s.rar} />
-      <Chip icon={Mail} label="E-mail" step={s.email} />
+      <Chip icon={Table} label="RAR" step={s.rar} />
+      <Chip icon={Envelope} label="E-mail" step={s.email} />
       <Chip icon={CalendarPlus} label="Agenda" step={s.calendar} />
     </span>
   );
@@ -262,7 +262,8 @@ export function Solicitacoes() {
     <section id="solicitacoes" className="gutter scroll-mt-[72px] py-space-8">
       <div className="flex flex-col gap-space-2 sm:flex-row sm:items-start sm:justify-between">
         <SectionHeader id="solicitacoes" title="Solicitações" />
-        <Button type="button" variant="action" onClick={() => open('frentes')} className="self-start sm:mb-space-4">
+        {/* No celular a ação é o FAB "Nova solicitação" (Sidebar) */}
+        <Button type="button" variant="action" onClick={() => open('frentes')} className="self-start max-lg:!hidden sm:mb-space-4">
           <Plus className="size-5" aria-hidden />
           Abrir nova solicitação
         </Button>
@@ -327,7 +328,7 @@ export function Solicitacoes() {
               <form onSubmit={send} noValidate className="flex flex-col gap-space-3">
                 <div className="flex flex-col gap-space-1 rounded-md bg-secondary/40 p-space-2">
                   <p className="flex items-center gap-space-1 text-caption text-text-secondary" id="sol-requesterEmail">
-                    <UserRound className="size-4 shrink-0" aria-hidden />
+                    <UserCircle className="size-4 shrink-0" aria-hidden />
                     {me?.email ? (
                       <span>
                         <strong className="font-semibold text-text-primary">{me.name}</strong> · {me.email}
@@ -420,12 +421,12 @@ export function Solicitacoes() {
 
                 {failure && (
                   <p role="alert" className="flex items-center gap-space-1 text-body text-error">
-                    <AlertCircle className="size-5 shrink-0" aria-hidden />
+                    <WarningCircle className="size-5 shrink-0" aria-hidden />
                     {failure}
                   </p>
                 )}
                 <Button type="submit" variant="action" size="lg" disabled={sending || !mode} className="w-full sm:w-auto sm:self-start">
-                  <Send className="size-5" aria-hidden />
+                  <PaperPlaneTilt className="size-5" aria-hidden />
                   {sending ? 'Enviando…' : 'Enviar solicitação'}
                 </Button>
               </form>
@@ -434,7 +435,7 @@ export function Solicitacoes() {
             {view === 'feito' && done && (
               <div role="status" className="flex flex-col gap-space-2">
                 <p className="flex items-center gap-space-1 text-body-large font-semibold">
-                  <CheckCircle2 className="size-6 shrink-0 text-success" aria-hidden />
+                  <CheckCircle className="size-6 shrink-0 text-success" aria-hidden />
                   {done.ticket.id} · {done.ticket.title}
                 </p>
                 <p className="text-body text-text-secondary">
@@ -444,7 +445,7 @@ export function Solicitacoes() {
                 {!!done.ticket.work?.length && (
                   <div className="flex flex-col gap-1 rounded-md bg-secondary/40 p-space-2">
                     <p className="flex items-center gap-1 text-caption font-semibold text-text-primary">
-                      <CalendarClock className="size-4" aria-hidden />
+                      <CalendarCheck className="size-4" aria-hidden />
                       Produção na agenda do design ({done.ticket.effortHours} h)
                     </p>
                     <ul className="text-caption text-text-secondary">
@@ -462,7 +463,7 @@ export function Solicitacoes() {
                 <div className="flex flex-wrap gap-space-1">
                   {done.ticket.status.email !== 'ok' && (
                     <a href={mailtoFor(done.ticket)} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-space-1 rounded-md border border-secondary px-space-2 text-body font-semibold text-text-primary no-underline hover:border-primary">
-                      <Mail className="size-5" aria-hidden />
+                      <Envelope className="size-5" aria-hidden />
                       Enviar e-mail
                     </a>
                   )}
@@ -485,7 +486,7 @@ export function Solicitacoes() {
                 <RecentList list={list} />
                 <a href={RAR_URL} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1 self-start text-caption font-semibold">
                   Planilha RAR
-                  <ExternalLink className="size-4" aria-hidden />
+                  <ArrowSquareOut className="size-4" aria-hidden />
                 </a>
               </div>
             )}

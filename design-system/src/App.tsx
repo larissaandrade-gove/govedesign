@@ -29,24 +29,24 @@ const GUIAS_TABS = [
   { id: 'diretrizes', label: 'Diretrizes' },
 ];
 
-/** Celular: uma tela por aba (Início, Apps, Cores, Guias), como no app mobile. */
+/** Celular: uma tela por destino da navigation bar (Início, Apps, Cores, Guias); Cores e Guias com tabs primárias (MD3). */
 function MobileScreen({ section }: { section: string }) {
   const group = groupOf(section);
   if (group === 'aplicacoes') return <Apps />;
   if (group === 'cores')
     return (
-      <>
+      <div className="m-titled">
         <MobileTabs label="Cores" tabs={CORES_TABS} active={section === 'logomarca' ? 'logomarca' : 'cores'} />
         {section === 'logomarca' ? <Logomarca /> : <ColorPalette />}
-      </>
+      </div>
     );
   if (group === 'guias') {
     const active = GUIAS_TABS.some((t) => t.id === section) ? section : 'tipografia';
     return (
-      <>
+      <div className="m-titled">
         <MobileTabs label="Guias" tabs={GUIAS_TABS} active={active} />
         {active === 'tipografia' ? <Typography /> : active === 'componentes' ? <UIKit /> : <Diretrizes />}
-      </>
+      </div>
     );
   }
   return (
@@ -94,13 +94,13 @@ function Shell() {
       <Sidebar view={view} />
       <main className="transition-[padding] duration-300 ease-entry lg:pl-[var(--rail,248px)]">
         {view.kind === 'app' && mobile && appsFor(true).every((a) => a.id !== view.appId) ? (
-          <div className="pb-[104px] pt-[56px] [&>section]:pt-space-3">
+          <div className="pb-[112px] pt-16 [&>section]:pt-space-3">
             <Apps />
           </div>
         ) : view.kind === 'app' ? (
           <AppPage key={view.appId} appId={view.appId} />
         ) : mobile ? (
-          <div className="pb-[104px] pt-[56px] [&>section]:pt-space-3">
+          <div className="pb-[176px] pt-16 [&>section]:pt-space-3">
             <MobileScreen section={view.section} />
           </div>
         ) : (
@@ -117,7 +117,7 @@ function Shell() {
         )}
         {view.kind !== 'app' && !mobile && <Footer />}
         {mobile && <MobileSearch />}
-        <BackToTop />
+        {!mobile && <BackToTop />}
       </main>
     </div>
   );
