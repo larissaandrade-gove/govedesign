@@ -157,7 +157,7 @@ export function LinkDetailPage() {
           <dl className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="surface flex flex-col-reverse justify-end p-5">
               <dt className="mt-2 text-sm font-medium text-muted-foreground">Cliques</dt>
-              <dd className="font-mono text-4xl font-light tabular-nums" data-testid="detail-clicks">
+              <dd className="font-display text-4xl font-bold tabular-nums" data-testid="detail-clicks">
                 {stats.isPending ? "—" : (stats.data?.count ?? 0)}
               </dd>
             </div>

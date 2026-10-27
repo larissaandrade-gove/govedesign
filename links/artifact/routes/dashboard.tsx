@@ -5,10 +5,6 @@ import { CheckCircle, Globe, Link as LinkIcon, CursorClick, Plus, Power } from "
 import { clickStatsQuery, dashboardStatsQuery, recentLinksQuery } from "@/lib/links-queries";
 import { IconHeader, StatusBadge } from "../components/LinkTools";
 
-function pad(value: number) {
-  return value < 10 ? `0${value}` : String(value);
-}
-
 /** Dashboard: indicadores e links recentes. */
 export function DashboardPage() {
   const stats = useQuery(dashboardStatsQuery);
@@ -31,11 +27,11 @@ export function DashboardPage() {
         {indicators.map((item) => (
           <div key={item.label} className="surface p-5" data-testid={`stat-${item.label}`}>
             <span
-              className={`block font-mono text-4xl font-light tabular-nums ${
+              className={`block font-display text-4xl font-bold tabular-nums ${
                 item.value > 0 ? "text-foreground" : "text-muted-foreground"
               }`}
             >
-              {stats.isPending ? "—" : pad(item.value)}
+              {stats.isPending ? "—" : item.value}
             </span>
             <p className="mt-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <item.icon className="size-4 shrink-0" aria-hidden />

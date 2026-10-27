@@ -258,7 +258,7 @@ function LinksPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg bg-secondary/50 p-4">
                 <p className="label-caps mb-2 text-muted-foreground">Cliques</p>
-                <span className="font-mono text-2xl font-light">
+                <span className="font-display text-2xl font-bold tabular-nums">
                   {stats.data?.get(viewing.id)?.count ?? 0}
                 </span>
               </div>

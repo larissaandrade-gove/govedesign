@@ -12,6 +12,7 @@ import logoCor from "../../brand/logos/gove-logo-cor.webp";
 import logoRoxo from "../../brand/logos/gove-logo-roxo.webp";
 import logoBranco from "../../brand/logos/gove-logo-branco.webp";
 import logoBrancoAmarelo from "../../brand/logos/gove-logo-branco-amarelo.webp";
+import { isEmbedded } from "@gove/runtime";
 import { useTheme } from "./theme";
 
 const FILES: Record<string, string> = {
@@ -30,6 +31,8 @@ const HEADER_BG = { light: "#FFFFFF", dark: "#20133D" } as const;
 export function AppBrand() {
   const theme = useTheme();
   const height = 26;
+  // No Design System a marca já está no cabeçalho dele.
+  if (isEmbedded()) return null;
   const pick = pickLogo(HEADER_BG[theme], kindForBox(82, height)) as { file: string; aspect: number };
   return (
     <div className="flex min-h-11 items-center gap-3">

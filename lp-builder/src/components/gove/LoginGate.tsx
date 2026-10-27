@@ -35,7 +35,7 @@ export function LoginGate({ children }: { children: ReactNode }) {
           >
             ACESSO RESTRITO
           </p>
-          <h1 className="mt-2 text-[25px] font-bold text-white">GOVE LP Builder</h1>
+          <h1 className="mt-2 font-display text-[25px] font-bold text-white">LP Builder</h1>
           <p className="mt-2 text-sm text-white/70">
             Entre com as credenciais do time de marketing.
           </p>

@@ -218,7 +218,7 @@ export function LinksPage() {
                   <td className={`${td} hidden truncate text-muted-foreground min-[900px]:table-cell`}>
                     {row.original_url}
                   </td>
-                  <td className={`${td} font-mono tabular-nums text-muted-foreground`} data-testid={`clicks-${row.slug}`}>
+                  <td className={`${td} font-medium tabular-nums text-muted-foreground`} data-testid={`clicks-${row.slug}`}>
                     {stats.isPending ? "—" : (stats.data?.get(row.id)?.count ?? 0)}
                   </td>
                   <td className={`${td} hidden font-mono text-xs text-muted-foreground min-[900px]:table-cell`}>
@@ -313,7 +313,7 @@ export function LinksPage() {
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-muted-foreground">Cliques</dt>
-                <dd className="mt-1 font-mono text-2xl font-light tabular-nums">
+                <dd className="mt-1 font-display text-2xl font-bold tabular-nums">
                   {stats.data?.get(viewing.id)?.count ?? 0}
                 </dd>
               </div>

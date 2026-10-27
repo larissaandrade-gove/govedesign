@@ -131,6 +131,7 @@ const navBase =
   "nav-item inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-2.5 text-sm font-medium transition-colors min-[900px]:px-3.5";
 
 export function ArtifactShell({ children }: { children: ReactNode }) {
+  const embedded = isEmbedded();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
@@ -139,17 +140,20 @@ export function ArtifactShell({ children }: { children: ReactNode }) {
           className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-6"
         >
           <div className="flex min-w-0 items-center gap-2 min-[900px]:gap-6">
-            <Link
-              to="/dashboard"
-              aria-label="Gove Links — início"
-              className="flex min-h-11 items-center gap-2"
-            >
-              {/* Fundo real do cabeçalho: branco (claro) / #20133D (escuro). */}
-              <GoveLogo height={24} box={[76, 24]} light="#FFFFFF" dark="#20133D" />
-              <span className="hidden text-sm font-semibold text-muted-foreground min-[480px]:inline">
-                Links
-              </span>
-            </Link>
+            {/* No Design System a marca já está no cabeçalho dele: só a navegação aqui. */}
+            {!embedded && (
+              <Link
+                to="/dashboard"
+                aria-label="Gove Links — início"
+                className="flex min-h-11 items-center gap-2"
+              >
+                {/* Fundo real do cabeçalho: branco (claro) / #20133D (escuro). */}
+                <GoveLogo height={24} box={[76, 24]} light="#FFFFFF" dark="#20133D" />
+                <span className="hidden text-sm font-semibold text-muted-foreground min-[480px]:inline">
+                  Links
+                </span>
+              </Link>
+            )}
             <ul className="flex items-center gap-1">
               {navItems.map((item) => (
                 <li key={item.to}>

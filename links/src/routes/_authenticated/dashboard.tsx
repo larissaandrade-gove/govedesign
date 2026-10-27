@@ -24,10 +24,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 const columns = ["Identificador", "URL Original", "Cliques", "Status"];
 
-function pad(value: number) {
-  return value < 10 ? `0${value}` : String(value);
-}
-
 function DashboardPage() {
   const stats = useQuery(dashboardStatsQuery);
   const links = useQuery(recentLinksQuery);
@@ -52,11 +48,11 @@ function DashboardPage() {
             <p className="label-caps mb-4 text-muted-foreground">{item.label}</p>
             <div className="flex items-baseline gap-2">
               <span
-                className={`font-mono text-4xl font-light ${
+                className={`font-display text-4xl font-bold tabular-nums ${
                   item.value > 0 ? "text-foreground" : "text-foreground/20"
                 }`}
               >
-                {stats.isPending ? "—" : pad(item.value)}
+                {stats.isPending ? "—" : item.value}
               </span>
               <span className="text-[10px] font-medium text-muted-foreground/60">
                 {stats.isError ? "Erro" : stats.isPending ? "Carregando" : "Atualizado"}

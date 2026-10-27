@@ -140,7 +140,7 @@ function LinkDetailPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="animate-entrance rounded-xl bg-card p-6 ring-1 ring-border">
               <p className="label-caps mb-4 text-muted-foreground">Total de cliques</p>
-              <span className="font-mono text-4xl font-light">
+              <span className="font-display text-4xl font-bold tabular-nums">
                 {stats.isPending ? "—" : stats.data?.count ?? 0}
               </span>
             </div>

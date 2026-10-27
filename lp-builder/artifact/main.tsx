@@ -18,7 +18,7 @@ const router = createRouter({
 
 const el = document.getElementById("root")!;
 el.innerHTML =
-  '<p style="font:600 14px Montserrat,system-ui,sans-serif;padding:32px;color:var(--muted-foreground)">Carregando projetos…</p>';
+  '<p style="font:500 14px Inter,system-ui,sans-serif;padding:32px;color:var(--muted-foreground)">Carregando projetos…</p>';
 
 pagesReady.finally(() => {
   el.innerHTML = "";

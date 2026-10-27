@@ -32,7 +32,10 @@
 }
 
 @theme inline {
-  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  /* Interface do builder: Inter no corpo, Montserrat nos títulos (regra de marca).
+     A LP no canvas/exportada define as próprias fontes. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", "Inter", ui-sans-serif, sans-serif;
   --color-gove-primary: var(--gove-primary);
   --color-gove-primary-hover: var(--gove-primary-hover);
   --color-gove-accent: var(--gove-accent);
@@ -68,6 +71,7 @@
   --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-title: var(--title);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -105,6 +109,7 @@
   --radius: 0.625rem;
   --background: oklch(0.967 0 0); /* #F4F4F4 */
   --foreground: oklch(0.325 0.011 236.9); /* #2F3539 */
+  --title: #20133d; /* Noite */
   --card: oklch(1.000 0 0); /* #FFFFFF */
   --card-foreground: oklch(0.325 0.011 236.9); /* #2F3539 */
   --popover: oklch(1.000 0 0); /* #FFFFFF */
@@ -140,6 +145,7 @@
 .dark {
   --background: oklch(0.231 0.077 293.8); /* #20133D */
   --foreground: oklch(0.967 0 0); /* #F4F4F4 */
+  --title: #f4f4f4; /* Branco */
   --card: oklch(0.312 0.117 292.8); /* #351F65 */
   --card-foreground: oklch(0.967 0 0); /* #F4F4F4 */
   --popover: oklch(0.312 0.117 292.8); /* #351F65 */
@@ -181,6 +187,11 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+  }
+
+  /* Títulos da interface em Montserrat; a LP no canvas (.gove-lp) fica de fora. */
+  :where(h1, h2, h3):not(.gove-lp *) {
+    font-family: var(--font-display);
   }
 
   /* Foco visível em todo o builder (acessibilidade por teclado) */
