@@ -12,8 +12,11 @@ import {
   earliestDueDate,
   earliestFeasibleDate,
   effortHours,
+  dueTime,
   freeFromBusy,
   leadHours,
+  normalizeSchedule,
+  ticketEvent,
   planWork,
   quarterLabel,
   rarRow,
@@ -55,11 +58,11 @@ test('prazos: alta urgência a partir de 24 h úteis; vídeo vale o dobro', () =
   assert.ok(TICKET_TYPES.every((t) => leadHours(t.id, 'alta') >= 24));
 });
 
-test('horas úteis: expediente 9–12 e 13–18, fins de semana e feriados fora', () => {
+test('horas úteis: expediente padrão 8–12 e 13–17, fins de semana e feriados fora', () => {
   assert.equal(new Date(addBusinessHours(SEG_10H, 10)).toISOString(), '2026-10-20T15:00:00.000Z'); // terça 12h
   assert.equal(earliestDueDate(SEG_10H, 24), '2026-10-22'); // 7 + 8 + 8 + 1
-  assert.equal(earliestDueDate(Date.parse('2026-10-30T16:00:00-03:00'), 10), '2026-11-03'); // 02/11 é Finados
-  assert.equal(businessHoursBetween(SEG_10H, at('2026-10-19T18:00:00')), 7);
+  assert.equal(earliestDueDate(Date.parse('2026-10-30T16:00:00-03:00'), 10), '2026-11-04'); // 1 + (02/11 é Finados) 8 + 1
+  assert.equal(businessHoursBetween(SEG_10H, at('2026-10-19T18:00:00')), 6);
   assert.equal(quarterLabel(SEG_10H), '4T26');
 });
 
@@ -76,7 +79,7 @@ test('obrigatórios: entrega, prioridade, título, descrição (50+), tipo de pe
   assert.match(validateTicket(base({ dueDate: '2026-10-21' }), { now: SEG_10H }).errors.dueDate, /24 h úteis.*22\/10\/2026/);
   assert.match(validateTicket(base({ priority: 'normal', dueDate: '2026-10-23' }), { now: SEG_10H }).errors.dueDate, /48 h úteis/);
   assert.match(validateTicket(base({ type: 'video', dueDate: '2026-10-23' }), { now: SEG_10H }).errors.dueDate, /48 h úteis/);
-  assert.match(validateTicket(base({ dueDate: '2026-10-24' }), { now: SEG_10H }).errors.dueDate, /dia útil/);
+  assert.match(validateTicket(base({ dueDate: '2026-10-24' }), { now: SEG_10H }).errors.dueDate, /dia de expediente/);
   assert.ok(validateTicket(base({ links: [] }), { now: SEG_10H }).errors.links);
   assert.ok(validateTicket(base({ requesterEmail: 'ana@gmail.com' }), { now: SEG_10H }).errors.requesterEmail);
   assert.equal(validateTicket(base({ requesterName: '' }), { now: SEG_10H }).ticket.requesterName, 'Ana Souza'); // nome vem do login
@@ -132,7 +135,9 @@ test('linha do RAR, e-mail com solicitante e marcador, .ics no prazo', () => {
   assert.equal(data.calendar, false);
   assert.equal(data.work.length, blocks.length);
   assert.match(data.work[0].summary, /^Produção 1\/\d: Garrafas para o GF26 \[DS-ABC234\]$/);
-  assert.match(ticketIcs(ticket), /DTSTART:20261023T200000Z/); // 17h de Brasília
+  assert.match(ticketIcs(ticket), /DTSTART:20261023T190000Z/); // 16h de Brasília (última hora do expediente)
+  assert.match(mail.text, /Entrega: 23\/10\/2026, até 17h/);
+  assert.match(ticketIcs(ticket), /ORGANIZER:mailto:larissa\.andrade@gove\.digital/);
   assert.match(ticketIcs(ticket), /ATTENDEE;CN=Ana Souza:mailto:ana\.souza@gove\.digital/);
 });
 
@@ -162,7 +167,7 @@ test('rota: solicitante vem do login; sem login, recusa', async () => {
 
 test('rota: consulta a agenda do design, distribui a produção e despacha ao Apps Script', async () => {
   const calls = [];
-  const busy = [{ start: '2026-10-20T12:00:00.000Z', end: '2026-10-20T21:00:00.000Z' }]; // terça 9h–18h
+  const busy = [{ start: '2026-10-20T11:00:00.000Z', end: '2026-10-20T20:00:00.000Z' }]; // terça 8h–17h
   const fetchImpl = async (_url, init) => {
     const body = JSON.parse(init.body);
     calls.push(body);
@@ -185,7 +190,8 @@ test('rota: consulta a agenda do design, distribui a produção e despacha ao Ap
     assert.equal(sent.token, 'frase');
     assert.ok(sent.work.length >= 4);
     assert.ok(sent.work.every((w) => !w.startTime.startsWith('2026-10-20')), 'nada na terça ocupada');
-    assert.equal(sent.event.startTime, '2026-10-23T17:00:00');
+    assert.equal(sent.event.startTime, '2026-10-23T16:00:00');
+    assert.equal(sent.event.endTime, '2026-10-23T17:00:00');
     assert.match(sent.email.text, /Solicitante: Larissa Andrade/);
 
     const lista = await (await fetch(s.base)).json();
@@ -223,5 +229,54 @@ test('rota: sem Apps Script, envia e-mail com convite pelo SMTP', async () => {
     assert.match(sent[0].icalEvent.content, /BEGIN:VEVENT/);
   } finally {
     s.close();
+  }
+});
+
+// Expediente da responsável: 7h–11h e 12h–16h, de segunda a sábado
+const CEDO = { days: [1, 2, 3, 4, 5, 6], periods: [['07:00', '11:00'], ['12:00', '16:00']] };
+
+test('expediente: valida, muda horas úteis, entrega e evento; pedido guarda o seu', () => {
+  assert.equal(normalizeSchedule({ days: [1], periods: [['08:00', '12:00'], ['11:00', '14:00']] }).error, 'Os períodos não podem se sobrepor.');
+  assert.match(normalizeSchedule({ days: [], periods: [['08:00', '12:00']] }).error, /ao menos um dia/);
+  assert.match(normalizeSchedule({ days: [1], periods: [['8h', '12:00']] }).error, /HH:MM/);
+  assert.equal(dueTime(CEDO), '16:00');
+  assert.equal(businessHoursBetween(SEG_10H, at('2026-10-19T18:00:00'), CEDO), 5); // 10–11 e 12–16
+  assert.equal(earliestDueDate(at('2026-10-23T15:00:00'), 10, CEDO), '2026-10-26'); // sex 1 + sáb 8 + seg 1
+  assert.equal(dueInstant('2026-10-23', CEDO), at('2026-10-23T16:00:00'));
+
+  const { ticket } = validateTicket(base({ dueDate: '2026-10-24' }), { now: SEG_10H, schedule: CEDO }); // sábado vale
+  assert.ok(ticket);
+  assert.equal(ticket.dueTime, '16:00');
+  assert.deepEqual(ticket.schedule, { days: CEDO.days, periods: CEDO.periods });
+  const ev = ticketEvent(ticket);
+  assert.equal(ev.startTime, '2026-10-24T15:00:00');
+  assert.equal(ev.endTime, '2026-10-24T16:00:00');
+  assert.match(ticketEmail(ticket).text, /Entrega: 24\/10\/2026, até 16h/);
+  // Pedido antigo (sem dueTime) continua com a entrega às 18h
+  const { dueTime: _d, schedule: _s, ...antigo } = ticket;
+  assert.equal(ticketEvent(antigo).endTime, '2026-10-24T18:00:00');
+});
+
+test('rota: só a responsável altera o expediente; pedidos seguintes usam o novo', async () => {
+  const outra = serve({ sessionEmail: () => 'ana.souza@gove.digital' });
+  const dona = serve();
+  try {
+    const put = (b, body) => fetch(b + '/expediente', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.equal((await put(outra.base, CEDO)).status, 403);
+    const inicial = await (await fetch(dona.base + '/expediente')).json();
+    assert.equal(inicial.canEdit, true);
+    assert.deepEqual(inicial.schedule.periods, [['08:00', '12:00'], ['13:00', '17:00']]);
+    assert.equal((await put(dona.base, { days: [1], periods: [['09:00', '08:00']] })).status, 400);
+    const r = await put(dona.base, CEDO);
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).schedule.updatedBy, 'larissa.andrade@gove.digital');
+
+    const av = await (await fetch(dona.base + '/availability?type=redesign&priority=alta')).json();
+    assert.equal(av.earliestLead, '2026-10-22'); // 5 + 8 + 8 + 3
+    const j = await (await post(dona.base, base({ dueDate: '2026-10-24' }))).json();
+    assert.equal(j.ticket.dueTime, '16:00');
+  } finally {
+    outra.close();
+    dona.close();
   }
 });

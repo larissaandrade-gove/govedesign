@@ -5,9 +5,12 @@
 // - com o Apps Script da planilha (TICKETS_WEBHOOK_URL + TICKETS_WEBHOOK_TOKEN):
 //   linha nova na aba "Novo RAR", e-mail, evento de entrega e blocos de produção;
 // - sem ele, com SMTP: e-mail com convite (.ics); o Apps Script lança o resto ao ler o e-mail.
+// Os prazos seguem o expediente da responsável (`inbox`), que só ela altera
+// (GET/PUT /expediente); cada pedido guarda o expediente em que foi feito.
 import express from 'express';
 import nodemailer from 'nodemailer';
 import {
+  DEFAULT_SCHEDULE,
   DESIGN_INBOX,
   TICKET_PRIORITIES,
   TICKET_TYPES,
@@ -20,6 +23,7 @@ import {
   leadHours,
   nameFromEmail,
   newTicketId,
+  normalizeSchedule,
   planWork,
   rarRow,
   ticketEmail,
@@ -38,6 +42,10 @@ CREATE TABLE IF NOT EXISTS design_tickets (
   email TEXT NOT NULL DEFAULT 'pendente',
   calendar TEXT NOT NULL DEFAULT 'pendente',
   error TEXT
+);
+CREATE TABLE IF NOT EXISTS design_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
 );`;
 
 const DAY = 864e5;
@@ -70,6 +78,13 @@ export function createTicketsRouter({
   const list = db.prepare('SELECT * FROM design_tickets ORDER BY created_at DESC LIMIT ?');
   const exists = db.prepare('SELECT 1 FROM design_tickets WHERE id = ?');
   const script = Boolean(webhookUrl && webhookToken);
+  const getSetting = db.prepare('SELECT value FROM design_settings WHERE key = ?');
+  const putSetting = db.prepare('INSERT INTO design_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+  /** Expediente vigente da responsável (o padrão enquanto ela não salvar outro). */
+  const schedule = () => {
+    const row = getSetting.get('expediente');
+    return (row && normalizeSchedule(JSON.parse(row.value)).schedule) || DEFAULT_SCHEDULE;
+  };
 
   const router = express.Router();
   router.use(express.json({ limit: '64kb' }));
@@ -113,18 +128,34 @@ export function createTicketsRouter({
     res.json({ types: TICKET_TYPES, priorities: TICKET_PRIORITIES, inbox, integrations: { rar: script, email: script || Boolean(mailer), calendar: script || Boolean(mailer) } });
   });
 
+  router.get('/expediente', (req, res) => {
+    res.json({ schedule: schedule(), owner: inbox, canEdit: sessionEmail(req) === inbox });
+  });
+
+  router.put('/expediente', (req, res) => {
+    const email = sessionEmail(req);
+    if (!email) return res.status(401).json({ error: 'Faça login para alterar o expediente.' });
+    if (email !== inbox) return res.status(403).json({ error: 'Só a responsável pelas solicitações altera o expediente.' });
+    const { ok, error, schedule: s } = normalizeSchedule(req.body);
+    if (!ok) return res.status(400).json({ error });
+    const saved = { ...s, updatedAt: new Date(now()).toISOString(), updatedBy: email };
+    putSetting.run('expediente', JSON.stringify(saved));
+    res.json({ schedule: saved });
+  });
+
   // Primeira entrega possível: prazo mínimo + espaço livre na agenda do design
   router.get('/availability', async (req, res) => {
     const type = String(req.query.type ?? '');
     const priority = String(req.query.priority ?? '');
     if (!TICKET_TYPES.some((t) => t.id === type) || !TICKET_PRIORITIES.some((p) => p.id === priority)) return res.status(400).json({ error: 'Frente ou prioridade inválida.' });
     const t = now();
+    const sc = schedule();
     const free = await designFree(t, t + HORIZON_DAYS * DAY);
     res.json({
       leadHours: leadHours(type, priority),
       effortHours: effortHours(type),
-      earliestLead: earliestDueDate(t, leadHours(type, priority)),
-      earliest: earliestFeasibleDate({ nowMs: t, typeId: type, priority, free }),
+      earliestLead: earliestDueDate(t, leadHours(type, priority), sc),
+      earliest: earliestFeasibleDate({ nowMs: t, typeId: type, priority, free, schedule: sc }),
       calendar: free ? 'consultada' : 'não consultada',
     });
   });
@@ -138,14 +169,15 @@ export function createTicketsRouter({
     const me = requester(req);
     if (!me) return res.status(401).json({ error: 'Faça login para abrir solicitações.' });
     const t0 = now();
-    const { ok, errors, ticket } = validateTicket({ ...req.body, requesterEmail: me.email, requesterName: me.name }, { now: t0, domain });
+    const sc = schedule();
+    const { ok, errors, ticket } = validateTicket({ ...req.body, requesterEmail: me.email, requesterName: me.name }, { now: t0, domain, schedule: sc });
     if (!ok) return res.status(400).json({ error: 'Revise os campos destacados.', errors });
 
-    const due = dueInstant(ticket.dueDate);
+    const due = dueInstant(ticket.dueDate, sc);
     const free = await designFree(t0, due);
-    const plan = planWork({ nowMs: t0, dueMs: due, hours: ticket.effortHours, free });
+    const plan = planWork({ nowMs: t0, dueMs: due, hours: ticket.effortHours, free, schedule: sc });
     if (plan.missingHours > 0) {
-      const first = earliestFeasibleDate({ nowMs: t0, typeId: ticket.type, priority: ticket.priority, free: await designFree(t0, t0 + HORIZON_DAYS * DAY) });
+      const first = earliestFeasibleDate({ nowMs: t0, typeId: ticket.type, priority: ticket.priority, free: await designFree(t0, t0 + HORIZON_DAYS * DAY), schedule: sc });
       const msg = `A agenda do design não tem ${ticket.effortHours} h livres até ${brDateFromIso(ticket.dueDate)}.${first ? ` Primeira data com espaço: ${brDateFromIso(first)}.` : ''}`;
       return res.status(400).json({ error: 'Revise os campos destacados.', errors: { dueDate: msg } });
     }

@@ -3,20 +3,26 @@
 // prazos em horas úteis, distribuição da produção na agenda do design, linha da
 // aba "Novo RAR", e-mail e eventos de agenda.
 
-/** Horário de trabalho (Brasília, sem horário de verão): 9h–12h e 13h–18h, 8 h por dia. */
-export const WORK_PERIODS = [
-  [9, 12],
-  [13, 18],
-];
+/**
+ * Expediente padrão da responsável pelas solicitações (Brasília, sem horário de
+ * verão): seg–sex, 8h–12h e 13h–17h. Ela atualiza o expediente na página
+ * Solicitações; cada pedido guarda uma cópia do expediente em que foi feito.
+ */
+export const DEFAULT_SCHEDULE = Object.freeze({
+  days: Object.freeze([1, 2, 3, 4, 5]),
+  periods: Object.freeze([Object.freeze(['08:00', '12:00']), Object.freeze(['13:00', '17:00'])]),
+});
+/** Períodos do expediente padrão em horas ([[8, 12], [13, 17]]). */
+export const WORK_PERIODS = DEFAULT_SCHEDULE.periods.map((p) => p.map((h) => toMinutes(h) / 60));
 export const TIME_ZONE = 'America/Sao_Paulo';
 const OFFSET_MS = -3 * 3600e3; // UTC−3 o ano inteiro desde 2019
 const HOUR = 3600e3;
 const DAY = 24 * HOUR;
-/** Hora de entrega no dia do prazo. */
-export const DUE_HOUR = 18;
+/** Hora de entrega no dia do prazo, no expediente padrão (fim do último período). */
+export const DUE_HOUR = WORK_PERIODS[WORK_PERIODS.length - 1][1];
 
-/** Caixa da área de design que recebe os pedidos (o servidor aceita TICKETS_INBOX). */
-export const DESIGN_INBOX = 'mkt@gove.digital';
+/** Responsável pelas solicitações: recebe os pedidos e os eventos na agenda (o servidor aceita TICKETS_INBOX). */
+export const DESIGN_INBOX = 'larissa.andrade@gove.digital';
 /** Planilha RAR (aba "Novo RAR") onde cada pedido vira uma linha. */
 export const RAR_URL = 'https://docs.google.com/spreadsheets/d/1gtVN6m1Z0aPyNTVuLNJptKn8_TGrjN2yYymwy2c6QOY/edit';
 
@@ -99,6 +105,53 @@ export const leadHours = (typeId, priority) => (LEAD_HOURS[priority] ?? LEAD_HOU
 /** Horas de produção reservadas na agenda do design. */
 export const effortHours = (typeId) => EFFORT_HOURS * (typeById(typeId)?.factor ?? 1);
 
+/* ------------------------------------------------------------ expediente */
+
+function toMinutes(hhmm) {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(hhmm ?? '').trim());
+  return m ? Number(m[1]) * 60 + Number(m[2]) : NaN;
+}
+const hhmm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
+/**
+ * Valida e normaliza um expediente `{ days: [0–6], periods: [['HH:MM', 'HH:MM'], …] }`.
+ * Devolve `{ ok, error, schedule }` (períodos em ordem, sem sobreposição; ao
+ * menos um dia e uma hora de trabalho por dia).
+ */
+export function normalizeSchedule(input) {
+  const days = [...new Set((Array.isArray(input?.days) ? input.days : []).map(Number))].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6).sort();
+  if (!days.length) return { ok: false, error: 'Escolha ao menos um dia de trabalho.', schedule: null };
+  const raw = (Array.isArray(input?.periods) ? input.periods : []).slice(0, 6).map((p) => [toMinutes(p?.[0]), toMinutes(p?.[1])]);
+  if (!raw.length) return { ok: false, error: 'Inclua ao menos um período de trabalho.', schedule: null };
+  if (raw.some(([a, b]) => Number.isNaN(a) || Number.isNaN(b))) return { ok: false, error: 'Use horários no formato HH:MM.', schedule: null };
+  if (raw.some(([a, b]) => b - a < 30)) return { ok: false, error: 'Cada período precisa terminar depois de começar (mínimo 30 min).', schedule: null };
+  raw.sort((x, y) => x[0] - y[0]);
+  for (let i = 1; i < raw.length; i++) if (raw[i][0] < raw[i - 1][1]) return { ok: false, error: 'Os períodos não podem se sobrepor.', schedule: null };
+  if (raw.reduce((n, [a, b]) => n + b - a, 0) < 60) return { ok: false, error: 'O expediente precisa ter ao menos 1 hora por dia.', schedule: null };
+  const schedule = { days, periods: raw.map(([a, b]) => [hhmm(a), hhmm(b)]) };
+  for (const k of ['updatedAt', 'updatedBy']) if (typeof input?.[k] === 'string') schedule[k] = input[k].slice(0, 80);
+  return { ok: true, error: null, schedule };
+}
+
+/** Expediente válido ou o padrão. */
+const sched = (s) => (s && s !== DEFAULT_SCHEDULE ? (normalizeSchedule(s).schedule ?? DEFAULT_SCHEDULE) : DEFAULT_SCHEDULE);
+/** Períodos em ms a partir da meia-noite. */
+const spansOf = (s) => sched(s).periods.map(([a, b]) => [toMinutes(a) * 60e3, toMinutes(b) * 60e3]);
+/** Hora de entrega ("17:00"): fim do último período do expediente. */
+export const dueTime = (schedule) => sched(schedule).periods.at(-1)[1];
+/** Horas de trabalho por dia. */
+export const dailyHours = (schedule) => spansOf(schedule).reduce((n, [a, b]) => n + b - a, 0) / HOUR;
+/** "seg a sex · 08:00–12:00 e 13:00–17:00". */
+export function scheduleLabel(schedule) {
+  const s = sched(schedule);
+  const d = s.days;
+  const short = (i) => WEEKDAYS[i].slice(0, 3);
+  const contiguous = d.length > 2 && d.every((x, i) => i === 0 || x === d[i - 1] + 1);
+  const days = contiguous ? `${short(d[0])} a ${short(d.at(-1))}` : d.map(short).join(', ');
+  return `${days} · ${s.periods.map(([a, b]) => `${a}–${b}`).join(' e ')}`;
+}
+
 /* ------------------------------------------------------------ calendário */
 
 const wall = (ms) => new Date(ms + OFFSET_MS); // ler com getUTC*
@@ -141,24 +194,24 @@ export function holidays(year) {
 }
 
 /** Dia útil? Recebe o início do dia em "hora de parede" (ms UTC deslocado). */
-function isBusinessDayWall(dayWall) {
+function isBusinessDayWall(dayWall, schedule) {
   const d = new Date(dayWall);
-  const wd = d.getUTCDay();
-  return wd !== 0 && wd !== 6 && !holidays(d.getUTCFullYear()).has(iso(d));
+  return sched(schedule).days.includes(d.getUTCDay()) && !holidays(d.getUTCFullYear()).has(iso(d));
 }
 
-export const isBusinessDate = (yyyyMmDd) => isBusinessDayWall(Date.parse(`${yyyyMmDd}T00:00:00Z`));
+export const isBusinessDate = (yyyyMmDd, schedule) => isBusinessDayWall(Date.parse(`${yyyyMmDd}T00:00:00Z`), schedule);
 
 /** Expedientes (ms UTC) entre dois instantes, por dia útil: [[início, fim], …][]. */
-function workWindows(startMs, endMs) {
+function workWindows(startMs, endMs, schedule) {
   const days = [];
   if (endMs <= startMs) return days;
+  const periods = spansOf(schedule);
   for (let day = dayStartWall(startMs); fromWall(day) < endMs; day += DAY) {
-    if (!isBusinessDayWall(day)) continue;
+    if (!isBusinessDayWall(day, schedule)) continue;
     const spans = [];
-    for (const [a, b] of WORK_PERIODS) {
-      const s = Math.max(startMs, fromWall(day + a * HOUR));
-      const e = Math.min(endMs, fromWall(day + b * HOUR));
+    for (const [a, b] of periods) {
+      const s = Math.max(startMs, fromWall(day + a));
+      const e = Math.min(endMs, fromWall(day + b));
       if (e > s) spans.push([s, e]);
     }
     if (spans.length) days.push(spans);
@@ -167,15 +220,16 @@ function workWindows(startMs, endMs) {
 }
 
 /** Instante (ms) em que se completam `hours` horas úteis a partir de `startMs`. */
-export function addBusinessHours(startMs, hours) {
+export function addBusinessHours(startMs, hours, schedule) {
   let remaining = hours * HOUR;
   let day = dayStartWall(startMs);
   let cursor = startMs + OFFSET_MS;
+  const periods = spansOf(schedule);
   for (let guard = 0; guard < 3660; guard++, day += DAY, cursor = day) {
-    if (!isBusinessDayWall(day)) continue;
-    for (const [a, b] of WORK_PERIODS) {
-      const s = Math.max(cursor, day + a * HOUR);
-      const e = day + b * HOUR;
+    if (!isBusinessDayWall(day, schedule)) continue;
+    for (const [a, b] of periods) {
+      const s = Math.max(cursor, day + a);
+      const e = day + b;
       if (s >= e) continue;
       if (remaining <= e - s) return fromWall(s + remaining);
       remaining -= e - s;
@@ -185,23 +239,23 @@ export function addBusinessHours(startMs, hours) {
 }
 
 /** Horas úteis entre dois instantes (0 se `endMs` vier antes). */
-export function businessHoursBetween(startMs, endMs) {
+export function businessHoursBetween(startMs, endMs, schedule) {
   let total = 0;
-  for (const spans of workWindows(startMs, endMs)) for (const [s, e] of spans) total += e - s;
+  for (const spans of workWindows(startMs, endMs, schedule)) for (const [s, e] of spans) total += e - s;
   return total / HOUR;
 }
 
-/** Instante de entrega de um prazo AAAA-MM-DD (18h de Brasília). */
-export const dueInstant = (yyyyMmDd) => fromWall(Date.parse(`${yyyyMmDd}T00:00:00Z`) + DUE_HOUR * HOUR);
+/** Instante de entrega de um prazo AAAA-MM-DD (fim do expediente, Brasília). */
+export const dueInstant = (yyyyMmDd, schedule) => fromWall(Date.parse(`${yyyyMmDd}T00:00:00Z`) + toMinutes(dueTime(schedule)) * 60e3);
 
 /** Primeira data de entrega (AAAA-MM-DD) que cumpre o prazo mínimo em horas úteis. */
-export function earliestDueDate(nowMs, minHours) {
-  return iso(wall(addBusinessHours(nowMs, minHours)));
+export function earliestDueDate(nowMs, minHours, schedule) {
+  return iso(wall(addBusinessHours(nowMs, minHours, schedule)));
 }
 
-const nextBusinessDate = (yyyyMmDd) => {
+const nextBusinessDate = (yyyyMmDd, schedule) => {
   let d = Date.parse(`${yyyyMmDd}T00:00:00Z`) + DAY;
-  while (!isBusinessDayWall(d)) d += DAY;
+  while (!isBusinessDayWall(d, schedule)) d += DAY;
   return iso(new Date(d));
 };
 
@@ -226,8 +280,8 @@ export function freeFromBusy(startMs, endMs, busy) {
 const HALF = HOUR / 2;
 
 /** Expediente livre por dia útil: cruza o horário de trabalho com os intervalos livres (sem `free`, todo o expediente). */
-function freeByDay(startMs, endMs, free) {
-  return workWindows(startMs, endMs)
+function freeByDay(startMs, endMs, free, schedule) {
+  return workWindows(startMs, endMs, schedule)
     .map((spans) => (free ? spans.flatMap(([s, e]) => free.map((f) => [Math.max(s, f.start), Math.min(e, f.end)]).filter(([a, b]) => b - a >= HALF)) : spans))
     .filter((spans) => spans.length);
 }
@@ -240,9 +294,9 @@ const roundUpHalf = (ms) => Math.ceil(ms / HALF - 1e-9) * HALF;
  * da agenda do design; sem ele, só o horário de trabalho). Blocos de no mínimo
  * 30 min. Devolve os blocos e quanto faltou encaixar.
  */
-export function planWork({ nowMs, dueMs, hours, free = null }) {
+export function planWork({ nowMs, dueMs, hours, free = null, schedule }) {
   const start = Math.ceil(nowMs / HALF) * HALF; // blocos começam em hora cheia ou meia hora
-  const days = freeByDay(start, dueMs, free).map((spans) => spans.map(([s, e]) => [s, e]));
+  const days = freeByDay(start, dueMs, free, schedule).map((spans) => spans.map(([s, e]) => [s, e]));
   let remaining = hours * HOUR;
   const blocks = [];
   const take = (spans, quota) => {
@@ -279,11 +333,11 @@ export function planWork({ nowMs, dueMs, hours, free = null }) {
  * Primeira data de entrega que cumpre o prazo mínimo E tem espaço livre na
  * agenda do design para a produção (procura até `maxDays` dias úteis adiante).
  */
-export function earliestFeasibleDate({ nowMs, typeId, priority, free = null, maxDays = 60 }) {
-  let d = earliestDueDate(nowMs, leadHours(typeId, priority));
+export function earliestFeasibleDate({ nowMs, typeId, priority, free = null, maxDays = 60, schedule }) {
+  let d = earliestDueDate(nowMs, leadHours(typeId, priority), schedule);
   const need = effortHours(typeId);
-  for (let i = 0; i < maxDays; i++, d = nextBusinessDate(d)) {
-    if (planWork({ nowMs, dueMs: dueInstant(d), hours: need, free }).missingHours === 0) return d;
+  for (let i = 0; i < maxDays; i++, d = nextBusinessDate(d, schedule)) {
+    if (planWork({ nowMs, dueMs: dueInstant(d, schedule), hours: need, free, schedule }).missingHours === 0) return d;
   }
   return null;
 }
@@ -357,7 +411,8 @@ function cleanUrl(raw) {
  * Obrigatórios: frente, título, descrição (50+ caracteres), tipo de peça,
  * formato, prioridade, entrega (dentro do prazo mínimo) e solicitante.
  */
-export function validateTicket(input, { now = Date.now(), domain = 'gove.digital', id } = {}) {
+export function validateTicket(input, { now = Date.now(), domain = 'gove.digital', id, schedule } = {}) {
+  const s = sched(schedule);
   const errors = {};
   const type = typeById(input?.type);
   if (!type) errors.type = 'Escolha a frente da demanda.';
@@ -396,9 +451,9 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
   const lead = leadHours(type?.id, priority ?? 'normal');
   const dueDate = clean(input?.dueDate, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) || Number.isNaN(Date.parse(dueDate))) errors.dueDate = 'Escolha a data de entrega.';
-  else if (!isBusinessDate(dueDate)) errors.dueDate = 'Escolha um dia útil.';
-  else if (type && priority && businessHoursBetween(now, dueInstant(dueDate)) < lead) {
-    errors.dueDate = `Prazo mínimo: ${lead} h úteis. Primeira data possível: ${brDateFromIso(earliestDueDate(now, lead))}.`;
+  else if (!isBusinessDate(dueDate, s)) errors.dueDate = 'Escolha um dia de expediente (fora de fins de semana e feriados).';
+  else if (type && priority && businessHoursBetween(now, dueInstant(dueDate, s), s) < lead) {
+    errors.dueDate = `Prazo mínimo: ${lead} h úteis. Primeira data possível: ${brDateFromIso(earliestDueDate(now, lead, s))}.`;
   }
 
   const ok = Object.keys(errors).length === 0;
@@ -415,9 +470,11 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
         details,
         priority,
         dueDate,
+        dueTime: dueTime(s),
+        schedule: { days: [...s.days], periods: s.periods.map((p) => [...p]) },
         leadHours: lead,
         effortHours: effortHours(type.id),
-        businessHours: Math.floor(businessHoursBetween(now, dueInstant(dueDate))),
+        businessHours: Math.floor(businessHoursBetween(now, dueInstant(dueDate, s), s)),
         requesterName,
         requesterEmail,
         createdAt: new Date(now).toISOString(),
@@ -428,6 +485,9 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
 
 /* --------------------------------------------------------------- saídas */
 
+/** Hora de entrega do pedido ("17:00"); pedidos anteriores ao expediente configurável entregavam às 18:00. */
+const ticketDueTime = (t) => (/^\d{2}:\d{2}$/.test(t?.dueTime ?? '') ? t.dueTime : '18:00');
+const hourLabel = (hm) => (hm.endsWith(':00') ? `${Number(hm.slice(0, 2))}h` : hm.replace(':', 'h'));
 const detailLines = (t) => (typeById(t.type)?.fields ?? []).filter((f) => t.details?.[f.id]).map((f) => `${f.label}: ${t.details[f.id]}`);
 const priorityLabel = (t) => TICKET_PRIORITIES.find((p) => p.id === t.priority)?.label ?? t.priority;
 
@@ -466,7 +526,7 @@ export const TICKET_MARKER = 'gove-ticket:';
 /** Evento de produção na agenda do design (hora local de Brasília). */
 export const workEvent = (t, b, i, n) => ({
   summary: `Produção ${i + 1}/${n}: ${t.title} [${t.id}]`,
-  description: `${t.typeLabel} · ${t.pieceType} (${t.format})\nSolicitante: ${t.requesterName} (${t.requesterEmail})\nEntrega: ${brDateFromIso(t.dueDate)}, ${DUE_HOUR}h`,
+  description: `${t.typeLabel} · ${t.pieceType} (${t.format})\nSolicitante: ${t.requesterName} (${t.requesterEmail})\nEntrega: ${brDateFromIso(t.dueDate)}, ${hourLabel(ticketDueTime(t))}`,
   startTime: localIso(b.start),
   endTime: localIso(b.end),
   timeZone: TIME_ZONE,
@@ -488,7 +548,7 @@ export function ticketEmail(t, { calendar = true, blocks = [] } = {}) {
     ['Tipo de peça', t.pieceType],
     ['Formato', t.format],
     ['Prioridade', `${priorityLabel(t)} (mín. ${t.leadHours} h úteis)`],
-    ['Entrega', `${due}, até ${DUE_HOUR}h`],
+    ['Entrega', `${due}, até ${hourLabel(ticketDueTime(t))}`],
     ['Produção', `${t.effortHours} h${blocks.length ? `: ${blocks.map(blockLabel).join('; ')}` : ''}`],
     ...detailLines(t).map((l) => l.split(': ')),
   ];
@@ -503,14 +563,15 @@ ${t.links.length ? `<p style="font-size:14px">${t.links.map((l) => `<a href="${e
   return { subject, text, html };
 }
 
-/** Evento de entrega no dia do prazo (17h–18h, Brasília), com lembretes. */
+/** Evento de entrega no dia do prazo (última hora do expediente, Brasília), com lembretes. */
 export function ticketEvent(t) {
+  const end = toMinutes(ticketDueTime(t));
   const lines = [`${t.typeLabel} · ${t.pieceType} (${t.format}) · ${t.id}`, `Solicitante: ${t.requesterName} (${t.requesterEmail})`, `Prioridade: ${priorityLabel(t)}`, '', t.description, ...detailLines(t), ...t.links];
   return {
     summary: `Entrega design: ${t.title} (${t.id})`,
     description: lines.join('\n'),
-    startTime: `${t.dueDate}T${p2(DUE_HOUR - 1)}:00:00`,
-    endTime: `${t.dueDate}T${p2(DUE_HOUR)}:00:00`,
+    startTime: `${t.dueDate}T${hhmm(end - 60)}:00`,
+    endTime: `${t.dueDate}T${hhmm(end)}:00`,
     timeZone: TIME_ZONE,
     reminders: [
       { method: 'popup', minutes: 24 * 60 },
@@ -523,7 +584,7 @@ export function ticketEvent(t) {
 /** Arquivo .ics do evento de entrega (para quem não tem a agenda conectada). */
 export function ticketIcs(t) {
   const ev = ticketEvent(t);
-  const start = dueInstant(t.dueDate) - HOUR;
+  const start = fromWall(Date.parse(`${t.dueDate}T00:00:00Z`) + toMinutes(ticketDueTime(t)) * 60e3) - HOUR;
   const fmt = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const icsText = (s) => String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, (c) => `\\${c}`);
   return [

@@ -1,5 +1,6 @@
 import { findClaude } from './claude';
 import {
+  DEFAULT_SCHEDULE,
   DESIGN_INBOX,
   brDateFromIso,
   dueInstant,
@@ -9,11 +10,13 @@ import {
   leadHours,
   localIso,
   nameFromEmail,
+  normalizeSchedule,
   planWork,
   ticketEmail,
   ticketEvent,
   ticketIcs,
   type Interval,
+  type Schedule,
   type Ticket,
 } from '../../../shared/tickets.js';
 
@@ -83,14 +86,97 @@ export async function currentUser(mode: Mode): Promise<Me> {
   return null;
 }
 
+/* ------------------------------------------------- expediente da responsável */
+
+/** Expediente vigente e se quem vê pode alterá-lo (só a responsável, DESIGN_INBOX). */
+export type ScheduleState = { schedule: Schedule; canEdit: boolean; owner: string };
+const SCHEDULE_LS = 'gove:expediente';
+const SCHEDULE_DOC = 'config/expediente';
+const valid = (s: unknown): Schedule => normalizeSchedule(s).schedule ?? { ...DEFAULT_SCHEDULE, days: [...DEFAULT_SCHEDULE.days], periods: DEFAULT_SCHEDULE.periods.map((p) => [...p] as [string, string]) };
+const readLocalSchedule = () => {
+  try {
+    const raw = window.localStorage.getItem(SCHEDULE_LS);
+    return raw ? valid(JSON.parse(raw)) : valid(null);
+  } catch {
+    return valid(null);
+  }
+};
+
+/** Acompanha o expediente; devolve a função que encerra a escuta. */
+export function watchSchedule(mode: Mode, on: (s: ScheduleState) => void): () => void {
+  let alive = true;
+  let stop = () => {};
+  if (mode === 'server') {
+    const load = () =>
+      fetch('/api/tickets/expediente', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => alive && j && on({ schedule: valid(j.schedule), canEdit: Boolean(j.canEdit), owner: j.owner ?? DESIGN_INBOX }))
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 60_000);
+    stop = () => clearInterval(t);
+  } else if (mode === 'artifact') {
+    on({ schedule: valid(null), canEdit: false, owner: DESIGN_INBOX });
+    Promise.all([use('db'), currentUser('artifact')]).then(([db, me]) => {
+      if (!alive) return;
+      const canEdit = me?.email === DESIGN_INBOX;
+      if (!db) return on({ schedule: valid(null), canEdit: false, owner: DESIGN_INBOX });
+      stop = db.doc(SCHEDULE_DOC).onSnapshot(
+        (snap: any) => alive && on({ schedule: valid(snap?.exists === false ? null : snap?.data?.()), canEdit, owner: DESIGN_INBOX }),
+        () => on({ schedule: valid(null), canEdit: false, owner: DESIGN_INBOX }),
+      );
+    });
+  } else {
+    // Prévia local: edita neste navegador
+    const load = () => alive && on({ schedule: readLocalSchedule(), canEdit: true, owner: DESIGN_INBOX });
+    load();
+    window.addEventListener(SCHEDULE_LS, load);
+    stop = () => window.removeEventListener(SCHEDULE_LS, load);
+  }
+  return () => {
+    alive = false;
+    stop();
+  };
+}
+
+/** Salva o expediente (só a responsável). Devolve o expediente salvo. */
+export async function saveSchedule(mode: Mode, input: Schedule): Promise<Schedule> {
+  const { ok, error, schedule } = normalizeSchedule(input);
+  if (!ok || !schedule) throw new Error(error ?? 'Expediente inválido.');
+  if (mode === 'server') {
+    const r = await fetch('/api/tickets/expediente', { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(schedule) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error ?? 'Não foi possível salvar o expediente.');
+    return valid(j.schedule);
+  }
+  const saved = { ...schedule, updatedAt: new Date().toISOString() } as Schedule;
+  if (mode === 'artifact') {
+    const [db, user, me] = await Promise.all([use('db'), use('user'), currentUser('artifact')]);
+    if (me?.email !== DESIGN_INBOX) throw new Error('Só a responsável pelas solicitações altera o expediente.');
+    if (!db) throw new Error('O banco do Design System não está disponível nesta visualização.');
+    if (user) saved.updatedBy = await user.id();
+    await db.doc(SCHEDULE_DOC).set(saved);
+  } else {
+    try {
+      window.localStorage.setItem(SCHEDULE_LS, JSON.stringify(saved));
+    } catch {
+      /* sem armazenamento */
+    }
+    window.dispatchEvent(new Event(SCHEDULE_LS));
+  }
+  freeCache = null;
+  return saved;
+}
+
 /* ------------------------------------------------- agenda do design */
 
 const DAY = 864e5;
-let freeCache: { at: number; free: Interval[] | null } | null = null;
+let freeCache: { at: number; key: string; free: Interval[] | null } | null = null;
 
-/** Horários livres da agenda do design pelo Google Agenda de quem pede (artefato). */
-async function artifactFree(): Promise<Interval[] | null> {
-  if (freeCache && Date.now() - freeCache.at < 5 * 60e3) return freeCache.free;
+/** Horários livres da agenda da responsável pelo Google Agenda de quem pede (artefato), dentro do expediente. */
+async function artifactFree(schedule: Schedule): Promise<Interval[] | null> {
+  const key = JSON.stringify([schedule.days, schedule.periods]);
+  if (freeCache && freeCache.key === key && Date.now() - freeCache.at < 5 * 60e3) return freeCache.free;
   const mcp = await use('mcp');
   let free: Interval[] | null = null;
   if (mcp) {
@@ -102,7 +188,12 @@ async function artifactFree(): Promise<Interval[] | null> {
         startTime: localIso(start),
         endTime: localIso(end),
         durationMinutes: 30,
-        preferences: { startHour: '09:00', endHour: '18:00', excludeWeekends: true, pageSize: 100 },
+        preferences: {
+          startHour: schedule.periods[0][0],
+          endHour: schedule.periods[schedule.periods.length - 1][1],
+          excludeWeekends: !schedule.days.includes(0) && !schedule.days.includes(6),
+          pageSize: 100,
+        },
       });
       const slots: any[] = (r?.payload as any)?.timeSlots ?? [];
       free = slots
@@ -113,23 +204,23 @@ async function artifactFree(): Promise<Interval[] | null> {
       free = null;
     }
   }
-  freeCache = { at: Date.now(), free };
+  freeCache = { at: Date.now(), key, free };
   return free;
 }
 
 /** Primeira entrega possível para a frente e a prioridade, com a agenda do design quando dá para consultar. */
-export async function availability(mode: Mode, typeId: string, priority: string): Promise<Availability> {
+export async function availability(mode: Mode, typeId: string, priority: string, schedule: Schedule): Promise<Availability> {
   if (mode === 'server') {
     const r = await fetch(`/api/tickets/availability?type=${encodeURIComponent(typeId)}&priority=${encodeURIComponent(priority)}`, { credentials: 'same-origin' });
     if (r.ok) return r.json();
   }
   const now = Date.now();
-  const free = mode === 'artifact' ? await artifactFree() : null;
+  const free = mode === 'artifact' ? await artifactFree(schedule) : null;
   return {
     leadHours: leadHours(typeId, priority),
     effortHours: effortHours(typeId),
-    earliestLead: earliestDueDate(now, leadHours(typeId, priority)),
-    earliest: earliestFeasibleDate({ nowMs: now, typeId, priority, free }),
+    earliestLead: earliestDueDate(now, leadHours(typeId, priority), schedule),
+    earliest: earliestFeasibleDate({ nowMs: now, typeId, priority, free, schedule }),
     calendar: free ? 'consultada' : 'não consultada',
   };
 }
@@ -230,12 +321,13 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
     return { ticket: { ...j.ticket, status: j.status, error: j.error }, notes: j.error ? [j.error] : [] };
   }
 
-  // Produção distribuída nos horários livres da agenda do design
+  // Produção distribuída nos horários livres da agenda do design, no expediente em que o pedido foi feito
   const now = Date.now();
-  const free = mode === 'artifact' ? await artifactFree() : null;
-  const plan = planWork({ nowMs: now, dueMs: dueInstant(ticket.dueDate), hours: ticket.effortHours, free });
+  const schedule = valid(ticket.schedule);
+  const free = mode === 'artifact' ? await artifactFree(schedule) : null;
+  const plan = planWork({ nowMs: now, dueMs: dueInstant(ticket.dueDate, schedule), hours: ticket.effortHours, free, schedule });
   if (plan.missingHours > 0) {
-    const first = earliestFeasibleDate({ nowMs: now, typeId: ticket.type, priority: ticket.priority, free });
+    const first = earliestFeasibleDate({ nowMs: now, typeId: ticket.type, priority: ticket.priority, free, schedule });
     throw fieldError({ dueDate: `A agenda do design não tem ${ticket.effortHours} h livres até ${brDateFromIso(ticket.dueDate)}.${first ? ` Primeira data com espaço: ${brDateFromIso(first)}.` : ''}` });
   }
   const blocks = plan.blocks;
@@ -272,7 +364,7 @@ export async function submitTicket(mode: Mode, ticket: Ticket): Promise<SubmitRe
   } else {
     status.email = status.calendar = 'não configurado';
   }
-  if (mode === 'artifact' && !free) notes.push('A agenda do design não pôde ser consultada; a produção foi distribuída no horário de trabalho.');
+  if (mode === 'artifact' && !free) notes.push('A agenda do design não pôde ser consultada; a produção foi distribuída no expediente da responsável.');
 
   const stored: StoredTicket = { ...ticket, status, work: blocks };
   const [db, user] = mode === 'artifact' ? await Promise.all([use('db'), use('user')]) : [null, null];

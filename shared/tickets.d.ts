@@ -24,6 +24,10 @@ export type Ticket = {
   details: Record<string, string>;
   priority: TicketPriority;
   dueDate: string;
+  /** Hora de entrega ("17:00"); ausente nos pedidos antigos (18:00). */
+  dueTime?: string;
+  /** Expediente em vigor quando o pedido foi feito. */
+  schedule?: Schedule;
   leadHours: number;
   effortHours: number;
   businessHours: number;
@@ -32,9 +36,11 @@ export type Ticket = {
   createdAt: string;
 };
 export type TicketInput = Partial<Omit<Ticket, 'links' | 'priority'>> & { links?: string[] | string; priority?: string | null };
+export type Schedule = { days: number[]; periods: [string, string][]; updatedAt?: string; updatedBy?: string };
 export type Interval = { start: number; end: number };
 export type CalendarEvent = { summary: string; description: string; startTime: string; endTime: string; timeZone: string };
 
+export declare const DEFAULT_SCHEDULE: Readonly<Schedule>;
 export declare const WORK_PERIODS: [number, number][];
 export declare const TIME_ZONE: string;
 export declare const DUE_HOUR: number;
@@ -50,14 +56,18 @@ export declare function typeById(id: string | undefined): TicketType | undefined
 export declare function leadHours(typeId: string | undefined, priority: string): number;
 export declare function effortHours(typeId: string | undefined): number;
 export declare function holidays(year: number): Set<string>;
-export declare function isBusinessDate(yyyyMmDd: string): boolean;
-export declare function addBusinessHours(startMs: number, hours: number): number;
-export declare function businessHoursBetween(startMs: number, endMs: number): number;
-export declare function dueInstant(yyyyMmDd: string): number;
-export declare function earliestDueDate(nowMs: number, minHours: number): string;
+export declare function normalizeSchedule(input: unknown): { ok: boolean; error: string | null; schedule: Schedule | null };
+export declare function dueTime(schedule?: Schedule | null): string;
+export declare function dailyHours(schedule?: Schedule | null): number;
+export declare function scheduleLabel(schedule?: Schedule | null): string;
+export declare function isBusinessDate(yyyyMmDd: string, schedule?: Schedule | null): boolean;
+export declare function addBusinessHours(startMs: number, hours: number, schedule?: Schedule | null): number;
+export declare function businessHoursBetween(startMs: number, endMs: number, schedule?: Schedule | null): number;
+export declare function dueInstant(yyyyMmDd: string, schedule?: Schedule | null): number;
+export declare function earliestDueDate(nowMs: number, minHours: number, schedule?: Schedule | null): string;
 export declare function freeFromBusy(startMs: number, endMs: number, busy: Interval[]): Interval[];
-export declare function planWork(opts: { nowMs: number; dueMs: number; hours: number; free?: Interval[] | null }): { blocks: Interval[]; missingHours: number };
-export declare function earliestFeasibleDate(opts: { nowMs: number; typeId: string; priority: string; free?: Interval[] | null; maxDays?: number }): string | null;
+export declare function planWork(opts: { nowMs: number; dueMs: number; hours: number; free?: Interval[] | null; schedule?: Schedule | null }): { blocks: Interval[]; missingHours: number };
+export declare function earliestFeasibleDate(opts: { nowMs: number; typeId: string; priority: string; free?: Interval[] | null; maxDays?: number; schedule?: Schedule | null }): string | null;
 export declare function quarterLabel(ms: number): string;
 export declare function brDate(ms: number): string;
 export declare function brDateFromIso(yyyyMmDd: string): string;
@@ -65,7 +75,7 @@ export declare function localIso(ms: number): string;
 export declare function blockLabel(b: Interval): string;
 export declare function nameFromEmail(email: string): string;
 export declare function newTicketId(rand?: () => number): string;
-export declare function validateTicket(input: TicketInput, opts?: { now?: number; domain?: string; id?: string }): { ok: boolean; errors: Record<string, string>; ticket: Ticket | null };
+export declare function validateTicket(input: TicketInput, opts?: { now?: number; domain?: string; id?: string; schedule?: Schedule | null }): { ok: boolean; errors: Record<string, string>; ticket: Ticket | null };
 export declare function rarRow(t: Ticket, blocks?: Interval[]): Record<string, string | boolean>;
 export declare function workEvent(t: Ticket, b: Interval, i: number, n: number): CalendarEvent;
 export declare function ticketEmail(t: Ticket, opts?: { calendar?: boolean; blocks?: Interval[] }): { subject: string; text: string; html: string };

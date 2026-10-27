@@ -15,9 +15,18 @@ lendo as colunas pelo nome do cabeçalho e sem duplicar o mesmo código `DS-…`
 | Resultado / Comentários | entrega, prioridade, blocos de produção, descrição, detalhes e links |
 | Comentários gerais | quem pediu (nome e e-mail do login) |
 
-**Prazos e produção** (horas úteis: segunda a sexta, 9h–12h e 13h–18h, sem
-feriados nacionais; entrega às 18h do dia escolhido). Os números ficam em
-`shared/tickets.js` (`LEAD_HOURS`, `EFFORT_HOURS` e `factor` de cada frente).
+**Prazos e produção.** As horas úteis seguem o expediente da responsável pelas
+solicitações, Larissa Andrade (larissa.andrade@gove.digital), sem feriados
+nacionais. O padrão é segunda a sexta, 8h–12h e 13h–17h, e a entrega acontece no
+fim do expediente do dia escolhido. Ela altera o expediente no card **Horário de
+trabalho** da página Solicitações; os pedidos seguintes passam a usar o novo
+horário, e cada pedido guarda o expediente em que foi feito. Os números ficam em
+`shared/tickets.js` (`DEFAULT_SCHEDULE`, `LEAD_HOURS`, `EFFORT_HOURS` e `factor`
+de cada frente).
+
+> A agenda consultada e onde a produção é marcada é a da conta que instalou o
+> script (`CalendarApp.getDefaultCalendar()`). Para valer a agenda da Larissa,
+> instale e publique o script com a conta dela.
 
 | Frente | Alta urgência | Normal | Produção reservada |
 | --- | --- | --- | --- |
@@ -49,7 +58,7 @@ e o formulário mostra a primeira data com espaço.
    ```
    TICKETS_WEBHOOK_URL=https://script.google.com/macros/s/…/exec
    TICKETS_WEBHOOK_TOKEN=<a mesma frase de TICKETS_TOKEN>
-   TICKETS_INBOX=mkt@gove.digital
+   TICKETS_INBOX=larissa.andrade@gove.digital
    ```
 
 ## Como cada caminho funciona
@@ -58,7 +67,7 @@ e o formulário mostra a primeira data com espaço.
   login. O servidor consulta os horários ocupados da agenda (`action: "ocupado"`)
   e distribui a produção. Depois chama o App da Web, que lança a linha, envia o
   e-mail para `TICKETS_INBOX` com cópia para quem pediu, cria o evento de
-  entrega (17h–18h, com convite e lembretes) e os blocos "Produção n/N". Sem o App da
+  entrega (última hora do expediente, com convite e lembretes) e os blocos "Produção n/N". Sem o App da
   Web, mas com SMTP configurado, o servidor envia o e-mail com o convite `.ics`,
   e o gatilho do passo 3 lança a linha.
 - **Artefato no claude.ai**: quem pede vem da conta do claude.ai. A página consulta

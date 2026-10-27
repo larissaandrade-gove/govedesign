@@ -7,11 +7,13 @@ import {
   TICKET_TYPES,
   blockLabel,
   brDateFromIso,
+  dueTime,
   validateTicket,
   type TicketPriority,
   type TicketType,
 } from '../../../shared/tickets.js';
-import { availability, currentUser, detectMode, icsFor, mailtoFor, submitTicket, watchTickets, type Availability, type Me, type Mode, type Step, type StoredTicket } from '../lib/tickets';
+import { availability, currentUser, detectMode, icsFor, mailtoFor, submitTicket, watchSchedule, watchTickets, type Availability, type Me, type Mode, type ScheduleState, type Step, type StoredTicket } from '../lib/tickets';
+import { ExpedienteCard } from './ExpedienteCard';
 import { downloadText } from '../lib/download';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -161,6 +163,8 @@ export function Solicitacoes() {
   const [failure, setFailure] = useState('');
   const [list, setList] = useState<StoredTicket[]>([]);
   const [forecast, setForecast] = useState<Record<string, string | null>>({});
+  const [expediente, setExpediente] = useState<ScheduleState | null>(null);
+  const schedule = expediente?.schedule;
 
   useEffect(() => {
     detectMode().then(async (m) => {
@@ -169,25 +173,26 @@ export function Solicitacoes() {
     });
   }, []);
   useEffect(() => (mode ? watchTickets(mode, setList) : undefined), [mode]);
+  useEffect(() => (mode ? watchSchedule(mode, setExpediente) : undefined), [mode]);
 
   // Primeira entrega possível (prazo mínimo + agenda do design) para a frente escolhida
   useEffect(() => {
     setAvail(null);
-    if (!mode || !type) return;
+    if (!mode || !type || !schedule) return;
     let alive = true;
-    availability(mode, type.id, form.priority || 'normal').then((a) => alive && setAvail(a));
+    availability(mode, type.id, form.priority || 'normal', schedule).then((a) => alive && setAvail(a));
     return () => {
       alive = false;
     };
-  }, [mode, type, form.priority]);
+  }, [mode, type, form.priority, schedule]);
 
   const open = (v: View) => {
     setView(v);
     setFailure('');
     dialog.current?.showModal();
     // Previsão de cada frente (prioridade normal, para não induzir a urgência)
-    if (mode && v === 'frentes')
-      for (const t of TICKET_TYPES) availability(mode, t.id, 'normal').then((a) => setForecast((f) => ({ ...f, [t.id]: a.earliest })));
+    if (mode && schedule && v === 'frentes')
+      for (const t of TICKET_TYPES) availability(mode, t.id, 'normal', schedule).then((a) => setForecast((f) => ({ ...f, [t.id]: a.earliest })));
   };
   const close = () => dialog.current?.close();
 
@@ -225,7 +230,7 @@ export function Solicitacoes() {
     if (!type) return;
     setFailure('');
     const requester = me?.email ? me : { name: form.requesterName, email: form.requesterEmail };
-    const { ok, errors: errs, ticket } = validateTicket({ ...form, type: type.id, links: form.links.split(/\s+/), requesterName: requester.name, requesterEmail: requester.email });
+    const { ok, errors: errs, ticket } = validateTicket({ ...form, type: type.id, links: form.links.split(/\s+/), requesterName: requester.name, requesterEmail: requester.email }, { schedule });
     if (!ok || !ticket) {
       setErrors(errs);
       document.getElementById(`sol-${Object.keys(errs)[0]}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -268,6 +273,7 @@ export function Solicitacoes() {
           Abrir nova solicitação
         </Button>
       </div>
+      <ExpedienteCard mode={mode} state={expediente} />
 
       <dialog
         ref={dialog}
@@ -395,7 +401,7 @@ export function Solicitacoes() {
                       value={form.dueDate}
                       onChange={(e) => set('dueDate', e.target.value)}
                       error={err('dueDate')}
-                      hint={!avail ? 'Calculando previsão…' : avail.earliest ? `Entrega a partir de ${shortDate(avail.earliest)}` : 'Sem data livre nas próximas semanas.'}
+                      hint={!avail ? 'Calculando previsão…' : avail.earliest ? `Entrega a partir de ${shortDate(avail.earliest)}, até ${dueTime(schedule)}` : 'Sem data livre nas próximas semanas.'}
                     />
                   </div>
                 </div>
@@ -439,7 +445,7 @@ export function Solicitacoes() {
                   {done.ticket.id} · {done.ticket.title}
                 </p>
                 <p className="text-body text-text-secondary">
-                  {done.ticket.typeLabel} · {done.ticket.pieceType} ({done.ticket.format}) · entrega {brDateFromIso(done.ticket.dueDate)}, 18h
+                  {done.ticket.typeLabel} · {done.ticket.pieceType} ({done.ticket.format}) · entrega {brDateFromIso(done.ticket.dueDate)}, até {done.ticket.dueTime ?? '18:00'}
                 </p>
                 <StatusChips t={done.ticket} />
                 {!!done.ticket.work?.length && (

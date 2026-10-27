@@ -192,8 +192,9 @@ function lerCaixaDeEntrada() {
           var ev = {
             summary: 'Entrega design: ' + dado.ticket.title + ' (' + dado.ticket.id + ')',
             description: 'Solicitante: ' + dado.ticket.requesterName + ' (' + dado.ticket.requesterEmail + ')\n' + dado.row['Resultado / Comentários'],
-            startTime: dado.ticket.dueDate + 'T17:00:00',
-            endTime: dado.ticket.dueDate + 'T18:00:00',
+            // Última hora do expediente da responsável (pedidos antigos: 17h–18h)
+            startTime: dado.ticket.dueDate + 'T' + horaMenos1_(dado.ticket.dueTime || '18:00') + ':00',
+            endTime: dado.ticket.dueDate + 'T' + (dado.ticket.dueTime || '18:00') + ':00',
           };
           criarEvento_(dado.ticket, ev);
         }
@@ -204,6 +205,12 @@ function lerCaixaDeEntrada() {
     });
     if (ok) th.addLabel(label);
   });
+}
+
+/** "17:00" → "16:00". */
+function horaMenos1_(hhmm) {
+  var m = Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5)) - 60;
+  return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
 }
 
 /** Rode uma vez para criar o gatilho de 5 em 5 minutos. */
