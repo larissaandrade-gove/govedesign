@@ -32,7 +32,12 @@ const GUIAS_TABS = [
 /** Celular: uma tela por destino da navigation bar (Início, Apps, Cores, Guias); Cores e Guias com tabs primárias (MD3). */
 function MobileScreen({ section }: { section: string }) {
   const group = groupOf(section);
-  if (group === 'aplicacoes') return <Apps />;
+  if (group === 'aplicacoes')
+    return (
+      <div className="m-titled">
+        <Apps />
+      </div>
+    );
   if (group === 'cores')
     return (
       <div className="m-titled">
@@ -52,7 +57,9 @@ function MobileScreen({ section }: { section: string }) {
   return (
     <>
       <MobileHome />
-      <Solicitacoes />
+      <div className="m-home">
+        <Solicitacoes />
+      </div>
     </>
   );
 }
@@ -92,7 +99,7 @@ function Shell() {
         Pular para o conteúdo
       </a>
       <Sidebar view={view} />
-      <main className="transition-[padding] duration-300 ease-entry lg:pl-[var(--rail,248px)]">
+      <main className="transition-[padding] duration-300 ease-entry lg:pl-[var(--rail,264px)]">
         {view.kind === 'app' && mobile && appsFor(true).every((a) => a.id !== view.appId) ? (
           <div className="pb-[112px] pt-16 [&>section]:pt-space-3">
             <Apps />

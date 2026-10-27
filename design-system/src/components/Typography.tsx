@@ -16,10 +16,10 @@ export function Typography() {
         <div className="grid grid-cols-1 gap-space-2 md:grid-cols-2">
           <div className="flex items-end justify-between gap-space-2 rounded-lg border border-secondary bg-surface p-space-3">
             <div>
-              <p className="font-display text-h3 font-black text-text-primary">Montserrat</p>
-              <p className="text-caption text-text-secondary">Títulos · 700 / 800 / 900</p>
+              <p className="font-display text-h3 font-bold text-text-primary">Montserrat</p>
+              <p className="text-caption text-text-secondary">Títulos · 600 / 700</p>
             </div>
-            <span className="font-display text-[56px] font-black leading-none text-text-primary" aria-hidden>Aa</span>
+            <span className="font-display text-[56px] font-bold leading-none text-text-primary" aria-hidden>Aa</span>
           </div>
           <div className="flex items-end justify-between gap-space-2 rounded-lg border border-secondary bg-surface p-space-3">
             <div>

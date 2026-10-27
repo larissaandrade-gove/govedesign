@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AppWindow, ArrowLeft, BookOpenText, House, List, MagnifyingGlass, Palette, Plus, SealCheck, SquaresFour, TextAa, Ticket, type Icon as IconType,
@@ -56,11 +56,19 @@ function useActiveSection(view: View) {
       },
       { rootMargin: '-35% 0px -55% 0px' },
     );
+    // No fim da página a última seção (curta) não chega à faixa do observer
+    const onScroll = () => {
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) setActive(SECTIONS[SECTIONS.length - 1].id);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
     SECTIONS.forEach(({ id }) => {
       const el = document.getElementById(id);
       if (el) io.observe(el);
     });
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [view.kind]);
   return view.kind === 'app' ? `app-${view.appId}` : active;
 }
@@ -99,8 +107,20 @@ function reselect(on: boolean) {
 
 /** Item da navigation drawer: pílula de 56px; o ativo ganha o indicador e o ícone fill. */
 function DrawerItem({ href, label, icon: Icon, on, small = false }: { href: string; label: string; icon: IconType; on: boolean; small?: boolean }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  // Telas baixas: a lista rola; o item ativo fica sempre à vista (sem mexer na página)
+  useEffect(() => {
+    const el = ref.current;
+    const nav = el?.closest('nav');
+    if (!on || !el || !nav) return;
+    const a = el.getBoundingClientRect();
+    const n = nav.getBoundingClientRect();
+    if (a.bottom > n.bottom) nav.scrollBy({ top: a.bottom - n.bottom + 8, behavior: 'smooth' });
+    else if (a.top < n.top) nav.scrollBy({ top: a.top - n.top - 8, behavior: 'smooth' });
+  }, [on]);
   return (
     <a
+      ref={ref}
       href={href}
       aria-current={on ? 'page' : undefined}
       className={`relative flex items-center gap-space-2 rounded-full px-space-2 no-underline transition-colors duration-200 ${small ? 'min-h-11 text-caption' : 'min-h-14 text-body'} ${
@@ -241,7 +261,7 @@ export function Sidebar({ view }: { view: View }) {
         {title ? (
           <h1 className={`min-w-0 flex-1 truncate font-display text-[22px] font-semibold leading-7 text-text-primary ${appView ? '' : 'pl-space-1'}`}>{title}</h1>
         ) : (
-          <a href="#inicio" className="flex flex-1 items-center pl-space-1 no-underline" aria-label="Gove Design System — início">
+          <a href="#inicio" className="flex min-h-12 flex-1 items-center pl-space-1 no-underline" aria-label="Gove Design System — início">
             <GoveLogo kind="logotipo" height={24} />
           </a>
         )}

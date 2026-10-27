@@ -36,7 +36,7 @@ export function Hero() {
         animate="visible"
         className="gutter flex max-w-[1080px] flex-col gap-space-3 pb-space-8 pt-[96px] md:pt-space-8"
       >
-        <motion.h1 variants={fadeUp} className="text-[44px] font-black leading-[1.05] tracking-[-0.02em] sm:text-display">
+        <motion.h1 variants={fadeUp} className="text-[44px] font-bold leading-[1.1] tracking-[-0.02em] sm:text-display">
           Governo Zero Clique,
           <br />
           em <span className="text-highlight">tokens</span> e componentes.

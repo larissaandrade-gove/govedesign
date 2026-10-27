@@ -133,7 +133,7 @@ export function ColorCompass() {
                       <span className="font-semibold text-text-primary">{ATTRIBUTES[i].name}</span>
                       {ATTRIBUTES[i].colors.map((h) => (
                         <span key={h} className="inline-flex items-center gap-1 text-text-secondary">
-                          <span className="size-3 rounded-full border border-secondary" style={{ background: h }} aria-hidden />
+                          <span className="size-3 rounded-full border border-text-primary/25" style={{ background: h }} aria-hidden />
                           {colorByHex(h).name}
                         </span>
                       ))}
@@ -235,7 +235,7 @@ function ColorItem({ c }: { c: BrandColor }) {
   return (
     <div className="rounded-md border border-secondary bg-background">
       <div className="flex items-center gap-space-1 pl-space-1">
-        <span className="size-6 shrink-0 rounded-sm border border-secondary" style={{ background: c.hex }} aria-hidden />
+        <span className="size-6 shrink-0 rounded-sm border border-text-primary/25" style={{ background: c.hex }} aria-hidden />
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-text-primary">{c.name}</span>
         <button
           type="button"
@@ -279,7 +279,7 @@ function TopicResult({ index }: { index: number }) {
           const c = colorByHex(m.hex);
           return (
             <li key={m.hex} className="flex items-start gap-space-1 text-caption">
-              <span className="mt-0.5 size-4 shrink-0 rounded-sm border border-secondary" style={{ background: m.hex }} aria-hidden />
+              <span className="mt-0.5 size-4 shrink-0 rounded-sm border border-text-primary/25" style={{ background: m.hex }} aria-hidden />
               <span className="w-9 shrink-0 tabular-nums text-text-primary">{m.share}%</span>
               <span className="min-w-0 text-text-secondary">
                 <span className="font-semibold text-text-primary">{c.name}</span> · {c.story}

@@ -48,6 +48,25 @@
   .m-titled .section-title {
     @apply sr-only;
   }
+  .m-titled > section {
+    @apply pt-space-3;
+  }
+  .m-titled div:has(> .section-title):not(:has(> p)) {
+    @apply mb-0;
+  }
+  .m-home div:has(> .section-title) {
+    @apply mb-space-1;
+  }
+  /* Celular, Início: títulos de seção no mesmo nível de "Aplicações" (sem ícone) */
+  .m-home > section {
+    @apply pt-space-3;
+  }
+  .m-home .section-title {
+    @apply text-body-large font-semibold;
+  }
+  .m-home .section-title > span {
+    @apply hidden;
+  }
   .token {
     font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
     @apply text-caption text-text-secondary;
