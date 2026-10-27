@@ -32,7 +32,7 @@ export function MobileHome() {
                 <span className="flex size-[60px] items-center justify-center rounded-[20px] bg-secondary text-highlight shadow-sm">
                   <Icon className="size-6" aria-hidden />
                 </span>
-                <span className="line-clamp-2 leading-tight">{name.replace(/^(Gerador de|Revisor de) /, '').replace(/^./, (c) => c.toUpperCase())}</span>
+                <span className="line-clamp-2 leading-tight">{name.replace(/^Gerador de /, '').replace(/^./, (c) => c.toUpperCase())}</span>
               </a>
             </li>
           ))}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { APPS } from '../data/apps';
 
 /**
- * Navegação por hash simples: "#app-revisor" abre a página do app; qualquer
+ * Navegação por hash simples: "#app-criativos" abre a página do app; qualquer
  * outro hash ("#cores", "#componentes"…) mostra a documentação e rola até a seção.
  * Só usa letras, números e "-" no hash (funciona também dentro do artifact).
  */

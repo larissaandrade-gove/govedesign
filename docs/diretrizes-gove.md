@@ -237,7 +237,6 @@ A versão colorida só é usada quando roxo e amarelo passam ao mesmo tempo — 
 - [ ] Nenhum texto abaixo de 11 pt/px; alvos ≥ 44 px.
 - [ ] Um único chamado para ação.
 - [ ] Sem textos repetidos ou desnecessários.
-- [ ] Rodou no Revisor de identidade visual sem erros.
 
 ## Instruções para IA
 

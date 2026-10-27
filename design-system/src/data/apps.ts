@@ -1,6 +1,4 @@
-import { type Icon as IconType, Layout, LinkSimple, PenNib, Printer, Scan, Sparkle } from '@phosphor-icons/react';
-import revisor1 from '../assets/apps/revisor-1.webp';
-import revisor2 from '../assets/apps/revisor-2.webp';
+import { type Icon as IconType, Layout, LinkSimple, PenNib, Printer, Sparkle } from '@phosphor-icons/react';
 import criativos1 from '../assets/apps/criativos-1.webp';
 import criativos2 from '../assets/apps/criativos-2.webp';
 import links1 from '../assets/apps/links-1.webp';
@@ -11,7 +9,7 @@ import print2 from '../assets/apps/print-studio-2.webp';
 
 export type Shot = { src: string; caption: string };
 
-export const APP_TAGS = ['Marca', 'Mídia', 'Web', 'Impresso'] as const;
+export const APP_TAGS = ['Mídia', 'Web', 'Impresso'] as const;
 export type AppTag = (typeof APP_TAGS)[number];
 
 export type GoveApp = {
@@ -45,25 +43,6 @@ export const appsFor = (mobile: boolean) => (mobile ? APPS.filter((a) => !a.desk
 
 /** Aplicações do repositório govedesign que aplicam este design system. */
 export const APPS: GoveApp[] = [
-  {
-    id: 'revisor',
-    tag: 'Marca',
-    name: 'Revisor de identidade visual',
-    route: '/revisor/',
-    icon: Scan,
-    summary: 'Audita peças de marketing e apresentações contra os tokens de marca e entrega um relatório com o que corrigir.',
-    tagline: 'Audita peças contra a marca.',
-    features: ['Paleta por Delta-E', 'Montserrat e gradientes', 'Margens, logo e ícones', 'Relatório HTML + ZIP'],
-    stack: ['Express', 'SQLite', 'Fabric.js', 'sharp'],
-    folder: 'backend/ · db/ · frontend/revisor/',
-    run: 'npm start  →  http://localhost:3040/revisor/',
-    sameServer: true,
-    embeddedNote: 'Roda aqui no navegador. O histórico de auditorias fica salvo neste navegador; relatórios saem por download.',
-    shots: [
-      { src: revisor1, caption: 'Envio da peça: Modo A (Fabric.js JSON) ou Modo B (PNG/JPG).' },
-      { src: revisor2, caption: 'Resultado com status geral, preview anotado e itens a corrigir.' },
-    ],
-  },
   {
     id: 'criativos',
     tag: 'Mídia',
