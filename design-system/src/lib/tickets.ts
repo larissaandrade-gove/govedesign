@@ -92,6 +92,20 @@ export async function currentUser(mode: Mode): Promise<Me> {
 export type ScheduleState = { schedule: Schedule; canEdit: boolean; owner: string };
 const SCHEDULE_LS = 'gove:expediente';
 const SCHEDULE_DOC = 'config/expediente';
+/**
+ * Pode alterar o expediente no artefato? Com o e-mail da conta, só a
+ * responsável; sem ele (o claude.ai não expõe e-mails), quem é Editor do
+ * artefato — o mesmo nível que a regra do banco exige para gravar em config/.
+ */
+async function artifactCanEdit(): Promise<boolean> {
+  const [user, me] = await Promise.all([use('user'), currentUser('artifact')]);
+  if (me?.email) return me.email === DESIGN_INBOX;
+  try {
+    return Boolean(await user?.canEdit());
+  } catch {
+    return false;
+  }
+}
 const valid = (s: unknown): Schedule => normalizeSchedule(s).schedule ?? { ...DEFAULT_SCHEDULE, days: [...DEFAULT_SCHEDULE.days], periods: DEFAULT_SCHEDULE.periods.map((p) => [...p] as [string, string]) };
 const readLocalSchedule = () => {
   try {
@@ -117,9 +131,8 @@ export function watchSchedule(mode: Mode, on: (s: ScheduleState) => void): () =>
     stop = () => clearInterval(t);
   } else if (mode === 'artifact') {
     on({ schedule: valid(null), canEdit: false, owner: DESIGN_INBOX });
-    Promise.all([use('db'), currentUser('artifact')]).then(([db, me]) => {
+    Promise.all([use('db'), artifactCanEdit()]).then(([db, canEdit]) => {
       if (!alive) return;
-      const canEdit = me?.email === DESIGN_INBOX;
       if (!db) return on({ schedule: valid(null), canEdit: false, owner: DESIGN_INBOX });
       stop = db.doc(SCHEDULE_DOC).onSnapshot(
         (snap: any) => alive && on({ schedule: valid(snap?.exists === false ? null : snap?.data?.()), canEdit, owner: DESIGN_INBOX }),
@@ -151,8 +164,8 @@ export async function saveSchedule(mode: Mode, input: Schedule): Promise<Schedul
   }
   const saved = { ...schedule, updatedAt: new Date().toISOString() } as Schedule;
   if (mode === 'artifact') {
-    const [db, user, me] = await Promise.all([use('db'), use('user'), currentUser('artifact')]);
-    if (me?.email !== DESIGN_INBOX) throw new Error('Só a responsável pelas solicitações altera o expediente.');
+    const [db, user, canEdit] = await Promise.all([use('db'), use('user'), artifactCanEdit()]);
+    if (!canEdit) throw new Error('Só a responsável pelas solicitações altera o expediente.');
     if (!db) throw new Error('O banco do Design System não está disponível nesta visualização.');
     if (user) saved.updatedBy = await user.id();
     await db.doc(SCHEDULE_DOC).set(saved);
