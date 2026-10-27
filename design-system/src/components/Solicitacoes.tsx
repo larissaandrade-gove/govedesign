@@ -270,7 +270,7 @@ export function Solicitacoes() {
         {/* No celular a ação é o FAB "Nova solicitação" (Sidebar) */}
         <Button type="button" variant="action" onClick={() => open('frentes')} className="self-start max-lg:!hidden sm:mb-space-4">
           <Plus className="size-5" aria-hidden />
-          Abrir nova solicitação
+          Nova solicitação
         </Button>
       </div>
       <ExpedienteCard mode={mode} state={expediente} />

@@ -32,7 +32,7 @@ export function UIKit() {
             <p className="text-body text-text-secondary">Agentes que interpretam dados e orquestram decisões.</p>
           </Card>
         </div>
-        <DocActions doc={guide} filename="componentes-gove.md" />
+        <DocActions doc={guide} filename="componentes-gove.md" topic="de componentes" />
       </Reveal>
     </section>
   );

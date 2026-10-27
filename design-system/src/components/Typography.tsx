@@ -37,7 +37,7 @@ export function Typography() {
             </li>
           ))}
         </ul>
-        <DocActions doc={guide} filename="tipografia-gove.md" />
+        <DocActions doc={guide} filename="tipografia-gove.md" topic="de tipografia" />
       </Reveal>
     </section>
   );

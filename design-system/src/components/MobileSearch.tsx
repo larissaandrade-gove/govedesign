@@ -65,7 +65,7 @@ export function MobileSearch() {
               <span className="flex size-10 items-center justify-center rounded-md bg-accent text-on-accent" aria-hidden>
                 <Plus className="size-5" />
               </span>
-              Abrir nova solicitação
+              Nova solicitação
             </button>
           </li>
           {items.map(({ key, label, hint, href, icon: Icon }) => (

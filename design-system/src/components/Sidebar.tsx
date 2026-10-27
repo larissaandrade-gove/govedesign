@@ -271,8 +271,10 @@ export function Sidebar({ view }: { view: View }) {
             <MagnifyingGlass className="size-6" aria-hidden />
           </button>
         )}
+        {/* Ações da página do app (Sobre, Recarregar), trazidas por AppPage */}
+        {appView && <div id="appbar-actions" className="contents" />}
         <ThemeToggle compact />
-        <LogoutButton compact />
+        {!appView && <LogoutButton compact />}
       </header>
 
       {/* Celular: navigation bar (fora das telas de app, que usam o voltar da top app bar) */}

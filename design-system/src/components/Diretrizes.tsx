@@ -30,7 +30,7 @@ export function Diretrizes() {
             </li>
           ))}
         </ul>
-        <DocActions doc={guide} filename="diretrizes-gove.md" primary />
+        <DocActions doc={guide} filename="diretrizes-gove.md" topic="completo" primary />
       </Reveal>
     </section>
   );

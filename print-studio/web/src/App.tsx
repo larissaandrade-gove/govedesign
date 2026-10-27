@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { api, type LogosFixos, type Municipio, type QueueItem } from '@/lib/api';
 import { loadPrintFonts } from '@/lib/studio';
 import { cn } from '@/lib/utils';
+import { isEmbedded } from '../../../artifact-runtime/index.ts';
 import { Configuracoes } from '@/pages/Configuracoes';
 import { Editor } from '@/pages/Editor';
 import { Fila } from '@/pages/Fila';
@@ -11,6 +12,8 @@ import { Municipios } from '@/pages/Municipios';
 
 type Tab = 'editor' | 'municipios' | 'fila' | 'config';
 const QUEUE_KEY = 'gove-print-studio:fila';
+/** Dentro do Design System o título já está na página do app: aqui fica só a navegação. */
+const EMBEDDED = isEmbedded();
 
 function readQueue(): QueueItem[] {
   try {
@@ -60,15 +63,17 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-4 min-[900px]:gap-6 min-[900px]:px-5">
-        <button
-          type="button"
-          onClick={() => setTab('editor')}
-          className="flex min-h-11 shrink-0 items-center rounded-md px-1 font-display text-base font-bold text-foreground sm:text-lg"
-        >
-          Gove Print Studio
-        </button>
+        {!EMBEDDED && (
+          <button
+            type="button"
+            onClick={() => setTab('editor')}
+            className="flex min-h-11 shrink-0 items-center rounded-md px-1 font-display text-base font-bold text-foreground sm:text-lg"
+          >
+            Print Studio
+          </button>
+        )}
         {/* Controle segmentado: ícone + rótulo a partir de 900px; só ícone abaixo (rótulo fica acessível). */}
-        <nav className="ml-auto flex items-center gap-1 rounded-xl bg-muted p-1 min-[900px]:ml-0" aria-label="Seções">
+        <nav className={cn('flex items-center gap-1 rounded-xl bg-muted p-1', !EMBEDDED && 'ml-auto min-[900px]:ml-0')} aria-label="Seções">
           {tabs.map(({ id, label, icon: Icon, count }) => {
             const current = tab === id;
             const name = count ? `${label} (${count} ${count === 1 ? 'peça' : 'peças'})` : label;
