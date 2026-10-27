@@ -44,6 +44,9 @@ const patches: Record<string, Patch[]> = {
     ],
     // Sem login no artefato: some o botão "Sair" (ícone).
     [/<Button[^>]*onClick=\{signOut\}[\s\S]*?<\/Button>/, ""],
+    // Dentro do Design System o cabeçalho só teria a marca (já no cabeçalho dele): some inteiro.
+    [/^/, 'import { isEmbedded } from "@gove/runtime";\n'],
+    [/(<header className="border-b border-border bg-card">[\s\S]*?<\/header>)/, "{!isEmbedded() && ($1)}"],
     ["Landing page excluída deste navegador.", "Landing page excluída."],
     ["Carregando projetos locais…", "Carregando projetos…"],
   ],

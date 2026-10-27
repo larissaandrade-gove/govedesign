@@ -133,8 +133,23 @@ export function whenFontsReady(identity: Identity | undefined): Promise<unknown>
     typeof document !== "undefined" && document.fonts?.ready
       ? document.fonts.ready.catch(() => null)
       : Promise.resolve(null);
-  return identity === "bb" ? Promise.all([ready, loadBBFonts()]) : ready;
+  if (identity === "bb") return Promise.all([ready, loadBBFonts()]);
+  // Gove: Montserrat (títulos) e Inter (corpo) só baixam quando pedidas.
+  const gove =
+    typeof document !== "undefined" && document.fonts
+      ? Promise.all(GOVE_CANVAS_FONTS.map((f) => document.fonts.load(f).catch(() => null)))
+      : null;
+  return Promise.all([ready, gove]);
 }
+
+/** Faces da identidade Gove usadas no canvas (pesos válidos da marca). */
+const GOVE_CANVAS_FONTS = [
+  "600 40px Montserrat",
+  "700 40px Montserrat",
+  "400 40px Inter",
+  "500 40px Inter",
+  "600 40px Inter",
+];
 
 /* -------------------------------------------------------------- amostragem */
 

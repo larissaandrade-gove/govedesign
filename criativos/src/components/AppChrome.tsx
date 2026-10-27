@@ -27,13 +27,32 @@ const TABS: { to: "/" | "/studio" | "/follow-ups"; modelo?: string; label: strin
   { to: "/studio", label: "Studio de cards", hint: "Um card por vez, layout livre", icon: MagicWand },
 ];
 
+/**
+ * Dentro do iframe do Design System (pai na mesma origem) o título já aparece
+ * no cabeçalho do DS; mesma checagem de `isEmbedded()` do artifact-runtime,
+ * local porque o build do Lovable não resolve `@gove/runtime`.
+ */
+function isEmbedded() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.parent !== window && !!window.parent.document;
+  } catch {
+    return false;
+  }
+}
+
 export function AppHeader({ actions }: { actions?: ReactNode }) {
+  const embedded = isEmbedded();
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 pt-2 sm:px-6">
-        <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-foreground">
-          Criativos <span className="text-muted-foreground">GOVE</span>
-        </h1>
+      <div className={`mx-auto flex max-w-7xl items-center gap-3 px-4 pt-2 sm:px-6 ${embedded && !actions ? "hidden" : ""}`}>
+        {embedded ? (
+          <div className="flex-1" />
+        ) : (
+          <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-foreground">
+            Gerador de criativos
+          </h1>
+        )}
         {actions}
       </div>
       <nav aria-label="Funções do gerador" className="mx-auto max-w-7xl overflow-x-auto px-2 sm:px-4 [scrollbar-width:none]">

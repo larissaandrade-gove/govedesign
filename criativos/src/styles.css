@@ -95,7 +95,8 @@
   --sidebar-accent-foreground: oklch(0.231 0.077 293.8); /* #20133D */
   --sidebar-border: oklch(0.9 0.004 250);
   --sidebar-ring: oklch(0.347 0.200 287.0); /* #3D0099 */
-  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 
@@ -136,6 +137,7 @@
 
 @theme inline {
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 }
 
 @layer base {
@@ -147,6 +149,13 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+  }
+
+  /* Títulos: Montserrat (600/700); corpo e interface: Inter. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 }
 

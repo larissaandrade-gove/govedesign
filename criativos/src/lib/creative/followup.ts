@@ -128,8 +128,8 @@ export type FollowupResult = {
   bbLogo?: BBLogoRender | null;
 };
 
-const GOVE_TITLE_FONT = "Montserrat, Archivo, 'Helvetica Neue', Arial, sans-serif";
-const GOVE_BODY_FONT = "Inter, Archivo, 'Helvetica Neue', Arial, sans-serif";
+const GOVE_TITLE_FONT = "Montserrat, 'Helvetica Neue', Arial, sans-serif";
+const GOVE_BODY_FONT = "Inter, 'Helvetica Neue', Arial, sans-serif";
 const MIN_CONTRAST = 4.5;
 /** Pisos de legibilidade (px no canvas de 1080 de altura). */
 const MIN_TITLE = 44;
@@ -137,12 +137,11 @@ const MIN_BODY = 28;
 
 /** Fontes usadas no canvas: carregue antes de desenhar. */
 export const FOLLOWUP_FONTS = [
-  `800 64px Montserrat`,
+  `600 64px Montserrat`,
   `700 64px Montserrat`,
   `400 32px Inter`,
   `500 32px Inter`,
   `600 32px Inter`,
-  `700 32px Inter`,
 ];
 
 export async function loadFollowupFonts() {
@@ -444,6 +443,9 @@ function renderFollowupOnce(
   const bb = spec.identity === "bb" ? bbScheme(spec.bbScheme) : null;
   const TITLE_FONT = bb ? BB_TITLE_FONT : GOVE_TITLE_FONT;
   const BODY_FONT = bb ? BB_TEXT_FONT : GOVE_BODY_FONT;
+  // Pesos: Gove usa Montserrat 700 nos títulos e Inter até 600; BB mantém os seus.
+  const TITLE_W = bb ? 800 : 700;
+  const BODY_STRONG_W = bb ? 700 : 600;
   const preset = BG_PRESETS.find((p) => p.key === spec.bgPreset) ?? BG_PRESETS[0]!;
   const presetLight = themeFor(preset.colors).light;
   let t = themeFor(preset.colors);
@@ -604,14 +606,14 @@ function renderFollowupOnce(
     const title = fit(
       ctx,
       p.title.trim() || "Novidades",
-      (s) => `800 ${s}px ${TITLE_FONT}`,
+      (s) => `${TITLE_W} ${s}px ${TITLE_FONT}`,
       contentW,
       2,
       titleMax,
       MIN_TITLE,
     );
     if (title.clipped) fitsOk = false;
-    ctx.font = `800 ${title.size}px ${TITLE_FONT}`;
+    ctx.font = `${TITLE_W} ${title.size}px ${TITLE_FONT}`;
     ctx.fillStyle = bb
       ? bbText(
           "Título",
@@ -729,7 +731,7 @@ function renderFollowupOnce(
     if (size < MIN_BODY) sizesOk = false;
 
     if (cta) {
-      ctx.font = `700 ${ctaFont}px ${BODY_FONT}`;
+      ctx.font = `${BODY_STRONG_W} ${ctaFont}px ${BODY_FONT}`;
       const tw = ctx.measureText(cta).width;
       const bw = Math.min(contentW, tw + ctaPadX * 2 + 44);
       const by = H - M - ctaH;
@@ -772,7 +774,7 @@ function renderFollowupOnce(
     const nameFit = fit(
       ctx,
       name,
-      (s) => `800 ${s}px ${TITLE_FONT}`,
+      (s) => `${TITLE_W} ${s}px ${TITLE_FONT}`,
       textW,
       square ? 1 : 2,
       square ? 60 : 72,
@@ -870,7 +872,7 @@ function renderFollowupOnce(
 
     ctx.textAlign = align;
     if (kicker) {
-      ctx.font = `700 ${kickerSize}px ${BODY_FONT}`;
+      ctx.font = `${BODY_STRONG_W} ${kickerSize}px ${BODY_FONT}`;
       const kc = bb
         ? bbText("Chamada", [ink(kicker.toUpperCase(), textX, y)], bb.accent)
         : t.light
@@ -882,7 +884,7 @@ function renderFollowupOnce(
       textPairs.push(["Chamada", kc, t.bgs]);
       y += kickerSize + 20;
     }
-    ctx.font = `800 ${nameFit.size}px ${TITLE_FONT}`;
+    ctx.font = `${TITLE_W} ${nameFit.size}px ${TITLE_FONT}`;
     ctx.fillStyle = bb
       ? bbText(
           "Nome",
@@ -919,7 +921,7 @@ function renderFollowupOnce(
     }
     if (when) {
       y += 32;
-      ctx.font = `700 30px ${BODY_FONT}`;
+      ctx.font = `${BODY_STRONG_W} 30px ${BODY_FONT}`;
       const tw = ctx.measureText(when).width;
       const pw = Math.min(textW, tw + 40 + 36 + 16);
       const px = align === "center" ? textX - pw / 2 : textX;

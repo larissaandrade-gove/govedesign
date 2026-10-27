@@ -65,7 +65,7 @@ function Login() {
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Lock className="h-5 w-5" />
           </span>
-          <h1 className="text-xl font-semibold text-foreground">Gerador de Criativos GOVE</h1>
+          <h1 className="text-xl font-semibold text-foreground">Gerador de criativos</h1>
           <p className="text-sm text-muted-foreground">Acesso restrito à equipe de marketing.</p>
         </div>
 

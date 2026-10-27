@@ -247,7 +247,9 @@ export const SCHEMES: { key: CreativeScheme; label: string }[] = [
   { key: "minimal-dark", label: "Minimalista roxo (respiro roxo, CTA branco)" },
 ];
 
-const FONT = "Archivo, 'Helvetica Neue', Arial, sans-serif";
+/** Gove: Montserrat 700 nos títulos, Inter (400–600) no corpo. */
+const TITLE_FONT = "Montserrat, 'Helvetica Neue', Arial, sans-serif";
+const BODY_FONT = "Inter, 'Helvetica Neue', Arial, sans-serif";
 
 /** Modo BB: cor do card/faixa/painel de texto por esquema (texto sobre ele via par aprovado). */
 export const BB_PANEL: Record<string, string> = {
@@ -319,7 +321,7 @@ function fitHeadline(
   maxWidth: number,
   maxLines: number,
   max: number = TYPE_SCALE.headlineMax,
-  font: string = FONT,
+  font: string = TITLE_FONT,
 ) {
   let size: number = Math.max(TYPE_SCALE.headlineMin, max);
   const min = TYPE_SCALE.headlineMin;
@@ -339,7 +341,7 @@ function fitSubhead(
   text: string,
   maxWidth: number,
   max: number = TYPE_SCALE.subheadMax,
-  font: string = FONT,
+  font: string = BODY_FONT,
 ) {
   let size: number = Math.max(TYPE_SCALE.subheadMin, max);
   const min = TYPE_SCALE.subheadMin;
@@ -586,8 +588,10 @@ function renderCreativeOnce(
   // Identidade Banco do Brasil: esquema BB, fontes BB e cores escolhidas pelo
   // que está realmente atrás de cada elemento (amostragem do canvas).
   const bb: BBScheme | null = spec.identity === "bb" ? bbScheme(spec.bbScheme) : null;
-  const TF = bb ? BB_TITLE_FONT : FONT;
-  const BF = bb ? BB_TEXT_FONT : FONT;
+  const TF = bb ? BB_TITLE_FONT : TITLE_FONT;
+  const BF = bb ? BB_TEXT_FONT : BODY_FONT;
+  /** Peso de destaque no corpo (CTA, rótulos): Inter vai até 600; BB mantém 700. */
+  const BW = bb ? 700 : 600;
   const bbTexts: BBTextRecord[] = [];
   type Box = { x: number; y: number; w: number; h: number };
   const unionOf = (list: Box[]): Box => {
@@ -831,10 +835,10 @@ function renderCreativeOnce(
   const ctaMaxW = isSplit || isHero ? textW : CONTENT_W;
   let ctaFont: number = TYPE_SCALE.cta;
   let ctaLabel = spec.cta;
-  ctx.font = `700 ${ctaFont}px ${BF}`;
+  ctx.font = `${BW} ${ctaFont}px ${BF}`;
   while (ctx.measureText(ctaLabel).width + 22 + ctaIcon + CTA_PAD * 2 > ctaMaxW && ctaFont > 28) {
     ctaFont -= 2;
-    ctx.font = `700 ${ctaFont}px ${BF}`;
+    ctx.font = `${BW} ${ctaFont}px ${BF}`;
   }
   while (
     ctaLabel.length > 1 &&
@@ -1090,7 +1094,7 @@ function renderCreativeOnce(
           ctx.fillRect(bx, by, bw, bh);
           ctx.fillStyle = b.head;
           ctx.fillRect(bx, by, bw, head);
-          ctx.font = `700 ${Math.min(TYPE_SCALE.label, head * 0.55)}px ${BF}`;
+          ctx.font = `${BW} ${Math.min(TYPE_SCALE.label, head * 0.55)}px ${BF}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = bbText(`rótulo ${b.label.toLowerCase()}`, [ink(b.label, bx + bw / 2, by + head / 2)]);
@@ -1128,7 +1132,7 @@ function renderCreativeOnce(
         ctx.fillStyle = color;
         ctx.fillRect(bx, by, bw, head);
         ctx.fillStyle = i === 0 ? PALETTE.white : PALETTE.purple3;
-        ctx.font = `700 ${Math.min(TYPE_SCALE.label, head * 0.55)}px ${FONT}`;
+        ctx.font = `600 ${Math.min(TYPE_SCALE.label, head * 0.55)}px ${BODY_FONT}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(label, bx + bw / 2, by + head / 2);
@@ -1185,7 +1189,7 @@ function renderCreativeOnce(
 
     if (showModule && style === "quote-split") {
       ctx.save();
-      ctx.font = bb ? `800 190px ${TF}` : `700 190px Georgia, ${FONT}`;
+      ctx.font = bb ? `800 190px ${TF}` : `700 190px ${TITLE_FONT}`;
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillStyle = bb
@@ -1237,7 +1241,7 @@ function renderCreativeOnce(
   let y = blockTop;
 
   if (urgencyText) {
-    const chipFont = `700 ${TYPE_SCALE.label}px ${BF}`;
+    const chipFont = `${BW} ${TYPE_SCALE.label}px ${BF}`;
     ctx.font = chipFont;
     const label = urgencyText.toUpperCase();
     const iconKey = spec.themeIcon ?? "clock";
@@ -1292,7 +1296,7 @@ function renderCreativeOnce(
       py += subLH;
     }
     if (tokenText) {
-      ctx.font = `700 ${TYPE_SCALE.label}px ${BF}`;
+      ctx.font = `${BW} ${TYPE_SCALE.label}px ${BF}`;
       plan.push(ink(tokenText.toUpperCase(), textX, py + 10));
     }
     blockColor = bbText("texto", plan, onCard ? undefined : bb.title, 28);
@@ -1319,7 +1323,7 @@ function renderCreativeOnce(
   ctx.globalAlpha = textAlpha;
 
   if (tokenText) {
-    ctx.font = `700 ${TYPE_SCALE.label}px ${BF}`;
+    ctx.font = `${BW} ${TYPE_SCALE.label}px ${BF}`;
     ctx.globalAlpha = (bb ? 1 : 0.8) * textAlpha;
     ctx.fillText(tokenText.toUpperCase(), textX, y + 10);
     regUnion("token", [ink(tokenText.toUpperCase(), textX, y + 10)]);
@@ -1334,7 +1338,7 @@ function renderCreativeOnce(
   reg("cta", ctaX, ctaY, ctaW, ctaH);
 
   ctx.fill();
-  ctx.font = `700 ${ctaFont}px ${BF}`;
+  ctx.font = `${BW} ${ctaFont}px ${BF}`;
   const groupW = ctaContentW;
   const startX = ctaX + (ctaW - groupW) / 2;
 
@@ -1427,7 +1431,7 @@ function renderCreativeOnce(
 
   // 8. Selo institucional no canto superior direito
   if (badgeText) {
-    ctx.font = `700 ${TYPE_SCALE.label}px ${BF}`;
+    ctx.font = `${BW} ${TYPE_SCALE.label}px ${BF}`;
     const bw = ctx.measureText(badgeText.toUpperCase()).width + 44;
     const bh = 52;
     const bx = CANVAS_W - M - bw;
@@ -1465,13 +1469,13 @@ function renderCreativeOnce(
     let nameColor: string = plateDark ? PALETTE.white : PALETTE.purple3;
     let roleColor: string = plateDark ? PALETTE.gold : PALETTE.purple1;
     let ringColor: string = scheme === "institucional" ? PALETTE.gold : nameColor;
-    const NF = bb ? TF : FONT;
-    const RF = bb ? BF : FONT;
+    const NF = TF;
+    const RF = BF;
     const maxTextW = Math.min(CANVAS_W - M * 2 - D - 72, 560);
     ctx.save();
     ctx.globalAlpha = textAlpha;
     ctx.textBaseline = "top";
-    const fitFont = (txt: string, weight: number, start: number, min: number, font = FONT) => {
+    const fitFont = (txt: string, weight: number, start: number, min: number, font = BF) => {
       let f = start;
       ctx.font = `${weight} ${f}px ${font}`;
       while (f > min && ctx.measureText(txt).width > maxTextW) {
@@ -1480,7 +1484,7 @@ function renderCreativeOnce(
       }
       return f;
     };
-    const nw = bb ? 700 : 800;
+    const nw = 700;
     const rw = bb ? 500 : 600;
     const nf = fitFont(ex.name.trim(), nw, 40, 26, NF);
     ctx.font = `${nw} ${nf}px ${NF}`;
