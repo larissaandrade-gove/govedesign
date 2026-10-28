@@ -11,6 +11,7 @@
  * Saída: design-system/src/embedded/links.html
  * Domínio curto exibido: GOVE_LINKS_SHORT_DOMAIN (padrão go.gove.digital).
  */
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { defineConfig } from "vite";
@@ -25,7 +26,12 @@ const repoRoot = path.resolve(linksRoot, "..");
 const src = path.resolve(linksRoot, "src");
 const outDir = path.resolve(repoRoot, "design-system/src/embedded");
 
-const shortDomain = (process.env["GOVE_LINKS_SHORT_DOMAIN"] ?? "go.gove.digital").trim();
+// Mesmo domínio que o Design System libera (links/publicacao.json); sem ele, o padrão previsto.
+const published = String(JSON.parse(readFileSync(path.join(linksRoot, "publicacao.json"), "utf8")).url ?? "")
+  .trim()
+  .replace(/^https?:\/\//, "")
+  .replace(/\/+$/, "");
+const shortDomain = (process.env["GOVE_LINKS_SHORT_DOMAIN"] ?? (published || "go.gove.digital")).trim();
 
 export default defineConfig({
   root: here,

@@ -70,6 +70,8 @@ export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions
   }
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  // Endereço público dos apps que dependem de publicação web (Gove Links). Vazio = "Em breve".
+  app.get('/api/publicacao', (_req, res) => res.json({ links: process.env.LINKS_PUBLIC_URL || '' }));
 
   // ---------- Tokens de marca ----------
   app.get('/api/tokens', (req, res) => res.json(listTokens(db, req.query.category)));

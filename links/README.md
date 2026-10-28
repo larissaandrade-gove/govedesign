@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+> **Publicação web:** enquanto o encurtador não estiver no ar com domínio próprio, o Gove Design System mostra o app como "Em breve". Passo a passo para o time de tecnologia em [PUBLICACAO.md](./PUBLICACAO.md).
+
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable

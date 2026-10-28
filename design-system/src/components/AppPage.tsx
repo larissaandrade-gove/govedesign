@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { ArrowCounterClockwise, ArrowLeft, ArrowsOut, CaretLeft, CaretRight, Check, Copy, Info, TerminalWindow } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, ArrowLeft, ArrowSquareOut, ArrowsOut, CaretLeft, CaretRight, Check, Clock, Copy, Info, SpinnerGap, TerminalWindow } from '@phosphor-icons/react';
 import { APPS } from '../data/apps';
 import { appHref } from '../lib/router';
 import { fadeUp, stagger } from '../lib/motion';
 import { EmbeddedApp, hasEmbedded } from './EmbeddedApp';
 import { useMobile } from '../lib/useMobile';
+import { isOpen, useAppStatus, useStatuses } from '../lib/appStatus';
+import { findClaude } from '../lib/claude';
 
 /** Botão só de ícone: 44×44, rótulo acessível e dica. */
 function IconButton({ label, onClick, href, children, pressed }: { label: string; onClick?: () => void; href?: string; children: React.ReactNode; pressed?: boolean }) {
@@ -25,8 +27,18 @@ function IconButton({ label, onClick, href, children, pressed }: { label: string
 export function AppPage({ appId }: { appId: string }) {
   const index = APPS.findIndex((a) => a.id === appId);
   const app = APPS[index];
-  const prev = APPS[(index - 1 + APPS.length) % APPS.length];
-  const next = APPS[(index + 1) % APPS.length];
+  // Anterior/próximo pulam os apps "Em breve"
+  const statuses = useStatuses(APPS);
+  const step = (dir: 1 | -1) => {
+    for (let i = 1; i <= APPS.length; i++) {
+      const a = APPS[(index + dir * i + APPS.length * 2) % APPS.length];
+      if (isOpen(statuses[a.id] ?? 'ok')) return a;
+    }
+    return app;
+  };
+  const prev = step(-1);
+  const next = step(1);
+  const pub = useAppStatus(app);
   const [info, setInfo] = useState(false);
   const [copied, setCopied] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -35,6 +47,8 @@ export function AppPage({ appId }: { appId: string }) {
   const Icon = app.icon;
   const embedId = app.embed?.file ?? app.id;
   const exitFull = useCallback(() => setFull(false), []);
+  // Versão embutida só para apps comuns; os publicados abrem o endereço web
+  const local = pub.status === 'ok' && hasEmbedded(embedId);
   // Celular: Sobre e Recarregar vão para a top app bar (sem fileira extra acima do app)
   const mobile = useMobile();
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -75,7 +89,7 @@ export function AppPage({ appId }: { appId: string }) {
             <IconButton label="Sobre o app" onClick={() => setInfo((v) => !v)} pressed={info}>
               <Info className="size-5" aria-hidden />
             </IconButton>
-            {hasEmbedded(embedId) && (
+            {local && (
               <IconButton label="Recarregar" onClick={() => setReloadKey((n) => n + 1)}>
                 <ArrowCounterClockwise className="size-5" aria-hidden />
               </IconButton>
@@ -112,7 +126,7 @@ export function AppPage({ appId }: { appId: string }) {
             <IconButton label="Sobre o app" onClick={() => setInfo((v) => !v)} pressed={info}>
               <Info className="size-5" aria-hidden />
             </IconButton>
-            {hasEmbedded(embedId) && (
+            {local && (
               <>
                 <IconButton label="Recarregar" onClick={() => setReloadKey((n) => n + 1)}>
                   <ArrowCounterClockwise className="size-5" aria-hidden />
@@ -155,7 +169,35 @@ export function AppPage({ appId }: { appId: string }) {
         </div>
 
         <motion.div variants={fadeUp}>
-          {hasEmbedded(embedId) ? (
+          {pub.status === 'verificando' ? (
+            <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-secondary text-text-secondary" role="status">
+              <SpinnerGap className="size-6 animate-spin" aria-hidden />
+              <span className="sr-only">Verificando a publicação de {app.name}</span>
+            </div>
+          ) : pub.status === 'em-breve' ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-space-2 rounded-lg border border-dashed border-secondary px-space-3 py-space-6 text-center">
+              <span className="flex size-14 items-center justify-center rounded-lg bg-accent/25 text-text-primary" aria-hidden>
+                <Clock className="size-7" />
+              </span>
+              <h2 className="font-display text-h3 font-semibold text-text-primary">{app.name} chega em breve</h2>
+              <p className="max-w-[520px] text-body text-text-secondary">
+                O encurtador será liberado aqui assim que estiver publicado na web com domínio próprio. Até lá, os links curtos não funcionam fora da plataforma.
+              </p>
+            </div>
+          ) : pub.status === 'publicado' && !findClaude() ? (
+            <section aria-label={app.name} className="relative h-[calc(100dvh-88px)] min-h-[480px] overflow-hidden rounded-lg border border-secondary bg-background shadow-md lg:h-[calc(100vh-112px)]">
+              <iframe key={reloadKey} title={app.name} src={pub.url} className="absolute inset-0 block h-full w-full border-0 bg-background" />
+            </section>
+          ) : pub.status === 'publicado' ? (
+            // No claude.ai, sites externos não abrem dentro da página: abre em nova aba
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-space-2 rounded-lg border border-secondary px-space-3 py-space-6 text-center">
+              <p className="max-w-[520px] text-body text-text-secondary">{app.name} está publicado na web. Abra em uma nova aba para criar e acompanhar os links.</p>
+              <a href={pub.url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-space-1 rounded-md bg-accent px-space-3 font-semibold text-on-accent no-underline shadow-glow-yellow">
+                Abrir {app.name}
+                <ArrowSquareOut className="size-5" aria-hidden />
+              </a>
+            </div>
+          ) : local ? (
             <EmbeddedApp id={embedId} hash={app.embed?.hash} name={app.name} reloadKey={reloadKey} full={full} onExitFull={exitFull} />
           ) : (
             <div className="grid grid-cols-1 gap-space-3 lg:grid-cols-2">

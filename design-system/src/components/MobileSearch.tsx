@@ -4,6 +4,7 @@ import { appsFor } from '../data/apps';
 import { appHref } from '../lib/router';
 import { openNewRequest } from '../lib/useMobile';
 import { SECTIONS } from './Sidebar';
+import { isOpen, useStatuses } from '../lib/appStatus';
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -23,14 +24,18 @@ export function MobileSearch() {
     return () => window.removeEventListener('gove:buscar', open);
   }, []);
 
+  const status = useStatuses(appsFor(true));
   const items = useMemo(() => {
     const all = [
-      ...appsFor(true).map((a) => ({ key: a.id, label: a.name, hint: a.tagline, href: appHref(a.id), icon: a.icon })),
+      ...appsFor(true).map((a) => {
+        const soon = !isOpen(status[a.id] ?? 'ok');
+        return { key: a.id, label: a.name, hint: soon ? `Em breve · ${a.tagline}` : a.tagline, href: soon ? undefined : appHref(a.id), icon: a.icon };
+      }),
       ...SECTIONS.filter((s) => s.id !== 'inicio').map((s) => ({ key: s.id, label: s.label, hint: '', href: `#${s.id}`, icon: s.icon })),
     ];
     const t = norm(q.trim());
     return t ? all.filter((i) => norm(`${i.label} ${i.hint}`).includes(t)) : all;
-  }, [q]);
+  }, [q, status]);
 
   const close = () => dialog.current?.close();
 
@@ -70,7 +75,12 @@ export function MobileSearch() {
           </li>
           {items.map(({ key, label, hint, href, icon: Icon }) => (
             <li key={key}>
-              <a href={href} onClick={close} className="flex min-h-14 items-center gap-space-2 rounded-md px-space-1 text-text-primary no-underline hover:bg-secondary/50">
+              <a
+                href={href}
+                onClick={href ? close : undefined}
+                aria-disabled={!href || undefined}
+                className={`flex min-h-14 items-center gap-space-2 rounded-md px-space-1 text-text-primary no-underline ${href ? 'hover:bg-secondary/50' : 'cursor-default opacity-70'}`}
+              >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
                   <Icon className="size-5" />
                 </span>

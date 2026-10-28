@@ -10,6 +10,8 @@ import { appHref, type View } from '../lib/router';
 import { ThemeToggle } from './ThemeToggle';
 import { GoveLogo } from './GoveLogo';
 import { LogoutButton } from './LogoutButton';
+import { SoonBadge } from './SoonBadge';
+import { isOpen, useStatuses } from '../lib/appStatus';
 
 /**
  * Navegação no padrão Material Design 3:
@@ -106,7 +108,7 @@ function reselect(on: boolean) {
 }
 
 /** Item da navigation drawer: pílula de 56px; o ativo ganha o indicador e o ícone fill. */
-function DrawerItem({ href, label, icon: Icon, on, small = false }: { href: string; label: string; icon: IconType; on: boolean; small?: boolean }) {
+function DrawerItem({ href, label, icon: Icon, on, small = false, soon = false }: { href: string; label: string; icon: IconType; on: boolean; small?: boolean; soon?: boolean }) {
   const ref = useRef<HTMLAnchorElement>(null);
   // Telas baixas: a lista rola; o item ativo fica sempre à vista (sem mexer na página)
   useEffect(() => {
@@ -121,15 +123,21 @@ function DrawerItem({ href, label, icon: Icon, on, small = false }: { href: stri
   return (
     <a
       ref={ref}
-      href={href}
+      href={soon ? undefined : href}
       aria-current={on ? 'page' : undefined}
+      aria-disabled={soon || undefined}
       className={`relative flex items-center gap-space-2 rounded-full px-space-2 no-underline transition-colors duration-200 ${small ? 'min-h-11 text-caption' : 'min-h-14 text-body'} ${
-        on ? 'font-semibold text-text-primary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
+        on ? 'font-semibold text-text-primary' : soon ? 'cursor-default text-text-secondary' : 'text-text-secondary hover:bg-secondary/40 hover:text-text-primary'
       }`}
     >
       {on && <motion.span layoutId="drawer-indicator" className="absolute inset-0 rounded-full bg-secondary" transition={{ duration: 0.3, ease: EASE }} aria-hidden />}
       <Icon weight={on ? 'fill' : 'regular'} className={`relative shrink-0 ${small ? 'size-[18px]' : 'size-6'}`} aria-hidden />
       <span className="relative truncate">{label}</span>
+      {soon && (
+        <span className="relative ml-auto">
+          <SoonBadge small />
+        </span>
+      )}
     </a>
   );
 }
@@ -177,6 +185,7 @@ function Fab({ extended }: { extended: boolean }) {
 const iconButton = 'flex size-12 shrink-0 items-center justify-center rounded-full text-text-primary no-underline transition-colors hover:bg-secondary/50';
 
 export function Sidebar({ view }: { view: View }) {
+  const status = useStatuses(APPS);
   const active = useActiveSection(view);
   const [open, toggle] = useRail();
   const appView = view.kind === 'app';
@@ -220,7 +229,7 @@ export function Sidebar({ view }: { view: View }) {
             <ul className="flex flex-col" aria-labelledby="nav-apps">
               {APPS.map((a) => (
                 <li key={a.id}>
-                  <DrawerItem href={appHref(a.id)} label={a.name} icon={a.icon} on={active === `app-${a.id}`} small />
+                  <DrawerItem href={appHref(a.id)} label={a.name} icon={a.icon} on={active === `app-${a.id}`} small soon={!isOpen(status[a.id] ?? 'ok')} />
                 </li>
               ))}
             </ul>

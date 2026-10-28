@@ -4,6 +4,8 @@ import { appHref } from '../lib/router';
 import { APP_TAGS, appsFor, type AppTag } from '../data/apps';
 import { useMobile } from '../lib/useMobile';
 import { SectionHeader } from './SectionHeader';
+import { SoonBadge } from './SoonBadge';
+import { isOpen, useStatuses } from '../lib/appStatus';
 
 /** Aplicações: carrossel no computador; lista no celular. */
 export function Apps() {
@@ -12,6 +14,7 @@ export function Apps() {
   const [tag, setTag] = useState<AppTag | null>(null);
   const available = appsFor(useMobile());
   const shown = tag ? available.filter((a) => a.tag === tag) : available;
+  const status = useStatuses(available);
 
   useEffect(() => {
     const el = track.current;
@@ -68,12 +71,18 @@ export function Apps() {
         aria-label="Aplicações"
         className="flex flex-col gap-space-2 lg:-mx-1 lg:snap-x lg:snap-mandatory lg:flex-row lg:overflow-x-auto lg:px-1 lg:pb-space-2 lg:[scrollbar-width:thin]"
       >
-        {shown.map(({ id, name, icon: Icon, tagline }) => (
+        {shown.map(({ id, name, icon: Icon, tagline }) => {
+          // "Em breve": sem link até o app estar publicado (lib/appStatus)
+          const soon = !isOpen(status[id] ?? 'ok');
+          return (
           <li key={id} className="lg:w-[280px] lg:shrink-0 lg:snap-start">
             <a
-              href={appHref(id)}
-              aria-label={`Abrir ${name}`}
-              className="flex h-full items-center gap-space-2 rounded-lg border border-secondary bg-background p-space-2 no-underline shadow-md transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-lilac hover:shadow-card-hover lg:flex-col lg:items-start lg:p-space-3"
+              href={soon ? undefined : appHref(id)}
+              aria-label={soon ? `${name}: em breve` : `Abrir ${name}`}
+              aria-disabled={soon || undefined}
+              className={`flex h-full items-center gap-space-2 rounded-lg border border-secondary bg-background p-space-2 no-underline shadow-md lg:flex-col lg:items-start lg:p-space-3 ${
+                soon ? 'cursor-default opacity-70' : 'transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-1 hover:border-lilac hover:shadow-card-hover'
+              }`}
             >
               <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
                 <Icon className="size-6" />
@@ -82,10 +91,11 @@ export function Apps() {
                 <span className="font-display text-body-large font-bold text-text-primary">{name}</span>
                 <span className="text-caption text-text-secondary">{tagline}</span>
               </span>
-              <CaretRight className="size-5 shrink-0 text-text-muted lg:hidden" aria-hidden />
+              {soon ? <SoonBadge /> : <CaretRight className="size-5 shrink-0 text-text-muted lg:hidden" aria-hidden />}
             </a>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );

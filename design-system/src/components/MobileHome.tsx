@@ -2,8 +2,12 @@ import { BookOpenText, MagnifyingGlass, Palette } from '@phosphor-icons/react';
 import { appsFor } from '../data/apps';
 import { appHref } from '../lib/router';
 import { openSearch } from '../lib/useMobile';
+import { isOpen, useStatuses } from '../lib/appStatus';
+import { SoonBadge } from './SoonBadge';
 /** Início no celular: topo roxo com a search bar (MD3), atalhos dos apps e das seções. O logo fica na top app bar. */
 export function MobileHome() {
+  const apps = appsFor(true);
+  const status = useStatuses(apps);
   return (
     <div id="inicio" className="flex flex-col gap-space-3 pb-space-2">
       <div className="relative overflow-hidden rounded-b-[40px] bg-[#3D0099] px-space-2 pb-space-4 pt-space-3 text-[#F4F4F4]">
@@ -26,16 +30,26 @@ export function MobileHome() {
       <nav aria-label="Aplicações" className="flex flex-col gap-space-1">
         <h2 className="gutter text-body-large font-semibold">Aplicações</h2>
         <ul className="flex gap-space-2 overflow-x-auto px-space-2 pb-space-1 [scrollbar-width:none]">
-          {appsFor(true).map(({ id, name, icon: Icon }) => (
-            <li key={id} className="shrink-0">
-              <a href={appHref(id)} className="flex w-[76px] flex-col items-center gap-1 text-center text-caption font-medium text-text-primary no-underline">
-                <span className="flex size-[60px] items-center justify-center rounded-[20px] bg-secondary text-highlight shadow-sm">
-                  <Icon className="size-6" aria-hidden />
-                </span>
-                <span className="line-clamp-2 leading-tight">{name.replace(/^Gerador de /, '').replace(/^./, (c) => c.toUpperCase())}</span>
-              </a>
-            </li>
-          ))}
+          {apps.map(({ id, name, icon: Icon }) => {
+            const soon = !isOpen(status[id] ?? 'ok');
+            const short = name.replace(/^Gerador de /, '').replace(/^./, (c) => c.toUpperCase());
+            return (
+              <li key={id} className="shrink-0">
+                <a
+                  href={soon ? undefined : appHref(id)}
+                  aria-label={soon ? `${name}: em breve` : undefined}
+                  aria-disabled={soon || undefined}
+                  className={`flex w-[76px] flex-col items-center gap-1 text-center text-caption font-medium text-text-primary no-underline ${soon ? 'cursor-default' : ''}`}
+                >
+                  <span className={`relative flex size-[60px] items-center justify-center rounded-[20px] bg-secondary text-highlight shadow-sm ${soon ? 'opacity-60' : ''}`}>
+                    <Icon className="size-6" aria-hidden />
+                  </span>
+                  <span className="line-clamp-2 leading-tight">{short}</span>
+                  {soon && <SoonBadge small />}
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 

@@ -1,4 +1,4 @@
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -10,6 +10,12 @@ const EMBED_DIR = resolve(__dirname, 'src/embedded');
 const embedded = readdirSync(EMBED_DIR)
   .filter((f) => f.endsWith('.html'))
   .map((f) => f.slice(0, -5));
+
+// Endereço público do Gove Links (links/publicacao.json), preenchido pelo time
+// de tecnologia quando o encurtador for publicado com domínio próprio. Vazio = "Em breve".
+const linksUrl = String(JSON.parse(readFileSync(resolve(__dirname, '../links/publicacao.json'), 'utf8')).url ?? '')
+  .trim()
+  .replace(/\/+$/, '');
 
 function copyEmbedded(): Plugin {
   return {
@@ -33,6 +39,6 @@ export default defineConfig({
   base: './',
   plugins: [react(), viteSingleFile(), copyEmbedded()],
   resolve: { alias: { '@': '/src' } },
-  define: { __GOVE_EMBEDDED__: JSON.stringify(embedded) },
+  define: { __GOVE_EMBEDDED__: JSON.stringify(embedded), __GOVE_LINKS_URL__: JSON.stringify(linksUrl) },
   server: { fs: { allow: ['..'] } },
 });

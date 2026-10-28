@@ -36,7 +36,11 @@ export type GoveApp = {
   tag: AppTag;
   /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash. */
   embed?: { file: string; hash?: string };
+  /** Depende de publicação web: fica "Em breve" até o endereço público responder (lib/appStatus). */
+  publish?: { url: string };
 };
+
+declare const __GOVE_LINKS_URL__: string;
 
 /** Apps disponíveis no tamanho de tela atual (o Print Studio fica só no computador). */
 export const appsFor = (mobile: boolean) => (mobile ? APPS.filter((a) => !a.desktopOnly) : APPS);
@@ -75,7 +79,9 @@ export const APPS: GoveApp[] = [
     folder: 'links/',
     run: 'npm run links:install && npm run links:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui no navegador. O link curto só redireciona publicamente no servidor; aqui, "Testar link" registra o clique e abre o destino.',
+    embeddedNote:
+      'Em breve: o link curto só redireciona fora da plataforma quando o encurtador estiver publicado com domínio próprio (go.gove.digital). A liberação é automática assim que o time de tecnologia publicar o servidor.',
+    publish: { url: __GOVE_LINKS_URL__ },
     shots: [{ src: links1, caption: 'Acesso institucional da equipe de marketing (contas criadas pela administração).' }],
   },
   {
