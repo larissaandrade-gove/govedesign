@@ -115,14 +115,16 @@ function ColorField({
   return (
     <Field label={label}>
       <div className="flex flex-wrap gap-2">
-        {BRAND_SWATCHES.map((color) => (
+        {BRAND_SWATCHES.map(({ hex, nome }) => (
           <button
-            key={color}
+            key={hex}
             type="button"
-            aria-label={`Usar cor ${color}`}
-            onClick={() => onChange(color)}
+            title={`${nome} (${hex})`}
+            aria-label={`Usar cor ${nome} (${hex})`}
+            aria-pressed={value.toUpperCase() === hex}
+            onClick={() => onChange(hex)}
             className="size-11 rounded-lg border border-border"
-            style={{ backgroundColor: color }}
+            style={{ backgroundColor: hex }}
           />
         ))}
       </div>

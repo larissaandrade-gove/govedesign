@@ -229,16 +229,24 @@ export const RADIUS_MIN = 0;
 export const RADIUS_MAX = 100;
 export const RADIUS_STEPS = [0, 8, 16, 24, 32, 48, 64, 80, 100];
 
-// // TODO: confirmar hex oficial com manual de marca GOVE
-export const BRAND_SWATCHES = [
-  "#FFC72C", // Amarelo
-  "#3D0099", // Roxo claro
-  "#351F65", // Roxo intermediário
-  "#20133D", // Roxo escuro
-  "#2F3539", // Cinza escuro
-  "#5B6770", // Cinza claro
-  "#F4F4F4", // Cinza suave
-  "#FFFFFF", // Branco
+export interface BrandSwatch {
+  hex: string;
+  nome: string;
+}
+
+/** Paleta oficial Gove (manual de marca) + Branco puro, na ordem do seletor. */
+export const BRAND_SWATCHES: readonly BrandSwatch[] = [
+  { hex: "#F4F4F4", nome: "Branco" },
+  { hex: "#20133D", nome: "Noite" },
+  { hex: "#FFC72C", nome: "Amarelo" },
+  { hex: "#3D0099", nome: "Roxo" },
+  { hex: "#351F65", nome: "Roxo Profundo" },
+  { hex: "#2F3539", nome: "Grafite" },
+  { hex: "#5B6770", nome: "Cinza técnico" },
+  { hex: "#5AC2CD", nome: "Ciano" },
+  { hex: "#A278DA", nome: "Lavanda" },
+  { hex: "#16499F", nome: "Azul confiança" },
+  { hex: "#FFFFFF", nome: "Branco puro" },
 ];
 
 export interface GradientPreset {
@@ -257,4 +265,6 @@ export const GRADIENT_PRESETS: GradientPreset[] = [
   { id: "amarelo-gove", nome: "Amarelo GOVE", from: "#FFC72C", via: "", to: "#F4F4F4", angle: 135 },
   { id: "grafite", nome: "Grafite", from: "#2F3539", via: "", to: "#5B6770", angle: 135 },
   { id: "claro", nome: "Claro suave", from: "#FFFFFF", via: "", to: "#F4F4F4", angle: 180 },
+  { id: "ciano-azul", nome: "Ciano → Azul confiança", from: "#5AC2CD", via: "", to: "#16499F", angle: 135 },
+  { id: "lavanda-roxo", nome: "Lavanda → Roxo", from: "#A278DA", via: "", to: "#3D0099", angle: 135 },
 ];

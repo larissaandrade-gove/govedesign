@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "icons": "node scripts/build-icons.mjs",
     "test:bb": "node --test scripts/bb-check.test.mjs",
     "test:lp": "node --test scripts/bb-check.test.mjs scripts/anchors-templates.test.mjs"
   },

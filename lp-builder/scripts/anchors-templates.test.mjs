@@ -125,3 +125,40 @@ test("página criada do modelo é cópia independente do snapshot publicado", ()
   assert.equal(t.hasUnpublishedChanges(draft), true);
   assert.deepEqual(t.pageFromTemplate(draft), seed.publishedDoc);
 });
+
+// ── Paleta oficial e ícones no export ──
+const { BRAND_SWATCHES, GRADIENT_PRESETS } = await jiti.import(path.join(src, "lib/gove/types.ts"));
+const { ICON_PATHS } = await jiti.import(path.join(src, "lib/gove/iconPaths.ts"));
+const { ICON_CATALOG } = await jiti.import(path.join(src, "lib/gove/iconCatalog.ts"));
+
+test("paleta Gove: exatamente as 11 cores oficiais, com nome", () => {
+  assert.deepEqual(
+    BRAND_SWATCHES.map((s) => s.hex),
+    ["#F4F4F4", "#20133D", "#FFC72C", "#3D0099", "#351F65", "#2F3539", "#5B6770", "#5AC2CD", "#A278DA", "#16499F", "#FFFFFF"],
+  );
+  for (const s of BRAND_SWATCHES) assert.ok(s.nome.length > 0, s.hex);
+  const ids = GRADIENT_PRESETS.map((g) => `${g.from}>${g.to}`);
+  assert.ok(ids.includes("#5AC2CD>#16499F") && ids.includes("#A278DA>#3D0099"));
+});
+
+/** Página com um card de ícone. */
+function cardPage(icon) {
+  const row = f.makeRow(1);
+  row.columns[0].children = [f.makeCard({ icon, iconColor: "#3D0099" })];
+  return { version: 1, sections: [f.makeSection({ children: [row] })] };
+}
+
+test("card exporta o ícone escolhido (Ouvidoria = megafone), não o Check", () => {
+  const html = exportHtml(cardPage("Ouvidoria"), "x");
+  for (const d of ICON_PATHS.Ouvidoria) assert.ok(html.includes(`d="${d}"`));
+  for (const d of ICON_PATHS.Check) assert.ok(!html.includes(`d="${d}"`));
+  assert.ok(html.includes('fill="#3D0099"'));
+  // Chave legada continua com o próprio desenho; chave desconhecida cai no Check.
+  assert.ok(exportHtml(cardPage("BarChart3"), "x").includes(`d="${ICON_PATHS.BarChart3[0]}"`));
+  assert.ok(exportHtml(cardPage("NaoExiste"), "x").includes(`d="${ICON_PATHS.Check[0]}"`));
+});
+
+test("iconPaths.ts está em dia com o catálogo (rode npm run icons)", () => {
+  assert.deepEqual(Object.keys(ICON_PATHS).sort(), Object.keys(ICON_CATALOG).sort());
+  assert.equal(ICON_CATALOG.Ouvidoria.phosphor, "megaphone");
+});

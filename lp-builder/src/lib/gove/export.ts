@@ -20,6 +20,7 @@ import {
 } from "./bb";
 import { BB_FONT_FACE_CSS } from "./bbFonts";
 import { END_ANCHOR, SMOOTH_SCROLL_CSS, resolveButtonLink, sectionAnchor } from "./anchors";
+import { ICON_PATHS, ICON_VIEWBOX } from "./iconPaths";
 
 /** Contexto de renderização: identidade, fontes e (BB) o fundo do contêiner. */
 interface RenderCtx {
@@ -182,9 +183,15 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
   }
 }
 
-/** SVG simples e genérico para o ícone (sem dependências externas no export): o "Check" do Phosphor, peso regular. */
-function iconSvg(_name: string, color: string) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 256 256" fill="${color}" aria-hidden="true"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"></path></svg>`;
+/**
+ * SVG inline do ícone escolhido (sem dependências externas no export): paths Phosphor,
+ * peso regular, gerados de lib/gove/iconCatalog.ts por `npm run icons`. Chave
+ * desconhecida cai no "Check", como no editor.
+ */
+function iconSvg(name: string, color: string) {
+  const paths = (Object.hasOwn(ICON_PATHS, name) ? ICON_PATHS[name] : undefined) ?? ICON_PATHS["Check"]!;
+  const d = paths.map((p) => `<path d="${p}"></path>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}" fill="${esc(color)}" aria-hidden="true">${d}</svg>`;
 }
 
 function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string {
