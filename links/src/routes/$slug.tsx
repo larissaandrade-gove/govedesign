@@ -8,13 +8,13 @@ function page(title: string, message: string, status: number) {
 <title>${title} — Gove Links</title>
 <style>
   :root { color-scheme: light }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#f7f8fa;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif; color:#0f172a; padding:24px }
-  .card { max-width:420px; text-align:center; background:#fff; border:1px solid #e6e8ee;
-    border-radius:14px; padding:40px 32px }
-  .mark { font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:#0f172a; opacity:.55 }
-  h1 { font-size:20px; margin:20px 0 8px; letter-spacing:-.01em }
-  p { font-size:14px; line-height:1.6; color:#5b6478; margin:0 }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#f4f4f4;
+    font-family: Inter, Arial, sans-serif; color:#2f3539; padding:24px }
+  .card { max-width:420px; text-align:center; background:#fff; border:1px solid #e3d8f3;
+    border-radius:16px; padding:40px 32px; box-shadow:0 8px 24px rgba(32,19,61,.10) }
+  .mark { font-family: Montserrat, Arial, sans-serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#3d0099 }
+  h1 { font-family: Montserrat, Arial, sans-serif; font-weight:700; font-size:22px; line-height:1.2; color:#20133d; margin:20px 0 8px }
+  p { font-size:15px; line-height:1.6; color:#2f3539; margin:0 }
 </style></head>
 <body><div class="card"><div class="mark">Gove Links</div>
 <h1>${title}</h1><p>${message}</p></div></body></html>`;

@@ -204,3 +204,12 @@
 @utility gove-gradient-bg {
   background: var(--gove-gradient);
 }
+
+/*
+ * Guia de tipografia Gove: Inter só em 400/500/600 (o 700 não é carregado).
+ * Negrito em texto Inter usa o SemiBold; títulos em Montserrat seguem em 700.
+ * Fora das camadas do Tailwind para valer sobre o utilitário .font-bold.
+ */
+.font-bold:not(:is(h1, h2, h3, .font-display, .font-display *, .gove-lp *)) {
+  font-weight: 600;
+}

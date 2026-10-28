@@ -22,9 +22,11 @@
   --muted-foreground: #5b6770; /* 5.8:1 no branco, 5.3:1 no #F4F4F4 */
   --accent: #ffc72c;
   --accent-foreground: #20133d;
-  --border: #e4e1ea;
-  --input: #d6d2de;
+  --border: #e3d8f3; /* tokens do Design System (secondary) */
+  --input: #e3d8f3;
   --ring: #3d0099;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
 }
 
 /* ---------- escuro ---------- */
@@ -45,7 +47,7 @@
   --muted-foreground: #f4f4f4; /* 11:1 no card e no muted */
   --accent: #351f65;
   --accent-foreground: #f4f4f4;
-  --destructive: #ff8a80;
+  --destructive: #fda29b;
   --destructive-foreground: #20133d;
   --border: rgb(255 255 255 / 12%);
   --input: rgb(255 255 255 / 20%);
@@ -59,7 +61,7 @@
   --gove-primary: #3d0099;
   --foreground: #2f3539;
   --background: #ffffff;
-  --border: #e4e1ea;
+  --border: #e3d8f3;
   --muted-foreground: #5b6770;
   color: #2f3539;
 }

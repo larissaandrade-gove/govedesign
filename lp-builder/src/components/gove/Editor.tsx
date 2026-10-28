@@ -391,7 +391,7 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
           {status ? (
             <span
               className={`hidden rounded-md px-2 py-1 text-xs font-bold min-[600px]:inline ${
-                published && !dirty ? "bg-[#E6F4EA] text-[#14532D]" : "bg-secondary text-foreground"
+                published && !dirty ? "bg-[#1E7A46]/12 text-[#1E7A46] dark:bg-[#75E0A7]/15 dark:text-[#75E0A7]" : "bg-secondary text-foreground"
               }`}
               title="Situação do modelo"
             >

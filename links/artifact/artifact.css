@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "../src/styles.css";
 @source "./";
 
@@ -27,13 +27,13 @@
   --accent-foreground: #20133d;
   /* Amarelo não tem contraste como texto sobre branco: usa o azul Gove. */
   --accent-ink: #16499f;
-  --destructive: #c0262d;
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --border: #e3e1ea;
-  --input: #e3e1ea;
+  --border: #e3d8f3; /* tokens do Design System (secondary) */
+  --input: #e3d8f3;
   --ring: #a278da;
   --overlay: rgb(32 19 61 / 0.45);
-  --notice: #fff8e1;
+  --notice: rgb(255 199 44 / 0.14); /* tinta do Amarelo */
   --notice-border: #ffc72c;
   --chart-1: #3d0099;
   --chart-2: #a278da;
@@ -43,37 +43,37 @@
   /* Ação principal (uma por tela): amarelo Gove com texto #20133D (11:1). */
   --cta: #ffc72c;
   --cta-foreground: #20133d;
-  --success: #16499f;
+  --success: #1e7a46;
 }
 
 :root.dark {
   color-scheme: dark;
   --background: #20133d;
   --foreground: #f4f4f4;
-  --card: #2a1a52;
+  --card: #2f3539;
   --card-foreground: #f4f4f4;
-  --popover: #2a1a52;
+  --popover: #2f3539;
   --popover-foreground: #f4f4f4;
   --primary: #ffc72c;
   --primary-foreground: #20133d;
   --primary-glow: #a278da;
-  --secondary: #3a2670;
+  --secondary: #351f65;
   --secondary-foreground: #f4f4f4;
-  --muted: #2a1a52;
-  --muted-foreground: #c9c2db;
+  --muted: #351f65;
+  --muted-foreground: #f4f4f4;
   --accent: #ffc72c;
   --accent-foreground: #20133d;
   --accent-ink: #ffc72c;
-  --destructive: #ff8a80;
+  --destructive: #fda29b;
   --destructive-foreground: #20133d;
-  --border: #4a3780;
-  --input: #4a3780;
+  --border: #351f65;
+  --input: #351f65;
   --ring: #a278da;
   --overlay: rgb(0 0 0 / 0.6);
   --notice: #351f65;
   --notice-border: #a278da;
   --shadow-elegant: 0 20px 50px -20px rgb(0 0 0 / 0.6);
-  --success: #5ac2cd;
+  --success: #75e0a7;
 }
 
 @theme inline {

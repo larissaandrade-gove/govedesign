@@ -26,12 +26,12 @@
     --muted-foreground: 207 6% 36%;   /* #5B6770 — 5,9:1 sobre branco */
     --accent: 44 100% 59%;            /* #FFC72C */
     --accent-foreground: 258 53% 16%; /* #20133D */
-    --destructive: 0 70% 42%;         /* #B62020 — 6,2:1 sobre branco */
+    --destructive: 4 76% 40%;         /* #B42318 (Design System) — 6,6:1 sobre branco */
     --destructive-foreground: 0 0% 100%;
     --warning: 35 100% 27%;           /* #8A5300 — 6,3:1 sobre branco */
-    --success: 145 78% 25%;           /* #0E7237 — 6,0:1 sobre branco */
-    --border: 210 9% 86%;
-    --input: 210 9% 80%;
+    --success: 146 61% 30%;           /* #1E7A46 (Design System) — 5,4:1 sobre branco */
+    --border: 264 53% 90%;            /* #E3D8F3 (Design System) */
+    --input: 264 53% 90%;
     --ring: 264 100% 30%;             /* #3D0099 */
     --radius: 0.5rem;
   }
@@ -47,16 +47,16 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 260 53% 26%;         /* #351F65 */
     --secondary-foreground: 0 0% 100%;
-    --muted: 258 40% 22%;
-    --muted-foreground: 266 40% 82%;
+    --muted: 259 53% 26%;             /* #351F65 */
+    --muted-foreground: 0 0% 96%;     /* #F4F4F4 */
     --accent: 44 100% 59%;            /* #FFC72C */
     --accent-foreground: 258 53% 16%;
-    --destructive: 354 100% 71%;
+    --destructive: 4 96% 80%;         /* #FDA29B (Design System) */
     --destructive-foreground: 258 53% 16%;
     --warning: 44 100% 59%;           /* #FFC72C */
-    --success: 152 76% 70%;           /* emerald-300 */
-    --border: 260 40% 30%;
-    --input: 260 40% 30%;
+    --success: 148 63% 67%;           /* #75E0A7 (Design System) */
+    --border: 259 53% 26%;            /* #351F65 */
+    --input: 259 53% 26%;
     --ring: 44 100% 59%;
   }
 }
@@ -75,4 +75,13 @@
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
+}
+
+/*
+ * Guia de tipografia Gove: Inter só em 400/500/600 (o 700 não é carregado).
+ * Negrito em texto Inter usa o SemiBold; títulos em Montserrat seguem em 700.
+ * Fora das camadas do Tailwind para valer sobre o utilitário .font-bold.
+ */
+.font-bold:not(:is(h1, h2, h3, .font-display, .font-display *)) {
+  font-weight: 600;
 }

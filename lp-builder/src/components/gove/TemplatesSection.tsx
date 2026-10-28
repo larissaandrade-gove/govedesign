@@ -85,13 +85,13 @@ export function StatusBadge({ template }: { template: StoredTemplate }) {
     <span className="flex flex-wrap items-center gap-1.5">
       <span
         className={`rounded-md px-2 py-0.5 text-xs font-bold ${
-          published ? "bg-[#E6F4EA] text-[#14532D]" : "bg-secondary text-foreground"
+          published ? "bg-[#1E7A46]/12 text-[#1E7A46] dark:bg-[#75E0A7]/15 dark:text-[#75E0A7]" : "bg-secondary text-foreground"
         }`}
       >
         {published ? "Publicado" : "Rascunho"}
       </span>
       {dirty ? (
-        <span className="rounded-md bg-[#FFF4D6] px-2 py-0.5 text-xs font-bold text-[#5C3B00]">
+        <span className="rounded-md bg-accent/25 px-2 py-0.5 text-xs font-bold text-[#20133D] dark:text-[#F4F4F4]">
           Alterações não publicadas
         </span>
       ) : null}

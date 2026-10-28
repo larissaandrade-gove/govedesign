@@ -23,8 +23,10 @@
   --muted-foreground: #5b6770; /* 5,7:1 sobre branco; 5,2:1 sobre #F4F4F4 */
   --accent: #ffc72c;
   --accent-foreground: #20133d;
-  --border: #e2e4e7;
-  --input: #d5d9dd;
+  --border: #e3d8f3; /* tokens do Design System (secondary) */
+  --input: #e3d8f3;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
   --ring: #3d0099;
   --chart-1: #3d0099;
   --chart-2: #ffc72c;
@@ -48,7 +50,7 @@
   --muted-foreground: #f4f4f4; /* 11:1 sobre #351F65 */
   --accent: #351f65;
   --accent-foreground: #ffc72c;
-  --destructive: #ff8a80;
+  --destructive: #fda29b;
   --destructive-foreground: #20133d;
   --border: rgb(255 255 255 / 14%);
   --input: rgb(255 255 255 / 20%);
@@ -58,7 +60,7 @@
   --chart-3: #5ac2cd;
   --chart-4: #f4f4f4;
   --chart-5: #16499f;
-  --sidebar: #2a1950;
+  --sidebar: #2f3539;
   --sidebar-foreground: #f4f4f4;
   --sidebar-primary: #ffc72c;
   --sidebar-primary-foreground: #20133d;
@@ -76,10 +78,10 @@ body {
 
 /* Avisos com cores fixas no código do app: versões legíveis no modo escuro. */
 .dark .text-amber-700 {
-  color: #ffd666;
+  color: #ffc72c;
 }
 .dark .text-emerald-700 {
-  color: #7ee2b8;
+  color: #75e0a7; /* success do Design System */
 }
 
 /* Toasts (sonner) seguem os tokens do tema. */

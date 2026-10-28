@@ -1,16 +1,16 @@
-export function GoveMark({ size = "sm" }: { size?: "sm" | "md" }) {
-  const box = size === "md" ? "size-8" : "size-6";
-  const dot = size === "md" ? "size-3" : "size-2";
-  const text = size === "md" ? "text-2xl" : "text-lg";
+import logoRoxo from "@/assets/logos/gove-logo-roxo.webp";
+import logoBrancoAmarelo from "@/assets/logos/gove-logo-branco-amarelo.webp";
 
+/**
+ * Logomarca oficial da Gove (brand/logos): roxa no tema claro, branca com
+ * amarelo no escuro — as versões com contraste ≥ 4,5:1 sobre cada fundo.
+ */
+export function GoveMark({ size = "sm" }: { size?: "sm" | "md" }) {
+  const h = size === "md" ? "h-8" : "h-6";
   return (
-    <div className="flex items-center gap-2">
-      <div className={`${box} rounded-sm bg-primary flex items-center justify-center`}>
-        <div className={`${dot} rounded-full bg-primary-foreground/25`} />
-      </div>
-      <span className={`${text} font-extrabold uppercase tracking-tighter text-primary`}>
-        Gove
-      </span>
-    </div>
+    <span className="inline-flex items-center" role="img" aria-label="Gove">
+      <img src={logoRoxo} alt="" className={`${h} w-auto dark:hidden`} />
+      <img src={logoBrancoAmarelo} alt="" className={`${h} hidden w-auto dark:block`} />
+    </span>
   );
 }

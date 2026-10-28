@@ -43,14 +43,14 @@ export function AccessGate({ children }: { children: ReactNode }) {
       <div className="flex max-w-[400px] flex-col items-center gap-space-3 text-center">
         <GoveLogo kind="logotipo" height={44} background="#20133D" />
         {state === 'checking' ? (
-          <p className="text-body text-[#E9E1F7]" role="status">
+          <p className="text-body text-[#F4F4F4]" role="status">
             Verificando acesso…
           </p>
         ) : (
           <>
             {state === 'guest' ? <ShieldWarning className="size-8 text-[#FFC72C]" aria-hidden /> : <SignIn className="size-8 text-[#FFC72C]" aria-hidden />}
             <h1 className="font-display text-h3">{state === 'guest' ? 'Acesso só para a equipe Gove' : 'Entre com sua conta Gove'}</h1>
-            <p className="text-body text-[#E9E1F7]">{state === 'guest' ? 'Peça acesso à área de design.' : 'Entre no claude.ai com seu e-mail @gove.digital e abra esta página de novo.'}</p>
+            <p className="text-body text-[#F4F4F4]">{state === 'guest' ? 'Peça acesso à área de design.' : 'Entre no claude.ai com seu e-mail @gove.digital e abra esta página de novo.'}</p>
           </>
         )}
       </div>
