@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CaretDown, ChatCircle, Check, Copy, MapPin, User } from '@phosphor-icons/react';
 import { ATTRIBUTES, BRAND_COLORS, QUESTIONS, TOPICS, colorByHex, type BrandColor } from '../data/colorCompass';
+import { FEATURES } from '../data/features';
+import { ColorTools } from './color-tools/ColorTools';
 
 const AXIS_ICON = { Pessoa: User, Situação: ChatCircle, Lugar: MapPin } as const;
-const STEPS = ['Contexto', 'Pauta', 'Tom'] as const;
+const STEPS = FEATURES.colorTools ? (['Contexto', 'Pauta', 'Tom', 'Ferramentas'] as const) : (['Contexto', 'Pauta', 'Tom'] as const);
+const TOOLS_STEP = 3;
 const MAX_WORDS = 3;
 
 /**
@@ -29,13 +32,9 @@ export function ColorCompass() {
   }, [step, topic, topicHexes, words]);
 
   /** Palavras que remetem às cores da pauta selecionada. */
-  const relatedWords = useMemo(
-    () => new Set(topic === null ? [] : ATTRIBUTES.flatMap((a, i) => (a.colors.some((h) => topicHexes.has(h)) ? [i] : []))),
-    [topic, topicHexes],
-  );
+  const relatedWords = useMemo(() => new Set(topic === null ? [] : ATTRIBUTES.flatMap((a, i) => (a.colors.some((h) => topicHexes.has(h)) ? [i] : []))), [topic, topicHexes]);
 
-  const toggleWord = (i: number) =>
-    setWords((ws) => (ws.includes(i) ? ws.filter((w) => w !== i) : [...ws, i].slice(-MAX_WORDS)));
+  const toggleWord = (i: number) => setWords((ws) => (ws.includes(i) ? ws.filter((w) => w !== i) : [...ws, i].slice(-MAX_WORDS)));
 
   const showBar = step !== 0 && topic !== null;
 
@@ -53,98 +52,96 @@ export function ColorCompass() {
               step === i ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
-            <span className="flex size-5 items-center justify-center rounded-full bg-secondary text-[11px] text-text-primary">{i + 1}</span>
+            <span className="hidden size-5 items-center justify-center rounded-full bg-secondary text-[11px] text-text-primary sm:flex">{i + 1}</span>
             {s}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-space-3 p-space-2 md:grid-cols-[minmax(0,240px)_minmax(0,1fr)] md:p-space-3">
-        {/* Círculo cromático com as cores da marca na posição da nova bússola */}
-        <div className="flex flex-col items-center gap-space-2 md:sticky md:top-space-2 md:self-start">
-          <Wheel highlighted={highlighted} />
-          {showBar && (
-            <div className="flex h-3 w-full max-w-[240px] overflow-hidden rounded-full ring-1 ring-secondary" aria-hidden>
-              {TOPICS[topic!].mix.map((m) => (
-                <span key={m.hex} style={{ width: `${m.share}%`, background: m.hex }} />
-              ))}
-            </div>
-          )}
+      {FEATURES.colorTools && step === TOOLS_STEP ? (
+        <div className="p-space-2 md:p-space-3">
+          <ColorTools />
         </div>
-
-        <div className="flex min-w-0 flex-col gap-space-2">
-          {step === 0 && <ContextTab />}
-
-          {step === 1 && (
-            <>
-              <div className="flex flex-wrap gap-space-1" role="group" aria-label="Pauta (clique de novo para limpar)">
-                {TOPICS.map((p, i) => (
-                  <button
-                    key={p.name}
-                    type="button"
-                    aria-pressed={topic === i}
-                    onClick={() => setTopic(topic === i ? null : i)}
-                    className={`min-h-11 rounded-full border px-space-2 text-caption font-medium transition-colors ${
-                      topic === i ? 'border-primary bg-primary text-on-primary' : 'border-secondary bg-background text-text-primary hover:border-primary'
-                    }`}
-                  >
-                    {p.name}
-                  </button>
+      ) : (
+        <div className="grid grid-cols-1 gap-space-3 p-space-2 md:grid-cols-[minmax(0,240px)_minmax(0,1fr)] md:p-space-3">
+          {/* Círculo cromático com as cores da marca na posição da nova bússola */}
+          <div className="flex flex-col items-center gap-space-2 md:sticky md:top-space-2 md:self-start">
+            <Wheel highlighted={highlighted} />
+            {showBar && (
+              <div className="flex h-3 w-full max-w-[240px] overflow-hidden rounded-full ring-1 ring-secondary" aria-hidden>
+                {TOPICS[topic!].mix.map((m) => (
+                  <span key={m.hex} style={{ width: `${m.share}%`, background: m.hex }} />
                 ))}
               </div>
-              {topic !== null ? <TopicResult index={topic} /> : <p className="text-caption text-text-secondary">Escolha uma pauta para ver a predominância de cores.</p>}
-            </>
-          )}
+            )}
+          </div>
 
-          {step === 2 && (
-            <>
-              <p className="text-caption text-text-secondary">
-                {topic !== null
-                  ? `Palavras em destaque remetem às cores de “${TOPICS[topic].name}”.`
-                  : `Escolha até ${MAX_WORDS} palavras para ver as cores na bússola.`}
-              </p>
-              <div className="grid grid-cols-3 gap-space-1" role="group" aria-label="Tom">
-                {ATTRIBUTES.map((a, i) => {
-                  const on = words.includes(i);
-                  const related = relatedWords.has(i);
-                  return (
+          <div className="flex min-w-0 flex-col gap-space-2">
+            {step === 0 && <ContextTab />}
+
+            {step === 1 && (
+              <>
+                <div className="flex flex-wrap gap-space-1" role="group" aria-label="Pauta (clique de novo para limpar)">
+                  {TOPICS.map((p, i) => (
                     <button
-                      key={a.name}
+                      key={p.name}
                       type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleWord(i)}
-                      className={`relative min-h-11 rounded-md border px-space-1 text-caption font-semibold transition-colors ${
-                        on
-                          ? 'border-primary bg-primary text-on-primary'
-                          : related
-                            ? 'border-accent bg-accent/25 text-text-primary'
-                            : 'border-secondary bg-background text-text-primary hover:border-primary'
+                      aria-pressed={topic === i}
+                      onClick={() => setTopic(topic === i ? null : i)}
+                      className={`min-h-11 rounded-full border px-space-2 text-caption font-medium transition-colors ${
+                        topic === i ? 'border-primary bg-primary text-on-primary' : 'border-secondary bg-background text-text-primary hover:border-primary'
                       }`}
                     >
-                      {a.name}
+                      {p.name}
                     </button>
-                  );
-                })}
-              </div>
-              {words.length > 0 && (
-                <ul className="flex flex-col gap-1 rounded-md border border-secondary bg-background p-space-2 text-caption">
-                  {words.map((i) => (
-                    <li key={i} className="flex flex-wrap items-center gap-space-1">
-                      <span className="font-semibold text-text-primary">{ATTRIBUTES[i].name}</span>
-                      {ATTRIBUTES[i].colors.map((h) => (
-                        <span key={h} className="inline-flex items-center gap-1 text-text-secondary">
-                          <span className="size-3 rounded-full border border-text-primary/25" style={{ background: h }} aria-hidden />
-                          {colorByHex(h).name}
-                        </span>
-                      ))}
-                    </li>
                   ))}
-                </ul>
-              )}
-            </>
-          )}
+                </div>
+                {topic !== null ? <TopicResult index={topic} /> : <p className="text-caption text-text-secondary">Escolha uma pauta para ver a predominância de cores.</p>}
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <p className="text-caption text-text-secondary">{topic !== null ? `Palavras em destaque remetem às cores de “${TOPICS[topic].name}”.` : `Escolha até ${MAX_WORDS} palavras para ver as cores na bússola.`}</p>
+                <div className="grid grid-cols-3 gap-space-1" role="group" aria-label="Tom">
+                  {ATTRIBUTES.map((a, i) => {
+                    const on = words.includes(i);
+                    const related = relatedWords.has(i);
+                    return (
+                      <button
+                        key={a.name}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleWord(i)}
+                        className={`relative min-h-11 rounded-md border px-space-1 text-caption font-semibold transition-colors ${
+                          on ? 'border-primary bg-primary text-on-primary' : related ? 'border-accent bg-accent/25 text-text-primary' : 'border-secondary bg-background text-text-primary hover:border-primary'
+                        }`}
+                      >
+                        {a.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {words.length > 0 && (
+                  <ul className="flex flex-col gap-1 rounded-md border border-secondary bg-background p-space-2 text-caption">
+                    {words.map((i) => (
+                      <li key={i} className="flex flex-wrap items-center gap-space-1">
+                        <span className="font-semibold text-text-primary">{ATTRIBUTES[i].name}</span>
+                        {ATTRIBUTES[i].colors.map((h) => (
+                          <span key={h} className="inline-flex items-center gap-1 text-text-secondary">
+                            <span className="size-3 rounded-full border border-text-primary/25" style={{ background: h }} aria-hidden />
+                            {colorByHex(h).name}
+                          </span>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
