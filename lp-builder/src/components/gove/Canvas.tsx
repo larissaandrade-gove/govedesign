@@ -1,13 +1,26 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useState, type CSSProperties } from "react";
 import { END_ANCHOR, sectionAnchor } from "@/lib/gove/anchors";
 import { getIcon } from "./icons";
-import { buttonReactStyle } from "@/lib/gove/buttonStyle";
+import { buttonDecls, buttonReactStyle } from "@/lib/gove/buttonStyle";
+import {
+  DEFAULT_LINE_HEIGHT,
+  blockBoxCss,
+  blockFill,
+  blockMargin,
+  fluidFontAt,
+  hiddenLabel,
+  hiddenOn,
+  highlightCss,
+  sidedBorder,
+  textExtrasCss,
+} from "@/lib/gove/blockStyle";
+import { parseRich } from "@/lib/gove/richText";
 import { imageFrameCss } from "@/lib/gove/imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "@/lib/gove/animations";
 import { cursorCss, followerCss, normalizeCursor } from "@/lib/gove/cursor";
 import { embedUrl } from "@/lib/gove/video";
 import { countdownMsLeft, countdownUnits, pad } from "@/lib/gove/countdown";
-import type { CountdownBlock } from "@/lib/gove/types";
+import type { CountdownBlock, TextBlock } from "@/lib/gove/types";
 import type { BoxProps, Leaf, PageContent, RowBlock, SectionBlock } from "@/lib/gove/types";
 import {
   BB_PROTECTION,
@@ -41,6 +54,11 @@ interface Look {
   bb: boolean;
   fonts: PageFonts;
   container?: BBContext;
+  /** Modo do canvas (tamanho responsivo e itens ocultos). */
+  device: Device;
+  sheet: Sheet;
+  /** Editor: itens ocultos no modo aparecem esmaecidos com aviso; miniatura: somem. */
+  showHidden: boolean;
 }
 
 /** CSS da caixa (o mesmo do export) como estilo React. */
@@ -57,6 +75,10 @@ function DecorLayers({ box }: { box: BoxProps }) {
   );
 }
 
+/** Aviso dos itens ocultos no modo atual (o export usa @media). */
+const HIDDEN_CSS = `.gove-lp [data-gove-hidden]{opacity:.45 !important;outline:2px dashed #5B6770;outline-offset:2px;}
+.gove-lp [data-gove-hidden]::after{content:attr(data-gove-hidden);display:block;margin-top:4px;font:600 11px/1.6 Montserrat,sans-serif;color:#5B6770;-webkit-text-fill-color:#5B6770;text-transform:none;letter-spacing:0;text-align:left;}`;
+
 interface CanvasProps {
   page: PageContent;
   selectedId: string | null;
@@ -66,6 +88,8 @@ interface CanvasProps {
   onMove?:
     | ((dragId: string, targetId: string, position: "before" | "after", kind: "leaf" | "row") => void)
     | undefined;
+  /** false (miniaturas): itens ocultos no modo somem em vez de aparecer esmaecidos. */
+  showHidden?: boolean;
 }
 
 const outline = (active: boolean): CSSProperties =>
@@ -81,8 +105,11 @@ const outline = (active: boolean): CSSProperties =>
       }
     : {};
 
-function LeafView(props: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "device">) {
+type LeafProps = { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "device" | "showHidden">;
+
+function LeafView(props: LeafProps) {
   const { leaf, look } = props;
+  if (!look.showHidden && hiddenOn(leaf.blockStyle?.hide, look.device)) return null;
   if (look.bb && look.container && needsProtection(leaf, look.container)) {
     // Caixa de proteção BB: texto sobre foto vai num bloco Azul escuro.
     return (
@@ -97,15 +124,37 @@ function LeafView(props: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" |
   return <LeafBody {...props} />;
 }
 
-function LeafBody({
-  leaf,
-  look,
-  selectedId,
-  onSelect,
-  onMove,
-}: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "device">) {
+/** Texto com **negrito**, ==destaque== e quebras de linha (nunca HTML). */
+function RichContent({ leaf, look }: { leaf: TextBlock; look: Look }) {
+  const heading = leaf.tag !== "p";
+  const bold = heading ? look.fonts.headingWeight(true) : look.fonts.bodyWeight(true);
+  const hl = reactStyle(highlightCss(leaf, look.bb)) as CSSProperties;
+  return (
+    <>
+      {parseRich(leaf.content).map((line, i) => (
+        <Fragment key={i}>
+          {i > 0 ? <br /> : null}
+          {line.map((span, j) => {
+            let node: React.ReactNode = span.text;
+            if (span.bold) node = <strong style={{ fontWeight: bold }}>{node}</strong>;
+            if (span.highlight)
+              node = (
+                <span className="gove-hl" style={hl}>
+                  {node}
+                </span>
+              );
+            return <Fragment key={j}>{node}</Fragment>;
+          })}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+function LeafBody({ leaf, look, selectedId, onSelect, onMove }: LeafProps) {
   const { fonts } = look;
   const selected = selectedId === leaf.id;
+  const hidden = hiddenOn(leaf.blockStyle?.hide, look.device) ? hiddenLabel(leaf.blockStyle?.hide) : null;
   const dnd = {
     draggable: true,
     onDragStart: (e: React.DragEvent) => {
@@ -128,63 +177,54 @@ function LeafBody({
       const after = e.clientY > rect.top + rect.height / 2;
       onMove?.(dragId, leaf.id, after ? "after" : "before", "leaf");
     },
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSelect(leaf.id);
+    },
+    className: look.sheet.classOf(leaf.id) || undefined,
+    ...(hidden ? { "data-gove-hidden": hidden } : {}),
   };
-  const common: CSSProperties = { ...outline(selected), cursor: "grab", marginBottom: 16 };
+  const edit: CSSProperties = { ...outline(selected), cursor: "grab" };
+  /** Invólucro (botão, imagem, vídeo, contagem, RD): alinhamento + aparência do bloco. */
+  const wrapper = (align: string | undefined): CSSProperties => ({
+    ...(reactStyle({ "text-align": align, margin: blockMargin(leaf), ...blockBoxCss(leaf, look.bb) }) as CSSProperties),
+    ...edit,
+  });
 
   if (leaf.type === "text") {
     const Tag = leaf.tag;
+    const heading = leaf.tag !== "p";
+    const style = reactStyle({
+      margin: blockMargin(leaf),
+      "font-family": heading ? fonts.heading : fonts.body,
+      "font-size": `${fluidFontAt(leaf, look.device)}px`,
+      "font-weight": String(heading ? fonts.headingWeight(leaf.weight === "bold") : fonts.bodyWeight(leaf.weight === "bold")),
+      "font-style": leaf.italic ? "italic" : "normal",
+      color: leaf.color,
+      "text-align": leaf.align,
+      "line-height": String(leaf.lineHeight ?? DEFAULT_LINE_HEIGHT),
+      ...textExtrasCss(leaf),
+      ...blockBoxCss(leaf, look.bb),
+    }) as CSSProperties;
     return (
-      <Tag
-        {...dnd}
-        onClick={(e: React.MouseEvent) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{
-          ...common,
-          fontFamily: leaf.tag === "p" ? fonts.body : fonts.heading,
-          fontSize: leaf.size,
-          fontWeight:
-            leaf.tag === "p"
-              ? fonts.bodyWeight(leaf.weight === "bold")
-              : fonts.headingWeight(leaf.weight === "bold"),
-          fontStyle: leaf.italic ? "italic" : "normal",
-          color: leaf.color,
-          textAlign: leaf.align,
-          lineHeight: 1.4,
-          margin: "0 0 16px",
-        }}
-      >
-        {leaf.content}
+      <Tag {...dnd} style={{ ...style, ...edit }}>
+        <RichContent leaf={leaf} look={look} />
       </Tag>
     );
   }
 
   if (leaf.type === "button") {
+    const Icon = leaf.icon ? getIcon(leaf.icon) : null;
+    const icon = Icon ? <Icon size="1.15em" aria-hidden /> : null;
     return (
-      <div
-        {...dnd}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{ ...common, textAlign: leaf.align }}
-      >
+      <div {...dnd} style={wrapper(leaf.align)}>
         <span
           className={btnAnimClass(leaf.animation)}
-          style={{
-            display: "inline-block",
-            borderRadius: leaf.radius,
-            fontFamily: fonts.body,
-            fontSize: leaf.size,
-            fontWeight: fonts.bodyWeight(leaf.weight === "bold"),
-            fontStyle: leaf.italic ? "italic" : "normal",
-            textDecoration: look.bb && leaf.variant === "text" ? "underline" : undefined,
-            color: leaf.color,
-            ...buttonReactStyle(leaf),
-          }}
+          style={reactStyle(buttonDecls(leaf, fonts, look.bb)) as CSSProperties}
         >
-          {leaf.label}
+          {icon && leaf.iconPos !== "right" ? icon : null}
+          {icon ? <span>{leaf.label}</span> : leaf.label}
+          {icon && leaf.iconPos === "right" ? icon : null}
         </span>
       </div>
     );
@@ -192,14 +232,7 @@ function LeafBody({
 
   if (leaf.type === "image") {
     return (
-      <div
-        {...dnd}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{ ...common, textAlign: leaf.align }}
-      >
+      <div {...dnd} style={wrapper(leaf.align)}>
         {leaf.src ? (
           <img
             src={leaf.src}
@@ -223,25 +256,23 @@ function LeafBody({
 
   if (leaf.type === "card") {
     const Icon = getIcon(leaf.icon);
+    const bs = leaf.blockStyle ?? {};
+    const card = reactStyle({
+      "background-color": blockFill(leaf.bgColor, bs.fillOpacity),
+      color: leaf.color,
+      ...(bs.borderSides || bs.borderStyle
+        ? sidedBorder(leaf.borderWidth, leaf.borderColor, bs.borderSides, bs.borderStyle)
+        : { border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined }),
+      "border-radius": `${leaf.radius}px`,
+      "box-shadow": shadowCss(leaf.shadow, look.bb),
+      padding: `${leaf.padding}px`,
+      "text-align": leaf.align,
+      "font-family": fonts.body,
+      margin: blockMargin(leaf),
+      ...blockBoxCss(leaf, look.bb),
+    }) as CSSProperties;
     return (
-      <div
-        {...dnd}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{
-          ...common,
-          backgroundColor: leaf.bgColor,
-          color: leaf.color,
-          borderRadius: leaf.radius,
-          border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined,
-          boxShadow: shadowCss(leaf.shadow, look.bb),
-          padding: leaf.padding,
-          textAlign: leaf.align,
-          fontFamily: fonts.body,
-        }}
-      >
+      <div {...dnd} style={{ ...card, ...edit }}>
         <Icon size={28} color={leaf.iconColor} aria-hidden />
         <h3 style={{ margin: "8px 0", fontFamily: fonts.heading, fontSize: leaf.size + 4, fontWeight: 700 }}>{leaf.title}</h3>
         <p style={{ margin: 0, fontSize: leaf.size, lineHeight: 1.5 }}>{leaf.description}</p>
@@ -252,14 +283,7 @@ function LeafBody({
   if (leaf.type === "video") {
     const src = embedUrl(leaf.url);
     return (
-      <div
-        {...dnd}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{ ...common, textAlign: leaf.align }}
-      >
+      <div {...dnd} style={wrapper(leaf.align)}>
         {src ? (
           <span
             style={{
@@ -289,28 +313,14 @@ function LeafBody({
 
   if (leaf.type === "countdown") {
     return (
-      <div
-        {...dnd}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(leaf.id);
-        }}
-        style={{ ...common, textAlign: leaf.align }}
-      >
+      <div {...dnd} style={wrapper(leaf.align)}>
         <CountdownView leaf={leaf} fonts={fonts} />
       </div>
     );
   }
 
   return (
-    <div
-      {...dnd}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(leaf.id);
-      }}
-      style={{ ...common }}
-    >
+    <div {...dnd} style={wrapper(undefined)}>
       <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 bg-white/90 px-6 text-center">
         <span className="text-sm font-bold text-slate-700">
           [ Formulário RD Station será inserido aqui ]
@@ -344,7 +354,7 @@ function CountdownView({ leaf, fonts }: { leaf: CountdownBlock; fonts: PageFonts
           key={unit.key}
           className={btnAnimClass(leaf.animation)}
           style={{
-            ...buttonReactStyle({ variant: leaf.variant ?? "filled", bgColor: leaf.bgColor }),
+            ...buttonReactStyle({ variant: leaf.variant ?? "filled", bgColor: leaf.bgColor, color: leaf.color }),
             color: leaf.color,
             borderRadius: leaf.radius,
             padding: "12px 18px",
@@ -382,7 +392,7 @@ function RowView({
   selectedId,
   onSelect,
   onMove,
-}: { row: RowBlock; section: SectionBlock; look: Look; sheet: Sheet } & Omit<CanvasProps, "page" | "device">) {
+}: { row: RowBlock; section: SectionBlock; look: Look; sheet: Sheet } & Omit<CanvasProps, "page" | "device" | "showHidden">) {
   const look: Look = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
   return (
     <div
@@ -456,11 +466,11 @@ function RowView({
   );
 }
 
-export function Canvas({ page, selectedId, onSelect, device, onMove }: CanvasProps) {
+export function Canvas({ page, selectedId, onSelect, device, onMove, showHidden = true }: CanvasProps) {
   const mobile = device !== "desktop";
   const sheet = pageSheet(page);
   const bb = isBB(page);
-  const look: Look = { bb, fonts: pageFonts(page.identity) };
+  const look: Look = { bb, fonts: pageFonts(page.identity), device, sheet, showHidden };
   const logo = bb && page.bbLogo?.src ? page.bbLogo : null;
   const logoBox = logo ? logoLayout(logo) : null;
   const cursor = normalizeCursor(page.cursor);
@@ -483,7 +493,7 @@ export function Canvas({ page, selectedId, onSelect, device, onMove }: CanvasPro
       }
       onMouseLeave={follower ? () => setPos(null) : undefined}
     >
-      <style>{`${sheet.toCanvas(device)}\n${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}${bb ? `\n${BB_FONT_FACE_CSS}` : ""}`}</style>
+      <style>{`${sheet.toCanvas(device)}\n${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}${showHidden ? `\n${HIDDEN_CSS}` : ""}${bb ? `\n${BB_FONT_FACE_CSS}` : ""}`}</style>
       {logo && logoBox ? (
         <header
           className="bb-logo"
@@ -514,10 +524,14 @@ export function Canvas({ page, selectedId, onSelect, device, onMove }: CanvasPro
           }}
         />
       ) : null}
-      {page.sections.map((section: SectionBlock) => (
+      {page.sections.map((section: SectionBlock) => {
+        const hidden = hiddenOn(section.hide, device);
+        if (hidden && !showHidden) return null;
+        return (
         <section
           key={section.id}
           id={sectionAnchor(section)}
+          {...(hidden ? { "data-gove-hidden": hiddenLabel(section.hide) ?? "" } : {})}
           className={[bgAnimClass(section.box.animation), sheet.classOf(section.id)].filter(Boolean).join(" ") || undefined}
           onClick={() => onSelect(section.id)}
           style={{
@@ -542,7 +556,8 @@ export function Canvas({ page, selectedId, onSelect, device, onMove }: CanvasPro
             ))}
           </div>
         </section>
-      ))}
+        );
+      })}
       <div id={END_ANCHOR} aria-hidden />
     </div>
   );

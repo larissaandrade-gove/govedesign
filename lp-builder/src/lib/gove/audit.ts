@@ -3,6 +3,8 @@ import { isLorem } from "./lorem";
 import { backgroundBehind } from "./tree";
 import type { PageContent } from "./types";
 import { resolveButtonLink } from "./anchors";
+import { highlightColors } from "./blockStyle";
+import { parseRich } from "./richText";
 
 export type AuditSeverity = "error" | "warning";
 
@@ -46,13 +48,15 @@ export function auditPage(page: PageContent): AuditIssue[] {
           }
 
           if (leaf.type === "text" || leaf.type === "button" || leaf.type === "card") {
-            if (leaf.size < MIN_FONT_SIZE) {
+            // Tamanho responsivo: vale o menor (celular).
+            const smallest = leaf.type === "text" && leaf.sizeMin ? Math.min(leaf.size, leaf.sizeMin) : leaf.size;
+            if (smallest < MIN_FONT_SIZE) {
               issues.push({
                 id: `size-${key}`,
                 nodeId: leaf.id,
                 severity: "error",
                 rule: "Tamanho de texto",
-                message: `Texto com ${leaf.size}px — o mínimo é ${MIN_FONT_SIZE}px.`,
+                message: `Texto com ${smallest}px${smallest !== leaf.size ? " no celular" : ""} — o mínimo é ${MIN_FONT_SIZE}px.`,
               });
             }
             const fgBg =
@@ -71,6 +75,36 @@ export function auditPage(page: PageContent): AuditIssue[] {
                 message: `Contraste de ${result.ratio.toFixed(2)}:1 — o mínimo exigido é 4.5:1.`,
               });
             }
+          }
+
+          // Destaque ==texto== (degradê): as duas cores precisam de contraste.
+          if (leaf.type === "text" && parseRich(leaf.content).some((line) => line.some((s) => s.highlight))) {
+            const { from, to } = highlightColors(leaf);
+            const worst = Math.min(
+              ...[from, to].map((c) => checkContrast(c, bg, leaf.size, leaf.weight === "bold").ratio ?? 21),
+            );
+            if (worst < 4.5)
+              issues.push({
+                id: `contrast-hl-${key}`,
+                nodeId: leaf.id,
+                severity: "error",
+                rule: "Contraste",
+                message: `Destaque em degradê com contraste de ${worst.toFixed(2)}:1 — o mínimo exigido é 4.5:1.`,
+              });
+          }
+
+          // Área de clique: botão P (10×20) fica abaixo de 44px de altura.
+          if (leaf.type === "button" && leaf.variant !== "text") {
+            const pad = leaf.btnSize === "sm" ? 10 : leaf.btnSize === "md" ? 14 : 16;
+            const height = Math.round(pad * 2 + leaf.size * 1.2);
+            if (height < 44)
+              issues.push({
+                id: `target-${key}`,
+                nodeId: leaf.id,
+                severity: "warning",
+                rule: "Área de clique",
+                message: `Botão "${leaf.label}" com cerca de ${height}px de altura — o recomendado é 44px ou mais (use o tamanho M ou G).`,
+              });
           }
 
           if (leaf.type === "text" && isLorem(leaf.content)) {

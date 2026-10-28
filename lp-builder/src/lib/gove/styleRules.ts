@@ -18,6 +18,7 @@
  * novas geram exatamente a folha de antes (só o ponto de quebra do tablet).
  */
 import { backgroundCss, normalizeBox, rgba } from "./background";
+import { leafRules, sectionRules, shadowCss } from "./blockStyle";
 import type {
   BoxProps,
   ContentWidth,
@@ -28,7 +29,6 @@ import type {
   RowBlock,
   RowMaxWidth,
   SectionBlock,
-  Shadow,
 } from "./types";
 
 /* ------------------------------------------------------------ pontos de quebra */
@@ -87,14 +87,7 @@ const num = (n: number) => String(Math.round(n * 1000) / 1000);
 
 /* ---------------------------------------------------------------------- caixa */
 
-/** Sombra; na identidade BB usa o Azul escuro da paleta (translúcido). */
-export function shadowCss(shadow: Shadow | undefined, bb = false): string | undefined {
-  const c = bb ? "51,51,189" : "11,32,39";
-  if (shadow === "sm") return `0 2px 8px rgba(${c},.08)`;
-  if (shadow === "md") return `0 8px 24px rgba(${c},.16)`;
-  if (shadow === "lg") return `0 24px 60px rgba(${c},.18)`;
-  return undefined;
-}
+export { shadowCss };
 
 export const hasDecor = (box: BoxProps) =>
   !!box.decor && (!!box.decor.grid || !!box.decor.glows?.length);
@@ -292,19 +285,30 @@ export function columnCss(row: RowBlock, index: number): Decls {
 
 /* ------------------------------------------------------------------- a folha */
 
-/** Onde a regra vale: sempre, no tablet (≤980, inclui o celular), no celular (≤640) ou sem "reduzir movimento". */
-export type RuleAt = "all" | "tablet" | "mobile" | "motion";
+/**
+ * Onde a regra vale: sempre, no tablet (≤980, inclui o celular), no celular
+ * (≤640), só no computador (≥981), só no tablet (641-980) ou sem "reduzir
+ * movimento".
+ */
+export type RuleAt = "all" | "tablet" | "mobile" | "desktop" | "tabletOnly" | "motion";
 
 interface Rule {
   sel: string;
   decls: Decls;
+  /** Só no HTML exportado (ex.: ocultar por dispositivo; o canvas esmaece). */
+  exportOnly?: boolean;
 }
 
 const MEDIA: Record<Exclude<RuleAt, "all">, string> = {
   tablet: `(max-width:${BREAKPOINTS.tablet}px)`,
   mobile: `(max-width:${BREAKPOINTS.mobile}px)`,
+  desktop: `(min-width:${BREAKPOINTS.tablet + 1}px)`,
+  tabletOnly: `(min-width:${BREAKPOINTS.mobile + 1}px) and (max-width:${BREAKPOINTS.tablet}px)`,
   motion: "(prefers-reduced-motion: no-preference)",
 };
+
+/** Ordem dos grupos no CSS (o celular vence o tablet; movimento por último). */
+const MEDIA_ORDER = ["tablet", "mobile", "desktop", "tabletOnly", "motion"] as const;
 
 const declString = (decls: Decls) =>
   Object.entries(decls)
@@ -319,7 +323,14 @@ const safeId = (id: string) => id.replace(/[^A-Za-z0-9_-]/g, "_");
  * (ex.: ".g-abc>.gove-col", ".g-abc:hover", "section").
  */
 export class Sheet {
-  private groups: Record<RuleAt, Rule[]> = { all: [], tablet: [], mobile: [], motion: [] };
+  private groups: Record<RuleAt, Rule[]> = {
+    all: [],
+    tablet: [],
+    mobile: [],
+    desktop: [],
+    tabletOnly: [],
+    motion: [],
+  };
   private frames = new Map<string, string>();
   private sharedKeys = new Set<string>();
   private classed = new Set<string>();
@@ -335,8 +346,8 @@ export class Sheet {
     return this.classed.has(id) ? `g-${safeId(id)}` : "";
   }
 
-  add(sel: string, decls: Decls, at: RuleAt = "all"): this {
-    if (declString(decls)) this.groups[at].push({ sel, decls });
+  add(sel: string, decls: Decls, at: RuleAt = "all", opts: { exportOnly?: boolean } = {}): this {
+    if (declString(decls)) this.groups[at].push({ sel, decls, ...(opts.exportOnly ? { exportOnly: true } : {}) });
     return this;
   }
 
@@ -353,18 +364,20 @@ export class Sheet {
     return this;
   }
 
-  private lines(at: RuleAt, prefix: string, indent: string) {
-    return this.groups[at].map((r) => `${indent}${prefix} ${r.sel}{${declString(r.decls)}}`);
+  private lines(at: RuleAt, prefix: string, indent: string, canvas = false) {
+    return this.groups[at]
+      .filter((r) => !(canvas && r.exportOnly))
+      .map((r) => `${indent}${prefix} ${r.sel}{${declString(r.decls)}}`);
   }
 
   private framesCss() {
     return [...this.frames].map(([name, body]) => `@keyframes ${name}{${body}}`);
   }
 
-  /** CSS do export: regras gerais, depois @media do tablet, do celular e de movimento. */
+  /** CSS do export: regras gerais, depois @media do tablet, do celular, por faixa e de movimento. */
   toExport(scope = ".gove-lp"): string {
     const out = this.lines("all", scope, "");
-    for (const at of ["tablet", "mobile", "motion"] as const) {
+    for (const at of MEDIA_ORDER) {
       if (!this.groups[at].length) continue;
       out.push(`@media ${MEDIA[at]}{\n${this.lines(at, scope, "  ").join("\n")}\n}`);
     }
@@ -375,15 +388,17 @@ export class Sheet {
    * CSS do canvas: as regras do tablet/celular entram (sem @media) conforme o
    * modo, com escopo `.gove-lp[data-device="…"]` para não vazar para outros
    * canvas da tela (miniaturas). A ordem e a especificidade relativa são as
-   * mesmas do export.
+   * mesmas do export. Regras só do export (ocultar por dispositivo) ficam de fora.
    */
   toCanvas(device: Device): string {
     const scope = `.gove-lp[data-device="${device}"]`;
-    const out = this.lines("all", scope, "");
-    if (device !== "desktop") out.push(...this.lines("tablet", scope, ""));
-    if (device === "mobile") out.push(...this.lines("mobile", scope, ""));
-    if (this.groups.motion.length)
-      out.push(`@media ${MEDIA.motion}{\n${this.lines("motion", scope, "  ").join("\n")}\n}`);
+    const out = this.lines("all", scope, "", true);
+    if (device !== "desktop") out.push(...this.lines("tablet", scope, "", true));
+    if (device === "mobile") out.push(...this.lines("mobile", scope, "", true));
+    if (device === "desktop") out.push(...this.lines("desktop", scope, "", true));
+    if (device === "tablet") out.push(...this.lines("tabletOnly", scope, "", true));
+    const motion = this.lines("motion", scope, "  ", true);
+    if (motion.length) out.push(`@media ${MEDIA.motion}{\n${motion.join("\n")}\n}`);
     return [...out, ...this.framesCss()].join("\n");
   }
 }
@@ -479,13 +494,16 @@ export function pageSheet(page: PageContent): Sheet {
   const scroll = offset === "auto" ? stickyHeaderHeight(page) : offset;
   if (scroll > 0) sheet.add("section", { "scroll-margin-top": `${scroll}px` });
 
+  const bb = page.identity === "bb";
   for (const section of page.sections) {
+    sectionRules(sheet, section);
     if (hasDecor(section.box))
       sheet.shared("decor", ".gove-decor~*", { position: "relative", "z-index": "1" });
     for (const row of section.children) {
       if (hasDecor(row.box))
         sheet.shared("decor", ".gove-decor~*", { position: "relative", "z-index": "1" });
       rowRules(sheet, row);
+      for (const col of row.columns) for (const leaf of col.children) leafRules(sheet, leaf, bb);
     }
   }
   return sheet;

@@ -25,6 +25,8 @@ function page(rowOver = {}, boxOver = {}, extra = {}) {
   row.columns[0].children = [f.makeText({ tag: "h1", content: "Hero" })];
   row.columns[1].children = [f.makeText({ content: "Card" })];
   const section = f.makeSection({ box: f.defaultBox(boxOver), children: [row] });
+  // Seções novas ganham o espaçamento "auto" no celular (etapa 2); aqui, só o layout.
+  if (!("paddingYMobile" in boxOver)) delete section.box.paddingYMobile;
   return { page: { version: 1, sections: [section], ...extra }, row, section };
 }
 

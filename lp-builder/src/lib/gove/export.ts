@@ -1,8 +1,20 @@
-import { buttonCss } from "./buttonStyle";
+import { buttonCss, buttonDecls } from "./buttonStyle";
 import { imageFrameCss } from "./imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "./animations";
 import { embedUrl } from "./video";
-import type { BoxProps, ImageCredit, Leaf, PageContent, RowBlock, SectionBlock } from "./types";
+import type { BoxProps, ImageCredit, Leaf, PageContent, RowBlock, SectionBlock, TextBlock } from "./types";
+import {
+  DEFAULT_LINE_HEIGHT,
+  blockBoxCss,
+  blockFill,
+  blockMargin,
+  fluidFont,
+  hasBlockStyle,
+  highlightCss,
+  sidedBorder,
+  textExtrasCss,
+} from "./blockStyle";
+import { parseRich } from "./richText";
 import { cursorCss, followerCss, followerScript } from "./cursor";
 import {
   BB_PALETTE,
@@ -60,9 +72,44 @@ const PROTECTION_STYLE = `background-color:${BB_PROTECTION.bg};padding:12px 16px
 
 function leafHtml(leaf: Leaf, ctx: RenderCtx): string {
   const html = leafInner(leaf, ctx);
-  if (ctx.bb && ctx.container && html && needsProtection(leaf, ctx.container))
-    return `<div class="bb-protecao" style="${PROTECTION_STYLE}">${html.replace(/margin:0 0 16px/, "margin:0")}</div>`;
+  if (ctx.bb && ctx.container && html && needsProtection(leaf, ctx.container)) {
+    // A caixa de proteção assume a margem e a classe do bloco (hover, ocultar).
+    const margin = blockMargin(leaf);
+    const own = ctx.sheet.classOf(leaf.id);
+    const inner = html.replace(`margin:${margin}`, "margin:0").replace(own ? ` class="${own}"` : /$^/, "");
+    const style = PROTECTION_STYLE.replace("margin:0 0 16px", `margin:${margin}`);
+    return `<div class="bb-protecao${own ? ` ${own}` : ""}" style="${style}">${inner}</div>`;
+  }
   return html;
+}
+
+/** Atributo class do elemento externo do bloco (classes extras + a da folha). */
+function classAttr(ctx: RenderCtx, id: string, ...extra: string[]) {
+  const cls = [...extra, ctx.sheet.classOf(id)].filter(Boolean).join(" ");
+  return cls ? ` class="${cls}"` : "";
+}
+
+/** Estilo do invólucro (botão, imagem, vídeo, contagem): alinhamento + aparência do bloco. */
+function wrapperStyle(leaf: Leaf, align: string | undefined, bb: boolean) {
+  return styleString({ "text-align": align, margin: blockMargin(leaf), ...blockBoxCss(leaf, bb) });
+}
+
+/** Conteúdo do texto: escapado, com **negrito**, ==destaque== e quebras de linha. */
+function richHtml(leaf: TextBlock, ctx: RenderCtx, heading: boolean): string {
+  const bold = String(heading ? ctx.fonts.headingWeight(true) : ctx.fonts.bodyWeight(true));
+  const hl = styleString(highlightCss(leaf, ctx.bb));
+  return parseRich(leaf.content)
+    .map((line) =>
+      line
+        .map((span) => {
+          let out = esc(span.text);
+          if (span.bold) out = `<strong style="font-weight:${bold};">${out}</strong>`;
+          if (span.highlight) out = `<span class="gove-hl" style="${esc(hl)}">${out}</span>`;
+          return out;
+        })
+        .join(""),
+    )
+    .join("<br>");
 }
 
 function leafInner(leaf: Leaf, ctx: RenderCtx): string {
@@ -71,43 +118,34 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
     case "text": {
       const heading = leaf.tag !== "p";
       const style = styleString({
-        margin: "0 0 16px",
+        margin: blockMargin(leaf),
         "font-family": heading ? fonts.heading : fonts.body,
-        "font-size": `${leaf.size}px`,
+        "font-size": fluidFont(leaf),
         "font-weight": String(heading ? fonts.headingWeight(leaf.weight === "bold") : fonts.bodyWeight(leaf.weight === "bold")),
         "font-style": leaf.italic ? "italic" : undefined,
         color: leaf.color,
         "text-align": leaf.align,
-        "line-height": "1.4",
+        "line-height": String(leaf.lineHeight ?? DEFAULT_LINE_HEIGHT),
+        ...textExtrasCss(leaf),
+        ...blockBoxCss(leaf, ctx.bb),
       });
-      return `<${leaf.tag} style="${style}">${esc(leaf.content)}</${leaf.tag}>`;
+      return `<${leaf.tag}${classAttr(ctx, leaf.id)} style="${style}">${richHtml(leaf, ctx, heading)}</${leaf.tag}>`;
     }
     case "button": {
-      const base: Record<string, string | undefined> = {
-        display: "inline-block",
-        "font-family": fonts.body,
-        "font-size": `${leaf.size}px`,
-        "font-weight": String(fonts.bodyWeight(leaf.weight === "bold")),
-        "font-style": leaf.italic ? "italic" : undefined,
-        // Link de texto na identidade BB: sublinhado (não depende só da cor).
-        "text-decoration": ctx.bb && leaf.variant === "text" ? "underline" : "none",
-        "border-radius": `${leaf.radius}px`,
-        color: leaf.color,
-        ...buttonCss(leaf),
-      };
-      if (base["backdrop-filter"]) base["-webkit-backdrop-filter"] = base["backdrop-filter"];
-      const wrapper = styleString({ "text-align": leaf.align, margin: "0 0 16px" });
+      const icon = leaf.icon ? iconSvg(leaf.icon, "currentColor", "1.15em") : "";
+      const base = buttonDecls(leaf, fonts, ctx.bb);
       // Link visitado em Roxo escuro só onde o par é aprovado (fundos claros).
       const visited =
         ctx.bb && leaf.variant === "text" && ctx.container && allowedText(ctx.container).includes(BB_PALETTE.roxoEscuro)
           ? "bb-link"
           : "";
       const cls = [btnAnimClass(leaf.animation), visited].filter(Boolean).join(" ");
-      return `<div style="${wrapper}"><a href="${esc(resolveButtonLink(ctx.page, leaf).href)}"${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${esc(leaf.label)}</a></div>`;
+      const label = esc(leaf.label);
+      const inner = !icon ? label : leaf.iconPos === "right" ? `<span>${label}</span>${icon}` : `${icon}<span>${label}</span>`;
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><a href="${esc(resolveButtonLink(ctx.page, leaf).href)}"${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${inner}</a></div>`;
     }
     case "image": {
       if (!leaf.src) return "";
-      const wrapper = styleString({ "text-align": leaf.align, margin: "0 0 16px" });
       const frame = imageFrameCss(leaf);
       const img = styleString({
         "max-width": "100%",
@@ -119,31 +157,36 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
       });
       const credit = leaf.credit ? creditHtml(leaf.credit, false, ctx.bb) : "";
       const data = leaf.credit ? ` data-pexels-id="${leaf.credit.id}"` : "";
-      return `<div style="${wrapper}"><img src="${esc(leaf.src)}" alt="${esc(leaf.alt)}"${data} style="${img}" />${credit}</div>`;
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><img src="${esc(leaf.src)}" alt="${esc(leaf.alt)}"${data} style="${img}" />${credit}</div>`;
     }
     case "card": {
+      const bs = leaf.blockStyle ?? {};
       const card = styleString({
-        "background-color": leaf.bgColor,
+        "background-color": blockFill(leaf.bgColor, bs.fillOpacity),
         color: leaf.color,
-        border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined,
+        ...(bs.borderSides || bs.borderStyle
+          ? sidedBorder(leaf.borderWidth, leaf.borderColor, bs.borderSides, bs.borderStyle)
+          : { border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined }),
         "border-radius": `${leaf.radius}px`,
         "box-shadow": shadowCss(leaf.shadow, ctx.bb),
         padding: `${leaf.padding}px`,
         "text-align": leaf.align,
         "font-family": fonts.body,
-        margin: "0 0 16px",
+        margin: blockMargin(leaf),
+        ...blockBoxCss(leaf, ctx.bb),
       });
       const icon = `<div style="${styleString({ color: leaf.iconColor, "font-size": "24px", "margin-bottom": "8px" })}">${iconSvg(leaf.icon, leaf.iconColor)}</div>`;
       const h3 = ctx.bb ? `font-family:${fonts.heading};` : "";
-      return `<div style="${card}">${icon}<h3 style="margin:0 0 8px;${h3}font-size:${leaf.size + 4}px;font-weight:700;">${esc(leaf.title)}</h3><p style="margin:0;font-size:${leaf.size}px;line-height:1.5;">${esc(leaf.description)}</p></div>`;
+      return `<div${classAttr(ctx, leaf.id)} style="${card}">${icon}<h3 style="margin:0 0 8px;${h3}font-size:${leaf.size + 4}px;font-weight:700;">${esc(leaf.title)}</h3><p style="margin:0;font-size:${leaf.size}px;line-height:1.5;">${esc(leaf.description)}</p></div>`;
     }
-    case "rdform":
+    case "rdform": {
       // Snippet do RD Station preservado exatamente como colado pelo usuário.
-      return leaf.snippet;
+      if (!hasBlockStyle(leaf)) return leaf.snippet;
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, undefined, ctx.bb)}">${leaf.snippet}</div>`;
+    }
     case "video": {
       const src = embedUrl(leaf.url);
       if (!src) return "";
-      const wrapper = styleString({ "text-align": leaf.align, margin: "0 0 16px" });
       const frame = styleString({
         display: "inline-block",
         width: `${leaf.width}%`,
@@ -152,11 +195,10 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
         "border-radius": `${leaf.radius}px`,
         overflow: "hidden",
       });
-      return `<div style="${wrapper}"><span style="${frame}"><iframe src="${esc(src)}" title="${esc(leaf.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0;display:block;"></iframe></span></div>`;
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><span style="${frame}"><iframe src="${esc(src)}" title="${esc(leaf.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0;display:block;"></iframe></span></div>`;
     }
     case "countdown": {
-      const wrapper = styleString({ "text-align": leaf.align, margin: "0 0 16px" });
-      const variantCss = buttonCss({ variant: leaf.variant ?? "filled", bgColor: leaf.bgColor });
+      const variantCss = buttonCss({ variant: leaf.variant ?? "filled", bgColor: leaf.bgColor, color: leaf.color });
       if (variantCss["backdrop-filter"]) variantCss["-webkit-backdrop-filter"] = variantCss["backdrop-filter"];
       const boxStyleStr = styleString({
         ...variantCss,
@@ -167,7 +209,7 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
         "min-width": `${leaf.size * 2}px`,
         "text-align": "center",
       });
-      return `<div style="${wrapper}"><div class="gove-countdown" data-target="${esc(leaf.target)}" data-mode="${leaf.mode}" data-expired="${esc(leaf.expiredText)}" data-unit-style="${esc(boxStyleStr)}" data-unit-class="${esc(btnAnimClass(leaf.animation))}" data-num-size="${leaf.size}" data-label-color="${esc(leaf.accentColor)}" data-color="${esc(leaf.color)}"${ctx.bb ? ` data-num-font="${esc(fonts.heading)}"` : ""} style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:${ctx.bb ? fonts.body : "Montserrat,Arial,sans-serif"};"></div></div>`;
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><div class="gove-countdown" data-target="${esc(leaf.target)}" data-mode="${leaf.mode}" data-expired="${esc(leaf.expiredText)}" data-unit-style="${esc(boxStyleStr)}" data-unit-class="${esc(btnAnimClass(leaf.animation))}" data-num-size="${leaf.size}" data-label-color="${esc(leaf.accentColor)}" data-color="${esc(leaf.color)}"${ctx.bb ? ` data-num-font="${esc(fonts.heading)}"` : ""} style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:${ctx.bb ? fonts.body : "Montserrat,Arial,sans-serif"};"></div></div>`;
     }
     default:
       return "";
@@ -179,10 +221,10 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
  * peso regular, gerados de lib/gove/iconCatalog.ts por `npm run icons`. Chave
  * desconhecida cai no "Check", como no editor.
  */
-function iconSvg(name: string, color: string) {
+export function iconSvg(name: string, color: string, size = "28") {
   const paths = (Object.hasOwn(ICON_PATHS, name) ? ICON_PATHS[name] : undefined) ?? ICON_PATHS["Check"]!;
   const d = paths.map((p) => `<path d="${p}"></path>`).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}" fill="${esc(color)}" aria-hidden="true">${d}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}" fill="${esc(color)}" aria-hidden="true">${d}</svg>`;
 }
 
 function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string {

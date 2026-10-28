@@ -68,6 +68,8 @@ export const makeButton = (over: Partial<ButtonBlock> = {}): ButtonBlock => ({
   size: 16,
   align: "left",
   animation: "none",
+  // Botões novos: levantar com sombra e afundar ao clicar (os antigos ficam como estavam).
+  blockStyle: { hover: "liftShadow", press: true, transition: 0.18 },
   ...over,
 });
 
@@ -150,13 +152,12 @@ export const makeRow = (cols = 1, over: Partial<RowBlock> = {}): RowBlock => ({
   ...over,
 });
 
-export const makeSection = (over: Partial<SectionBlock> = {}): SectionBlock => ({
-  id: uid(),
-  type: "section",
-  box: defaultBox(),
-  children: [],
-  ...over,
-});
+/** Seções novas: no celular, 72% do espaçamento vertical do computador ("auto"). */
+export const makeSection = (over: Partial<SectionBlock> = {}): SectionBlock => {
+  const section: SectionBlock = { id: uid(), type: "section", box: defaultBox(), children: [], ...over };
+  if (section.box.paddingYMobile === undefined) section.box = { ...section.box, paddingYMobile: "auto" };
+  return section;
+};
 
 export const emptyPage = (): PageContent => ({
   version: 1,

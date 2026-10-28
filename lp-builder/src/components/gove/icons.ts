@@ -14,6 +14,7 @@ import {
   Trophy, Users, VideoCamera, Wallet,
   CalendarCheck, Car, Certificate, CursorClick, HouseLine, Heartbeat, IdentificationCard, Megaphone,
   QrCode, Receipt, Recycle, SealCheck, UserCheck, WhatsappLogo,
+  ArrowRight, ArrowDown, ArrowUpRight, CaretRight, Play,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { ICON_CATALOG, type IconKey } from "@/lib/gove/iconCatalog";
@@ -101,6 +102,11 @@ const COMPONENTS: Record<IconKey, PhosphorIcon> = {
   Identidade: IdentificationCard,
   UsuarioVerificado: UserCheck,
   Clique: CursorClick,
+  ArrowRight: ArrowRight,
+  ArrowDown: ArrowDown,
+  ArrowUpRight: ArrowUpRight,
+  CaretRight: CaretRight,
+  Play: Play,
 };
 
 export interface IconMeta {

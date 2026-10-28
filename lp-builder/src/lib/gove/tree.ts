@@ -137,6 +137,9 @@ export function backgroundBehind(page: PageContent, id: string): string {
         for (const leaf of col.children) {
           if (leaf.id !== id) continue;
           if (leaf.type === "card") return leaf.bgColor;
+          // Fundo próprio opaco da aparência do bloco.
+          const own = leaf.blockStyle;
+          if (own?.bgColor && own.bgColor !== "transparent" && (own.fillOpacity ?? 100) >= 100) return own.bgColor;
           if (row.box.bgColor && row.box.bgColor !== "transparent") return row.box.bgColor;
           return section.box.bgColor;
         }

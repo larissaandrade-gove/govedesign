@@ -6,7 +6,15 @@ export const BUTTON_VARIANTS: { value: ButtonBlock["variant"]; label: string }[]
   { value: "outline", label: "Transparente com contorno" },
   { value: "glass", label: "Glass morphism" },
   { value: "text", label: "Texto" },
+  { value: "ghost", label: "Fantasma (borda translúcida)" },
 ];
+
+/** Preenchimento por tamanho: P (10×20), M (14×26), G (16×32, o de antes). */
+const SIZE_PADDING: Record<NonNullable<ButtonBlock["btnSize"]>, string> = {
+  sm: "10px 20px",
+  md: "14px 26px",
+  lg: "16px 32px",
+};
 
 export function hexToRgba(hex: string, alpha: number): string {
   const h = (hex || "#000000").replace("#", "");
@@ -22,12 +30,16 @@ export function hexToRgba(hex: string, alpha: number): string {
 export interface ButtonStyleInput {
   variant: ButtonBlock["variant"];
   bgColor: string;
+  /** Tamanho (ausente = "lg", 16×32). */
+  btnSize?: ButtonBlock["btnSize"] | undefined;
+  /** Cor do texto (a borda do "fantasma" usa essa cor, translúcida). */
+  color?: string | undefined;
 }
 
 /** CSS declarations (kebab-case) for a button block, shared by canvas and export. */
 export function buttonCss(leaf: ButtonStyleInput): Record<string, string | undefined> {
   const css: Record<string, string | undefined> = {
-    padding: leaf.variant === "text" ? "8px 0" : "16px 32px",
+    padding: leaf.variant === "text" ? "8px 0" : SIZE_PADDING[leaf.btnSize ?? "lg"] ?? SIZE_PADDING.lg,
   };
   switch (leaf.variant) {
     case "filled":
@@ -47,9 +59,45 @@ export function buttonCss(leaf: ButtonStyleInput): Record<string, string | undef
       css["backdrop-filter"] = "blur(12px) saturate(140%)";
       css["box-shadow"] = `0 8px 24px ${hexToRgba(leaf.bgColor, 0.22)}`;
       break;
+    case "ghost":
+      css["background-color"] = "transparent";
+      css["border"] = `2px solid ${hexToRgba(leaf.color || "#FFFFFF", 0.35)}`;
+      break;
     default:
       break;
   }
+  return css;
+}
+
+/**
+ * CSS completo do botão (o elemento `<a>` no export, o `<span>` no canvas).
+ * Sem opções novas = o CSS de antes, na mesma ordem.
+ */
+export function buttonDecls(
+  leaf: ButtonBlock,
+  fonts: { body: string; bodyWeight: (bold: boolean) => number },
+  bb = false,
+): Record<string, string | undefined> {
+  const full = leaf.fullWidth === "always";
+  const icon = !!leaf.icon;
+  const css: Record<string, string | undefined> = {
+    display: full ? "flex" : icon ? "inline-flex" : "inline-block",
+    "font-family": fonts.body,
+    "font-size": `${leaf.size}px`,
+    "font-weight": String(fonts.bodyWeight(leaf.weight === "bold")),
+    "font-style": leaf.italic ? "italic" : undefined,
+    // Link de texto na identidade BB: sublinhado (não depende só da cor).
+    "text-decoration": bb && leaf.variant === "text" ? "underline" : "none",
+    "border-radius": `${leaf.radius}px`,
+    color: leaf.color,
+    ...buttonCss(leaf),
+    "align-items": icon ? "center" : undefined,
+    gap: icon ? "8px" : undefined,
+    "justify-content": full ? "center" : undefined,
+    width: full ? "100%" : undefined,
+    "white-space": leaf.nowrap ? "nowrap" : undefined,
+  };
+  if (css["backdrop-filter"]) css["-webkit-backdrop-filter"] = css["backdrop-filter"];
   return css;
 }
 

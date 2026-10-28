@@ -103,6 +103,13 @@ export const ICON_CATALOG = {
     categoria: "atendimento",
   },
   Clique: { phosphor: "cursor-click", label: "Clique", categoria: "ações" },
+
+  // Setas e ações dos botões
+  ArrowRight: { phosphor: "arrow-right", label: "Seta para a direita", categoria: "setas" },
+  ArrowDown: { phosphor: "arrow-down", label: "Seta para baixo", categoria: "setas" },
+  ArrowUpRight: { phosphor: "arrow-up-right", label: "Seta diagonal (link)", categoria: "setas" },
+  CaretRight: { phosphor: "caret-right", label: "Avançar", categoria: "setas" },
+  Play: { phosphor: "play", label: "Reproduzir", categoria: "mídia" },
 } as const satisfies Record<string, { phosphor: string; label: string; categoria: string }>;
 
 export type IconKey = keyof typeof ICON_CATALOG;

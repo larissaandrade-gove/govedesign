@@ -31,10 +31,13 @@ import {
   type BBScheme,
 } from "../../../../brand/bb.js";
 import { normalizeBox } from "./background";
+import { HIGHLIGHT_DEFAULT } from "./blockStyle";
+import { parseRich, plainText } from "./richText";
 import { CURSOR_PRESETS } from "./cursor";
 import type { AuditIssue } from "./audit";
 import type {
   BBLogo,
+  BlockStyle,
   BoxProps,
   ButtonBlock,
   CountdownBlock,
@@ -43,6 +46,7 @@ import type {
   PageContent,
   RowBlock,
   SectionBlock,
+  TextBlock,
 } from "./types";
 
 export {
@@ -265,17 +269,33 @@ const solidBg = (ctx: BBContext) => (ctx.solid && !ctx.protected ? ctx.samples[0
 const isFilled = (variant: ButtonBlock["variant"] | undefined) =>
   !variant || variant === "filled" || variant === "elevated";
 
+/** Fundo próprio (blockStyle) do bloco sobre o contêiner: amostras, ou null. */
+function ownFill(leaf: Leaf, container: BBContext): string[] | null {
+  const bs = leaf.blockStyle;
+  const c = hex6(bs?.bgColor);
+  if (!c || leaf.type === "card") return null;
+  const op = bs?.fillOpacity ?? 100;
+  return op < 100 ? uniq(container.samples.map((u) => mix(c, u, Math.max(0, op) / 100))) : [c];
+}
+
 /** Contexto do texto de um bloco dentro de um contêiner (seção/linha). */
 export function leafTextContext(leaf: Leaf, container: BBContext): BBContext {
-  if (leaf.type === "card") return textContext([hex6(leaf.bgColor) ?? WHITE]);
+  if (leaf.type === "card") {
+    const bg = hex6(leaf.bgColor) ?? WHITE;
+    const op = leaf.blockStyle?.fillOpacity ?? 100;
+    return textContext(op < 100 ? uniq(container.samples.map((u) => mix(bg, u, Math.max(0, op) / 100))) : [bg]);
+  }
   if ((leaf.type === "button" || leaf.type === "countdown") && isFilled(leaf.variant))
     return textContext([hex6(leaf.bgColor) ?? WHITE]);
-  return container;
+  const own = ownFill(leaf, container);
+  return own ? textContext(own) : container;
 }
 
 /** O bloco ganha a caixa de proteção (texto solto sobre foto)? */
 export function needsProtection(leaf: Leaf, container: BBContext): boolean {
   if (!container.protected) return false;
+  // Fundo próprio opaco (aparência do bloco): o texto já tem contraste garantido.
+  if (hex6(leaf.blockStyle?.bgColor) && (leaf.blockStyle?.fillOpacity ?? 100) >= 100) return false;
   if (leaf.type === "text") return true;
   if (leaf.type === "button" || leaf.type === "countdown") return !isFilled(leaf.variant);
   return false;
@@ -407,16 +427,40 @@ function graphicOn(current: string, bg: string, prefs: string[]): string {
   return prefs.find((p) => ok.includes(p)) ?? ok[0] ?? P.azulEscuro;
 }
 
-function harmonizeLeaf(leaf: Leaf, container: BBContext): Leaf {
+/** Cores da aparência do bloco só da paleta. */
+function harmonizeBlockStyle(bs: BlockStyle): BlockStyle {
+  const next: BlockStyle = { ...bs };
+  if (bs.bgColor) next.bgColor = snapPalette(bs.bgColor);
+  if (bs.borderColor) next.borderColor = snapPalette(bs.borderColor);
+  if (bs.hoverColor) next.hoverColor = snapPalette(bs.hoverColor);
+  return next;
+}
+
+/** Destaque ==texto==: cor sólida legível e diferente da cor do texto. */
+function harmonizeHighlight(leaf: TextBlock, ctx: BBContext): TextBlock {
+  const marked = parseRich(leaf.content).some((line) => line.some((s) => s.highlight));
+  if (!marked && !leaf.highlightFrom) return leaf;
+  const allowed = allowedText(ctx);
+  const cur = hex6(leaf.highlightFrom);
+  const from =
+    cur && allowed.includes(cur) ? cur : (allowed.find((c) => c !== hex6(leaf.color)) ?? allowed[0] ?? leaf.color);
+  return { ...leaf, highlightFrom: from, highlightTo: from };
+}
+
+function harmonizeLeaf(raw: Leaf, container: BBContext): Leaf {
+  const leaf: Leaf = raw.blockStyle ? { ...raw, blockStyle: harmonizeBlockStyle(raw.blockStyle) } : raw;
   const bg = solidBg(container);
   const scheme = schemeByBg(bg);
   switch (leaf.type) {
     case "text": {
       const role = leaf.tag === "p" ? scheme?.text : scheme?.title;
-      return { ...leaf, color: deriveText(container, leaf.color, role ? [role] : []) };
+      const ctx = leafTextContext(leaf, container);
+      const own = ctx !== container;
+      const next = { ...leaf, color: deriveText(ctx, leaf.color, role && !own ? [role] : []) };
+      return harmonizeHighlight(next, ctx);
     }
     case "button": {
-      const variant = leaf.variant === "glass" ? "filled" : leaf.variant;
+      const variant = leaf.variant === "glass" ? "filled" : leaf.variant === "ghost" ? "outline" : leaf.variant;
       let fill = hex6(leaf.bgColor);
       if (!fill || !isBBColor(fill)) fill = scheme?.button ?? snapPalette(leaf.bgColor);
       if (bg && (isFilled(variant) || variant === "outline"))
@@ -433,7 +477,8 @@ function harmonizeLeaf(leaf: Leaf, container: BBContext): Leaf {
       return { ...next, color: deriveText(ctx, leaf.color, prefs) };
     }
     case "countdown": {
-      const variant = leaf.variant === "glass" ? "filled" : (leaf.variant ?? "filled");
+      const variant =
+        leaf.variant === "glass" ? "filled" : leaf.variant === "ghost" ? "outline" : (leaf.variant ?? "filled");
       let fill = hex6(leaf.bgColor);
       if (!fill || !isBBColor(fill)) fill = scheme?.button ?? snapPalette(leaf.bgColor);
       if (bg && (isFilled(variant) || variant === "outline"))
@@ -449,7 +494,7 @@ function harmonizeLeaf(leaf: Leaf, container: BBContext): Leaf {
     }
     case "card": {
       const cardBg = snapPalette(leaf.bgColor);
-      const ctx = textContext([cardBg]);
+      const ctx = leafTextContext({ ...leaf, bgColor: cardBg }, container);
       const cs = schemeByBg(cardBg);
       let borderColor = snapPalette(leaf.borderColor);
       if (leaf.borderWidth > 0) {
@@ -522,7 +567,7 @@ const clip = (s: string, n = 32) => {
 function leafLabel(leaf: Leaf): string {
   switch (leaf.type) {
     case "text":
-      return `Texto “${clip(leaf.content)}”`;
+      return `Texto “${clip(plainText(leaf.content))}”`;
     case "button":
       return `Botão “${clip(leaf.label, 24)}”`;
     case "card":
@@ -647,9 +692,29 @@ export function bbAudit(page: PageContent): AuditIssue[] {
       for (const col of row.columns)
         for (const leaf of col.children) {
           const ctx = leafTextContext(leaf, container);
+          const bs = leaf.blockStyle;
+          if (bs) {
+            const parts: [string, string | undefined][] = [
+              ["fundo", bs.bgColor],
+              ["borda", bs.borderWidth ? bs.borderColor : undefined],
+              ["destaque do hover", bs.hover && bs.hover !== "none" ? bs.hoverColor : undefined],
+            ];
+            for (const [part, color] of parts)
+              if (color && offPalette(color))
+                add(`pal-${leaf.id}-bs-${part}`, "Paleta BB", `${leafLabel(leaf)}: ${part} ${color} fora da paleta.`, leaf.id);
+          }
+          if ((leaf.type === "button" || leaf.type === "countdown") && leaf.variant === "ghost")
+            add(
+              `ghost-${leaf.id}`,
+              "Paleta BB",
+              `${leafLabel(leaf)}: estilo fantasma gera borda translúcida, fora da paleta. Use contorno.`,
+              leaf.id,
+            );
           switch (leaf.type) {
             case "text":
               checkText(leaf, "", leaf.color, ctx);
+              if (parseRich(leaf.content).some((line) => line.some((s) => s.highlight)))
+                checkText(leaf, " (destaque)", leaf.highlightFrom || HIGHLIGHT_DEFAULT.from, ctx);
               break;
             case "button":
               if (leaf.variant === "glass")
@@ -660,7 +725,7 @@ export function bbAudit(page: PageContent): AuditIssue[] {
                   leaf.id,
                 );
               checkText(leaf, "", leaf.color, ctx);
-              if (leaf.variant !== "text" && leaf.variant !== "glass")
+              if (leaf.variant !== "text" && leaf.variant !== "glass" && leaf.variant !== "ghost")
                 checkShape(leaf, " (fundo/borda)", leaf.bgColor, bg);
               break;
             case "countdown":
@@ -673,7 +738,7 @@ export function bbAudit(page: PageContent): AuditIssue[] {
                 );
               checkText(leaf, " (números)", leaf.color, ctx);
               checkText(leaf, " (rótulos)", leaf.accentColor, ctx);
-              if (leaf.variant !== "text" && leaf.variant !== "glass")
+              if (leaf.variant !== "text" && leaf.variant !== "glass" && leaf.variant !== "ghost")
                 checkShape(leaf, " (fundo/borda)", leaf.bgColor, bg);
               break;
             case "card": {

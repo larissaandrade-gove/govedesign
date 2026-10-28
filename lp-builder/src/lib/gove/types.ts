@@ -79,6 +79,63 @@ export interface BoxProps {
   /** Vidro: opacidade do preenchimento (0-100; ausente = 100, opaco). */
   fillOpacity?: number;
   decor?: BoxDecor;
+  /** Seção: espaçamento vertical no celular (≤640px): px, ou "auto" = 72% do computador. Ausente = igual ao computador. */
+  paddingYMobile?: number | "auto";
+}
+
+/** Dispositivos em que o elemento fica oculto (export: @media; canvas: esmaecido com aviso). */
+export interface DeviceHide {
+  /** Acima de 980px. */
+  desktop?: boolean;
+  /** De 641 a 980px. */
+  tablet?: boolean;
+  /** Até 640px. */
+  mobile?: boolean;
+}
+
+/** Efeito ao passar o mouse. */
+export type HoverEffect = "none" | "lift2" | "lift4" | "liftShadow" | "topBar" | "borderHighlight";
+/** Duração da transição (s). */
+export type TransitionSpeed = 0.18 | 0.2 | 0.3;
+
+/**
+ * Aparência de qualquer bloco (opcional; ausente = visual de antes, com 16px
+ * de espaço depois). Cores sempre da paleta.
+ */
+export interface BlockStyle {
+  /** Espaço antes (px; ausente = 0). */
+  marginTop?: number;
+  /** Espaço depois (px; ausente = 16). */
+  marginBottom?: number;
+  /** Largura máxima (px); a posição segue o alinhamento do bloco. */
+  maxWidth?: number;
+  /** Preenchimento interno (px). */
+  paddingY?: number;
+  paddingX?: number;
+  radius?: number;
+  /** Fundo (cor da paleta; necessário para o vidro). */
+  bgColor?: string;
+  /** Opacidade do fundo, 0-100 (ausente = 100). */
+  fillOpacity?: number;
+  /** Vidro: desfoque do que está atrás (0-16px). */
+  glassBlur?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  /** Ausente = "all". */
+  borderSides?: BorderSides;
+  borderStyle?: BorderStyle;
+  shadow?: Shadow;
+  /** Opacidade do bloco, 10-100 (ausente = 100). */
+  opacity?: number;
+  /** Ausente = "none". */
+  hover?: HoverEffect;
+  /** Cor da barra superior / da borda no hover (paleta). */
+  hoverColor?: string;
+  /** Ausente = 0.2. */
+  transition?: TransitionSpeed;
+  /** Afunda 1px ao clicar. */
+  press?: boolean;
+  hide?: DeviceHide;
 }
 
 export interface TextStyle {
@@ -92,8 +149,21 @@ export interface TextStyle {
 export interface TextBlock extends TextStyle {
   id: string;
   type: "text";
-  tag: "h1" | "h2" | "h3" | "p";
+  tag: "h1" | "h2" | "h3" | "h4" | "p";
+  /** Texto com marcação simples: **negrito**, ==destaque== e quebras de linha. */
   content: string;
+  blockStyle?: BlockStyle;
+  /* Ajustes tipográficos (opcionais; ausentes = visual de antes). */
+  uppercase?: boolean;
+  /** Espaçamento entre letras (em), de -0.04 a 0.14. */
+  letterSpacing?: number;
+  /** Altura de linha (ausente = 1.4). */
+  lineHeight?: number;
+  /** Tamanho responsivo: mínimo no celular (px); `size` é o máximo. Export: clamp(). */
+  sizeMin?: number;
+  /** Cores do destaque ==texto== (degradê da paleta; ausentes = Amarelo → Ciano). */
+  highlightFrom?: string;
+  highlightTo?: string;
 }
 
 export interface ButtonBlock extends TextStyle {
@@ -105,11 +175,24 @@ export interface ButtonBlock extends TextStyle {
   linkMode?: "url" | "section";
   /** Modo "section": id da seção, "@form" (formulário de inscrição) ou "@end" (final da página). */
   target?: string;
-  variant: "filled" | "elevated" | "outline" | "glass" | "text";
+  variant: "filled" | "elevated" | "outline" | "glass" | "text" | "ghost";
   bgColor: string;
   radius: number;
   animation?: ButtonAnimation;
+  blockStyle?: BlockStyle;
+  /** Tamanho: P (10×20), M (14×26), G (16×32). Ausente = "lg". */
+  btnSize?: ButtonSize;
+  /** Largura total: sempre ou só no celular. Ausente = nunca. */
+  fullWidth?: "always" | "mobile";
+  /** Ícone da biblioteca (chave de iconCatalog). */
+  icon?: string;
+  /** Ausente = "left". */
+  iconPos?: "left" | "right";
+  /** Sem quebra de linha no rótulo. */
+  nowrap?: boolean;
 }
+
+export type ButtonSize = "sm" | "md" | "lg";
 
 export type ImageFrame = "free" | "square" | "circle" | "rounded";
 
@@ -124,6 +207,7 @@ export interface ImageBlock {
   width: number; // %
   /** Crédito da foto vinda do Pexels (null = imagem própria). */
   credit?: ImageCredit | null;
+  blockStyle?: BlockStyle;
 }
 
 export interface CardBlock {
@@ -142,12 +226,14 @@ export interface CardBlock {
   shadow: Shadow;
   padding: number;
   size: number;
+  blockStyle?: BlockStyle;
 }
 
 export interface RdFormBlock {
   id: string;
   type: "rdform";
   snippet: string;
+  blockStyle?: BlockStyle;
 }
 
 export interface VideoBlock {
@@ -159,6 +245,7 @@ export interface VideoBlock {
   width: number; // %
   align: Align;
   radius: number;
+  blockStyle?: BlockStyle;
 }
 
 export type CountdownMode = "d" | "dh" | "dhm" | "dhms" | "m";
@@ -177,6 +264,7 @@ export interface CountdownBlock {
   expiredText: string;
   variant?: ButtonBlock["variant"];
   animation?: ButtonAnimation;
+  blockStyle?: BlockStyle;
 }
 
 export type Leaf =
@@ -228,6 +316,8 @@ export interface SectionBlock {
   type: "section";
   box: BoxProps;
   children: RowBlock[];
+  /** Ocultar a seção em algum dispositivo. */
+  hide?: DeviceHide;
 }
 
 /** Identidade visual da página: GOVE (padrão) ou Banco do Brasil. */

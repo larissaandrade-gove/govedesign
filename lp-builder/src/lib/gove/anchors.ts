@@ -7,6 +7,7 @@
  * via CSS — sem JavaScript, então funciona dentro do RD Station.
  */
 import type { ButtonBlock, PageContent, SectionBlock } from "./types";
+import { plainText } from "./richText";
 
 /** Destino "Formulário de inscrição": a primeira seção com formulário RD Station. */
 export const TARGET_FORM = "@form";
@@ -39,8 +40,8 @@ export function sectionLabel(page: PageContent, section: SectionBlock): string {
   for (const row of section.children)
     for (const col of row.columns)
       for (const leaf of col.children)
-        if (!heading && leaf.type === "text" && leaf.tag !== "p" && leaf.content.trim())
-          heading = leaf.content.trim();
+        if (!heading && leaf.type === "text" && leaf.tag !== "p" && plainText(leaf.content).trim())
+          heading = plainText(leaf.content).trim();
   if (heading) return `${n}. ${heading.length > 40 ? `${heading.slice(0, 39)}…` : heading}`;
   if (index === 0) return `${n}. Topo (hero)`;
   if (index === page.sections.length - 1 && page.sections.length > 1) return `${n}. Rodapé`;

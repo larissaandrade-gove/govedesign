@@ -29,8 +29,15 @@ import {
   type AnyNode,
   type BoxDecor,
   type BoxProps,
+  type BlockStyle,
   type ButtonBlock,
   type ContentWidth,
+  type DeviceHide,
+  type HoverEffect,
+  type Leaf,
+  type SectionBlock,
+  type Shadow,
+  type TextBlock,
   type Glow,
   type GlowPosition,
   type PageContent,
@@ -57,6 +64,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PaletteField, SchemePicker, TextColorField } from "./BBControls";
 import { useBBMode } from "@/lib/gove/bbMode";
+import {
+  BLOCK_MAX_WIDTHS,
+  BUTTON_SIZES,
+  DEFAULT_LINE_HEIGHT,
+  DEFAULT_TRANSITION,
+  HOVER_EFFECTS,
+  LETTER_SPACINGS,
+  LINE_HEIGHTS,
+  TRANSITION_SPEEDS,
+  highlightColors,
+  hoverColor,
+  mobilePaddingY,
+} from "@/lib/gove/blockStyle";
 import {
   BB_FONTS,
   BB_PALETTE,
@@ -936,6 +956,396 @@ function RowResponsiveFields({ row, onChange }: { row: RowBlock; onChange: (patc
   );
 }
 
+/* ------------------------------------------------- aparência de qualquer bloco */
+
+/** Grava o patch no `blockStyle` do bloco (vazio = sem a chave). */
+function useBlockStyle(leaf: Leaf, onChange: (patch: Record<string, unknown>) => void) {
+  const bs = leaf.blockStyle ?? {};
+  const set = (patch: Patch<BlockStyle>) => {
+    const next = withPatch(bs, patch);
+    onChange({ blockStyle: Object.keys(next).length ? next : undefined });
+  };
+  return [bs, set] as const;
+}
+
+const MARGIN_STEPS = SPACING_STEPS.filter((s) => s <= 96);
+
+/** Espaços, largura, preenchimento, raio, bordas, sombra, vidro e opacidade do bloco. */
+function BlockAppearanceFields({ leaf, onChange }: { leaf: Leaf; onChange: (patch: Record<string, unknown>) => void }) {
+  const bb = useBBMode();
+  const [bs, set] = useBlockStyle(leaf, onChange);
+  // Card e botão têm fundo, borda, raio e sombra próprios (nos campos do bloco).
+  const own = leaf.type === "card";
+  const box = leaf.type !== "button" && !own;
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <StepSelect label="Espaço antes" value={bs.marginTop ?? 0} steps={MARGIN_STEPS} onChange={(v) => set({ marginTop: v || undefined })} />
+        <StepSelect
+          label="Espaço depois"
+          value={bs.marginBottom ?? 16}
+          steps={MARGIN_STEPS}
+          onChange={(v) => set({ marginBottom: v === 16 ? undefined : v })}
+        />
+      </div>
+      <Field label="Largura máxima">
+        <select
+          className={SELECT}
+          value={String(bs.maxWidth ?? "")}
+          onChange={(e) => set({ maxWidth: Number(e.target.value) || undefined })}
+        >
+          <option value="">Sem limite</option>
+          {BLOCK_MAX_WIDTHS.map((w) => (
+            <option key={w} value={String(w)}>
+              {w}px
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">A posição segue o alinhamento do bloco.</p>
+      </Field>
+      {box ? (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <StepSelect label="Preenchimento vertical" value={bs.paddingY ?? 0} steps={SPACING_STEPS} onChange={(v) => set({ paddingY: v || undefined })} />
+            <StepSelect label="Preenchimento lateral" value={bs.paddingX ?? 0} steps={SPACING_STEPS} onChange={(v) => set({ paddingX: v || undefined })} />
+          </div>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={!!bs.bgColor}
+              onChange={(e) =>
+                set(
+                  e.target.checked
+                    ? { bgColor: bb ? BB_PALETTE.branco : "#FFFFFF" }
+                    : { bgColor: undefined, fillOpacity: undefined, glassBlur: undefined },
+                )
+              }
+            />
+            Fundo próprio
+          </label>
+          {bs.bgColor ? <SwatchField label="Cor do fundo" value={bs.bgColor} onChange={(v) => set({ bgColor: v })} /> : null}
+          <RadiusField value={bs.radius ?? 0} onChange={(v) => set({ radius: v || undefined })} />
+          <StepSelect
+            label="Espessura da borda"
+            value={bs.borderWidth ?? 0}
+            steps={[0, 1, 2, 3, 4]}
+            onChange={(v) => set({ borderWidth: v || undefined, borderColor: v ? (bs.borderColor ?? (bb ? BB_PALETTE.azulEscuro : "#F4F4F4")) : undefined })}
+          />
+          {bs.borderWidth ? (
+            <SwatchField label="Cor da borda" value={bs.borderColor ?? "#F4F4F4"} onChange={(v) => set({ borderColor: v })} />
+          ) : null}
+        </>
+      ) : null}
+      {(box && bs.borderWidth) || (own && leaf.type === "card" && leaf.borderWidth > 0) ? (
+        <>
+          <ChoiceField
+            label="Lados da borda"
+            value={bs.borderSides ?? "all"}
+            columns={2}
+            options={[
+              ["all", "Todos"],
+              ["block", "Em cima e embaixo"],
+              ["left", "Só à esquerda"],
+              ["none", "Nenhum"],
+            ]}
+            onChange={(v) => set({ borderSides: v === "all" ? undefined : v })}
+          />
+          <ChoiceField
+            label="Estilo da borda"
+            value={bs.borderStyle ?? "solid"}
+            columns={2}
+            options={[
+              ["solid", "Sólida"],
+              ["dashed", "Tracejada"],
+            ]}
+            onChange={(v) => set({ borderStyle: v === "solid" ? undefined : v })}
+          />
+        </>
+      ) : null}
+      {box ? (
+        <Field label="Sombra">
+          <select className={SELECT} value={bs.shadow ?? "none"} onChange={(e) => set({ shadow: e.target.value === "none" ? undefined : (e.target.value as Shadow) })}>
+            <option value="none">Nenhuma</option>
+            <option value="sm">Leve</option>
+            <option value="md">Média</option>
+            <option value="lg">Grande</option>
+          </select>
+        </Field>
+      ) : null}
+      {(box && bs.bgColor) || own ? (
+        <>
+          <RangeField
+            label="Vidro — desfoque do fundo"
+            value={bs.glassBlur ?? 0}
+            min={0}
+            max={16}
+            suffix="px"
+            onChange={(v) => set({ glassBlur: v || undefined })}
+          />
+          <RangeField
+            label="Opacidade do fundo"
+            value={bs.fillOpacity ?? 100}
+            min={0}
+            max={100}
+            step={5}
+            suffix="%"
+            onChange={(v) => set({ fillOpacity: v >= 100 ? undefined : v })}
+          />
+        </>
+      ) : null}
+      <RangeField
+        label="Opacidade do bloco"
+        value={bs.opacity ?? 100}
+        min={10}
+        max={100}
+        step={5}
+        suffix="%"
+        onChange={(v) => set({ opacity: v >= 100 ? undefined : v })}
+      />
+    </>
+  );
+}
+
+/** Efeitos: hover, velocidade da transição e clique. */
+function BlockEffectsFields({ leaf, onChange }: { leaf: Leaf; onChange: (patch: Record<string, unknown>) => void }) {
+  const [bs, set] = useBlockStyle(leaf, onChange);
+  const hover = bs.hover ?? "none";
+  return (
+    <>
+      <Field label="Ao passar o mouse">
+        <select className={SELECT} value={hover} onChange={(e) => set({ hover: e.target.value === "none" ? undefined : (e.target.value as HoverEffect) })}>
+          {HOVER_EFFECTS.map((h) => (
+            <option key={h.value} value={h.value}>
+              {h.label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {hover === "topBar" || hover === "borderHighlight" ? (
+        <SwatchField
+          label={hover === "topBar" ? "Cor da barra" : "Cor do destaque"}
+          value={hoverColor(leaf)}
+          onChange={(v) => set({ hoverColor: v })}
+        />
+      ) : null}
+      {hover !== "none" || bs.press ? (
+        <ChoiceField
+          label="Velocidade da transição"
+          value={bs.transition ?? DEFAULT_TRANSITION}
+          options={TRANSITION_SPEEDS.map((t) => [t, `${String(t).replace(".", ",")}s`] as const)}
+          onChange={(v) => set({ transition: v === DEFAULT_TRANSITION ? undefined : v })}
+        />
+      ) : null}
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!bs.press} onChange={(e) => set({ press: e.target.checked || undefined })} />
+        Afundar 1px ao clicar
+      </label>
+      <p className="text-xs text-muted-foreground">
+        Quem pede menos movimento no sistema vê só a troca de sombra e de cor, sem deslocamento.
+      </p>
+    </>
+  );
+}
+
+/** Ocultar em computador, tablet e/ou celular. */
+function HideFields({ hide, onChange }: { hide: DeviceHide | undefined; onChange: (hide: DeviceHide | undefined) => void }) {
+  const set = (key: keyof DeviceHide, on: boolean) => {
+    const next = withPatch(hide ?? {}, { [key]: on || undefined });
+    onChange(Object.keys(next).length ? next : undefined);
+  };
+  const options: [keyof DeviceHide, string][] = [
+    ["desktop", "Ocultar no computador (acima de 980px)"],
+    ["tablet", "Ocultar no tablet (641 a 980px)"],
+    ["mobile", "Ocultar no celular (até 640px)"],
+  ];
+  return (
+    <div className="space-y-1">
+      {options.map(([key, label]) => (
+        <label key={key} className="flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" checked={!!hide?.[key]} onChange={(e) => set(key, e.target.checked)} />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/** Seção no celular: espaçamento vertical e ocultar. */
+function SectionResponsiveFields({ section, onChange }: { section: SectionBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const box = normalizeBox(section.box);
+  const value = box.paddingYMobile === undefined ? "same" : String(box.paddingYMobile);
+  const auto = mobilePaddingY({ paddingY: box.paddingY, paddingYMobile: "auto" });
+  return (
+    <>
+      <Field label="Espaçamento vertical no celular">
+        <select
+          className={SELECT}
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange({ box: withPatch(box, { paddingYMobile: v === "same" ? undefined : v === "auto" ? "auto" : Number(v) }) });
+          }}
+        >
+          <option value="same">Igual ao computador ({box.paddingY}px)</option>
+          <option value="auto">Automático: 72% ({auto}px)</option>
+          {SPACING_STEPS.map((step) => (
+            <option key={step} value={String(step)}>
+              {step}px
+            </option>
+          ))}
+        </select>
+      </Field>
+      <HideFields hide={section.hide} onChange={(hide) => onChange({ hide })} />
+    </>
+  );
+}
+
+/** Texto: caixa alta, espaçamento entre letras, altura de linha, tamanho responsivo e destaque. */
+function TypographyFields({
+  node,
+  onChange,
+  bbCtx,
+}: {
+  node: TextBlock;
+  onChange: (patch: Record<string, unknown>) => void;
+  bbCtx: BBContext | null;
+}) {
+  const fluid = !!node.sizeMin && node.sizeMin < node.size;
+  const marked = node.content.includes("==");
+  const hl = highlightColors(node);
+  return (
+    <>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!node.uppercase} onChange={(e) => onChange({ uppercase: e.target.checked || undefined })} />
+        Caixa alta
+      </label>
+      <Field label="Espaçamento entre letras">
+        <select
+          className={SELECT}
+          value={String(node.letterSpacing ?? 0)}
+          onChange={(e) => onChange({ letterSpacing: Number(e.target.value) || undefined })}
+        >
+          {LETTER_SPACINGS.map((v) => (
+            <option key={v} value={String(v)}>
+              {v === 0 ? "Normal" : `${String(v).replace(".", ",")}em`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Altura de linha">
+        <select
+          className={SELECT}
+          value={String(node.lineHeight ?? DEFAULT_LINE_HEIGHT)}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            onChange({ lineHeight: v === DEFAULT_LINE_HEIGHT ? undefined : v });
+          }}
+        >
+          {LINE_HEIGHTS.map((v) => (
+            <option key={v} value={String(v)}>
+              {String(v).replace(".", ",")}
+              {v === DEFAULT_LINE_HEIGHT ? " (padrão)" : ""}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={fluid}
+          onChange={(e) =>
+            onChange({ sizeMin: e.target.checked ? Math.max(16, Math.min(node.size - 1, Math.round(node.size * 0.6))) : undefined })
+          }
+        />
+        Tamanho responsivo (menor no celular)
+      </label>
+      {fluid ? (
+        <Field label={`Tamanho mínimo (o máximo é ${node.size}px)`}>
+          <Input
+            type="number"
+            min={8}
+            max={node.size}
+            value={node.sizeMin}
+            onChange={(e) => onChange({ sizeMin: Number(e.target.value) || undefined })}
+            aria-label="Tamanho mínimo em px"
+          />
+          <p className="text-xs text-muted-foreground">
+            O tamanho acompanha a largura da tela: {node.sizeMin}px no celular, {node.size}px a partir de 1200px.
+          </p>
+        </Field>
+      ) : null}
+      {marked || node.highlightFrom ? (
+        bbCtx ? (
+          <TextColorField
+            label="Cor do destaque (==texto==)"
+            value={hl.from}
+            ctx={bbCtx}
+            onChange={(v) => onChange({ highlightFrom: v, highlightTo: v })}
+          />
+        ) : (
+          <>
+            <SwatchField label="Destaque: cor inicial do degradê" value={hl.from} onChange={(v) => onChange({ highlightFrom: v })} />
+            <SwatchField label="Destaque: cor final do degradê" value={hl.to} onChange={(v) => onChange({ highlightTo: v })} />
+          </>
+        )
+      ) : null}
+    </>
+  );
+}
+
+/** Botão: tamanho, largura total, ícone e quebra de linha. */
+function ButtonExtraFields({ node, onChange }: { node: ButtonBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  return (
+    <>
+      <ChoiceField
+        label="Tamanho"
+        value={node.btnSize ?? "lg"}
+        options={BUTTON_SIZES.map((b) => [b.value, `${b.label} (${b.padding.replace(/px/g, "").replace(" ", "×")})`] as const)}
+        onChange={(v) => onChange({ btnSize: v === "lg" ? undefined : v })}
+      />
+      <ChoiceField
+        label="Largura total"
+        value={node.fullWidth ?? "never"}
+        options={[
+          ["never", "Nunca"],
+          ["always", "Sempre"],
+          ["mobile", "Só no celular"],
+        ]}
+        onChange={(v) => onChange({ fullWidth: v === "never" ? undefined : v })}
+      />
+      <Field label="Ícone">
+        {node.icon ? (
+          <>
+            <IconPicker value={node.icon} onChange={(icon) => onChange({ icon })} />
+            <ChoiceField
+              label="Posição do ícone"
+              value={node.iconPos ?? "left"}
+              columns={2}
+              options={[
+                ["left", "À esquerda"],
+                ["right", "À direita"],
+              ]}
+              onChange={(v) => onChange({ iconPos: v === "left" ? undefined : v })}
+            />
+            <Button variant="outline" size="touch" className="w-full" onClick={() => onChange({ icon: undefined, iconPos: undefined })}>
+              Remover ícone
+            </Button>
+          </>
+        ) : (
+          <Button variant="outline" size="touch" className="w-full" onClick={() => onChange({ icon: "ArrowRight" })}>
+            <Plus aria-hidden />
+            Adicionar ícone
+          </Button>
+        )}
+      </Field>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!node.nowrap} onChange={(e) => onChange({ nowrap: e.target.checked || undefined })} />
+        Sem quebra de linha no texto
+      </label>
+    </>
+  );
+}
+
 /** Layout da página: largura do conteúdo, margens laterais e rolagem até as âncoras. */
 export function PageLayoutEditor({
   layout = {},
@@ -1321,11 +1731,13 @@ export function PropertiesPanel({
               onChange={(patch) => onChange({ box: withPatch(normalizeBox(node.box), patch) })}
             />
           </PanelGroup>
-          {node.type === "row" ? (
-            <PanelGroup title="Celular e tablet">
+          <PanelGroup title="Celular e tablet">
+            {node.type === "row" ? (
               <RowResponsiveFields row={node} onChange={onChange} />
-            </PanelGroup>
-          ) : null}
+            ) : (
+              <SectionResponsiveFields section={node} onChange={onChange} />
+            )}
+          </PanelGroup>
         </div>
       ) : null}
 
@@ -1340,11 +1752,15 @@ export function PropertiesPanel({
               <option value="h1">Título H1</option>
               <option value="h2">Título H2</option>
               <option value="h3">Título H3</option>
+              <option value="h4">Título H4</option>
               <option value="p">Parágrafo</option>
             </select>
           </Field>
           <Field label="Conteúdo">
             <Textarea value={node.content} rows={4} onChange={(e) => onChange({ content: e.target.value })} />
+            <p className="text-xs text-muted-foreground">
+              Use **negrito** e ==destaque em degradê==. Enter quebra a linha.
+            </p>
           </Field>
         </>
       ) : null}
@@ -1361,14 +1777,17 @@ export function PropertiesPanel({
               value={node.variant}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
-              {BUTTON_VARIANTS.filter((v) => !bb || v.value !== "glass").map((v) => (
+              {BUTTON_VARIANTS.filter((v) => !bb || (v.value !== "glass" && v.value !== "ghost")).map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}
                 </option>
               ))}
             </select>
           </Field>
-          {bb ? (
+          <ButtonExtraFields node={node} onChange={onChange} />
+          {node.variant === "ghost" ? (
+            <p className="text-xs text-muted-foreground">Fantasma: fundo transparente e borda translúcida na cor do texto.</p>
+          ) : bb ? (
             node.variant === "text" ? null : (
               <PaletteField
                 label={node.variant === "outline" ? "Cor da borda" : "Cor do botão"}
@@ -1493,6 +1912,12 @@ export function PropertiesPanel({
             </div>
           </Field>
         </>
+      ) : null}
+
+      {node.type === "text" ? (
+        <PanelGroup title="Tipografia">
+          <TypographyFields node={node} onChange={onChange} bbCtx={bbCtx} />
+        </PanelGroup>
       ) : null}
 
       {node.type === "image" ? (
@@ -1732,7 +2157,7 @@ export function PropertiesPanel({
               value={node.variant ?? "filled"}
               onChange={(e) => onChange({ variant: e.target.value })}
             >
-              {BUTTON_VARIANTS.filter((v) => !bb || v.value !== "glass").map((v) => (
+              {BUTTON_VARIANTS.filter((v) => !bb || (v.value !== "glass" && v.value !== "ghost")).map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}
                 </option>
@@ -1799,6 +2224,29 @@ export function PropertiesPanel({
             O código é preservado exatamente como colado e só é executado na plataforma final.
           </p>
         </Field>
+      ) : null}
+
+      {leafNode ? (
+        <div className="space-y-3">
+          <PanelGroup title="Aparência">
+            <BlockAppearanceFields leaf={leafNode} onChange={onChange} />
+          </PanelGroup>
+          <PanelGroup title="Efeitos">
+            <BlockEffectsFields leaf={leafNode} onChange={onChange} />
+          </PanelGroup>
+          <PanelGroup title="Celular e tablet">
+            <HideFields
+              hide={leafNode.blockStyle?.hide}
+              onChange={(hide) => {
+                const next = withPatch(leafNode.blockStyle ?? {}, { hide });
+                onChange({ blockStyle: Object.keys(next).length ? next : undefined });
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              No canvas, o bloco oculto aparece esmaecido com um aviso no modo correspondente.
+            </p>
+          </PanelGroup>
+        </div>
       ) : null}
     </div>
   );
