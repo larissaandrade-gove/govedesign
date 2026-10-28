@@ -295,6 +295,14 @@ test('Portal Cidadão: QR e faixa levam ao site do domicílio eletrônico, nas d
       const texts = els.filter((e) => e.type === 'text').map((e) => e.lines.map((x) => x.text).join(' ')).join(' | ');
       assert.ok(!/whatsapp/i.test(texts), `${l.id}: ${texts}`);
       if (l.id.startsWith('flyer')) assert.ok(texts.includes('www.saocarlos.sp.gov.br'), `${l.id}: faixa do site`);
+      if (l.id.startsWith('flyer')) {
+        // Comunicado do DTE: H1, H2 abaixo dos ícones e H4 junto do link; sem chamada após a faixa
+        const ids = r.blocks.map((b) => b.id);
+        assert.ok(ids.includes('h2') && !ids.includes('h4b'), `${identity} ${l.id}: blocos ${ids}`);
+        assert.ok(texts.includes('Comunicado aos') && texts.includes('Já ativou o seu DTE?') && texts.includes('link oficial:'), `${identity} ${l.id}: ${texts}`);
+        const y = (id) => r.blocks.find((b) => b.id === id).bbox.y;
+        assert.ok(y('h2') > y('servicos') && y('h2') < y('h4a') && y('h4a') < y('numero'), `${identity} ${l.id}: ordem H2 → H4 → link`);
+      }
     }
   }
   assert.ok(PORTAL_DEFAULT_TEXTS['display-a6'].h3.includes('Portal'));

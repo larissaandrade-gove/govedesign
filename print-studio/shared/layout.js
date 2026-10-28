@@ -89,9 +89,9 @@ export const BB_DEFAULT_TEXTS = {
  * levam ao site do domicílio eletrônico do município, em vez do WhatsApp (wa.me).
  */
 const PORTAL_FLYER_TEXTS = {
-  h1: '**Serviços da Prefeitura**\na um clique de você',
-  h4a: 'Aponte a câmera do seu celular para\no **QR code** abaixo ou **acesse o site**',
-  h4b: 'acesse os serviços\nda prefeitura de\n**qualquer lugar!**',
+  h1: '**Comunicado aos**\nEmpresários, Contadores\n**e Contribuintes:**',
+  h2: 'Modernize a gestão tributária\ndo seu negócio! **Já ativou o seu DTE?**',
+  h4a: 'Acesse e **regularize sua empresa**\npelo **link oficial:**',
 };
 export const PORTAL_DEFAULT_TEXTS = {
   'flyer-a4': { ...PORTAL_FLYER_TEXTS },
@@ -124,6 +124,7 @@ export const defaultTextsFor = (identity, model = 'whatsapp') => (model === 'por
 export const TEXT_LABELS = {
   h1: 'Título principal (H1)',
   h1b: 'Título — continuação em branco (H1)',
+  h2: 'Subtítulo abaixo dos ícones (H2)',
   h3: 'Apoio ao lado do QR (H3)',
   h4a: 'Instrução do QR (H4)',
   h4b: 'Chamada após a faixa do número/site (H4)',
@@ -784,6 +785,13 @@ function flyer(layout, input, measure, s, ts, nts, theme = null) {
     cursor = circles.bbox.y + circles.bbox.h;
   }
 
+  // Subtítulo (H2) abaixo dos ícones — no Portal Cidadão; vazio, não entra
+  if (T.h2?.trim()) {
+    const h2 = textBlock({ id: 'h2', role: 'h2', text: T.h2, x: minX, y: cursor + 5.2 * s, w: R1 - minX, sizePt: 27 * ts, weight: 'regular', boldWeight: 'bold', align: 'right', leading: TITLE_LEADING_EM, ...onBg, fit: TYPE.h3.min, measure });
+    blocks.push(block('h2', 'Subtítulo (H2)', [h2]));
+    cursor = textBottom(h2);
+  }
+
   // Painel branco: canto superior esquerdo arredondado, vai até a sangria (direita e base)
   const panelX = 26.2 * s;
   const panelTop = Math.max(91.9 * s, cursor + 8.5 * s);
@@ -826,14 +834,15 @@ function flyer(layout, input, measure, s, ts, nts, theme = null) {
   const logosNeed = theme ? logosColumnBBNeed(bbCol) : logoH.prefeitura + logoH.gove + (input.includeBB ? logoH.bb + 4 * s : 0) + 4 * s;
 
   const h4bOpts = { id: 'h4b', role: 'h4', text: T.h4b, x: R2 - 88 * s, y: barY + barH + 6.2 * s, w: 88 * s, sizePt: 24.8 * ts, weight: 'regular', align: 'right', leading: 0.96, ...onPanel, fit: TYPE.h4.min, measure };
-  let h4b = textBlock(h4bOpts);
+  // A chamada após a faixa é opcional (o Portal Cidadão não usa): sem ela, o QR sobe
+  let h4b = T.h4b?.trim() ? textBlock(h4bOpts) : null;
   // Sem altura para o QR mínimo + logos (ex.: chamada de 3 linhas no 10x15 BB): o H4b diminui (piso legível)
-  const spare = th - SAFE_MM - 0.5 - (textBottom(h4b) + 4.2 * s + QR_MIN_MM + 2 * QR_QUIET_MM + 3.6 * s + logosNeed);
-  if (spare < 0 && h4b.h > 0) {
+  const spare = h4b ? th - SAFE_MM - 0.5 - (textBottom(h4b) + 4.2 * s + QR_MIN_MM + 2 * QR_QUIET_MM + 3.6 * s + logosNeed) : 0;
+  if (h4b && spare < 0 && h4b.h > 0) {
     const size = Math.max(TYPE.h4.min, (h4b.size * (h4b.h + spare)) / h4b.h);
     h4b = textBlock({ ...h4bOpts, sizePt: size, fit: Math.min(size, TYPE.h4.min) });
   }
-  const qrTop = textBottom(h4b) + 4.2 * s;
+  const qrTop = h4b ? textBottom(h4b) + 4.2 * s : barY + barH + 6.2 * s;
   const qrMm = Math.max(QR_MIN_MM, Math.min(47.4 * s, bottom - qrTop - 2 * QR_QUIET_MM - 3.6 * s - logosNeed));
   const plate = qrMm + 2 * QR_QUIET_MM;
   const qr = qrPlate({ x: R2 - plate, y: qrTop, qrMm, data: qrTarget(input), th: theme });
@@ -858,7 +867,9 @@ function flyer(layout, input, measure, s, ts, nts, theme = null) {
     for (let i = 0; i < 40 && zone && polysIntersect(mock.shape, rectPoly(zone)); i++) shiftBlock(mock, -0.25, 0);
   }
 
-  blocks.push(panel, block('h4a', 'Instrução do QR (H4)', [h4a]), numero, block('h4b', portal ? 'Chamada após o site (H4)' : 'Chamada após o número (H4)', [h4b]), qr, mock, logos);
+  blocks.push(panel, block('h4a', portal ? 'Chamada do link (H4)' : 'Instrução do QR (H4)', [h4a]), numero);
+  if (h4b) blocks.push(block('h4b', portal ? 'Chamada após o site (H4)' : 'Chamada após o número (H4)', [h4b]));
+  blocks.push(qr, mock, logos);
   // Marca d'água do WhatsApp só no modelo WhatsApp
   return { blocks, watermark: portal ? null : { max: 100 * s, min: 40 * s, top: minX, bottom: panelTop + 10 * s }, panelTop };
 }
