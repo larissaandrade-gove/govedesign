@@ -1,4 +1,13 @@
-import { Warning, ArrowDown, ArrowUp, Trash } from "@phosphor-icons/react";
+import { Warning, ArrowDown, ArrowUp, Trash, ArrowLineDown } from "@phosphor-icons/react";
+import {
+  END_ANCHOR,
+  TARGET_END,
+  TARGET_FORM,
+  formSection,
+  resolveButtonLink,
+  sectionAnchor,
+  sectionLabel,
+} from "@/lib/gove/anchors";
 import { IconPicker } from "./IconPicker";
 import { PexelsSearch, creditFor } from "./PexelsSearch";
 import { checkContrast } from "@/lib/gove/contrast";
@@ -18,6 +27,8 @@ import {
   TYPE_SCALE,
   type AnyNode,
   type BoxProps,
+  type ButtonBlock,
+  type PageContent,
   type PageCursor,
 } from "@/lib/gove/types";
 import { Button } from "@/components/ui/button";
@@ -53,6 +64,8 @@ interface Props {
   onApplyScheme?: ((scheme: BBScheme | null) => void) | undefined;
   /** Configurações da página (mostradas quando nada está selecionado). */
   pageSettings?: React.ReactNode;
+  /** Página inteira (destinos dos botões "Ir para seção"). */
+  page?: PageContent | undefined;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -523,6 +536,108 @@ function CursorEditor({
   );
 }
 
+const SELECT = "h-11 w-full rounded-md border border-input bg-background px-3 text-sm";
+
+/** Ação do botão: URL externa ou rolar até uma seção da página (âncora, sem JS). */
+function ButtonLinkField({
+  node,
+  page,
+  onChange,
+}: {
+  node: ButtonBlock;
+  page: PageContent | undefined;
+  onChange: (patch: Record<string, unknown>) => void;
+}) {
+  const mode = node.linkMode === "section" ? "section" : "url";
+  const options: [typeof mode, string][] = [
+    ["url", "URL externa"],
+    ["section", "Ir para seção da página"],
+  ];
+  const link = page ? resolveButtonLink(page, node) : null;
+  const target = node.target || TARGET_FORM;
+  const exists = target === TARGET_FORM || target === TARGET_END || !!page?.sections.some((s) => s.id === target);
+  const noForm = !!page && target === TARGET_FORM && !formSection(page);
+  const goTo = () => {
+    if (!link) return;
+    const id = link.sectionId ? sectionAnchor({ id: link.sectionId }) : END_ANCHOR;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  return (
+    <Field label="Ação do botão">
+      <div role="radiogroup" aria-label="Ação do botão" className="grid grid-cols-2 gap-2">
+        {options.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={mode === id}
+            onClick={() =>
+              onChange(
+                id === "section"
+                  ? { linkMode: "section", target: node.target || TARGET_FORM }
+                  : { linkMode: "url" },
+              )
+            }
+            className="min-h-11 rounded-xl border-2 px-2 text-sm font-bold leading-tight transition-colors"
+            style={{
+              borderColor: mode === id ? "var(--gove-primary)" : "var(--color-border)",
+              backgroundColor: mode === id ? "var(--color-secondary)" : undefined,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {mode === "url" ? (
+        <Input
+          aria-label="Link do botão"
+          value={node.href}
+          onChange={(e) => onChange({ href: e.target.value })}
+          placeholder="https://"
+        />
+      ) : (
+        <>
+          <select
+            aria-label="Seção de destino"
+            className={SELECT}
+            value={exists ? target : ""}
+            onChange={(e) => onChange({ target: e.target.value })}
+          >
+            {!exists ? (
+              <option value="" disabled>
+                Seção excluída — escolha outra
+              </option>
+            ) : null}
+            <option value={TARGET_FORM}>Formulário de inscrição</option>
+            {page?.sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {sectionLabel(page, section)}
+              </option>
+            ))}
+            <option value={TARGET_END}>Final da página</option>
+          </select>
+          {link?.missing ? (
+            <p role="alert" className="flex items-start gap-2 text-xs font-semibold text-destructive">
+              <Warning className="mt-0.5 size-4 shrink-0" aria-hidden />
+              A seção de destino foi excluída. Por enquanto o botão leva para: {link.label}.
+            </p>
+          ) : noForm ? (
+            <p className="text-xs text-muted-foreground">
+              A página ainda não tem formulário RD Station: o botão leva ao final da página.
+            </p>
+          ) : null}
+          {link ? (
+            <Button variant="outline" size="touch" className="w-full" onClick={goTo}>
+              <ArrowLineDown aria-hidden />
+              Ver destino no canvas
+            </Button>
+          ) : null}
+        </>
+      )}
+    </Field>
+  );
+}
+
 export function PropertiesPanel({
   node,
   background,
@@ -536,6 +651,7 @@ export function PropertiesPanel({
   bbContainer,
   onApplyScheme,
   pageSettings,
+  page,
 }: Props) {
   const bb = useBBMode();
   if (!node) {
@@ -666,9 +782,7 @@ export function PropertiesPanel({
           <Field label="Texto do botão">
             <Input value={node.label} onChange={(e) => onChange({ label: e.target.value })} />
           </Field>
-          <Field label="Link ou âncora">
-            <Input value={node.href} onChange={(e) => onChange({ href: e.target.value })} placeholder="https:// ou #ancora" />
-          </Field>
+          <ButtonLinkField node={node} page={page} onChange={onChange} />
           <Field label="Estilo">
             <select
               className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"

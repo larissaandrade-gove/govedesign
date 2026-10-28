@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { END_ANCHOR, sectionAnchor } from "@/lib/gove/anchors";
 import { getIcon } from "./icons";
 import { buttonReactStyle } from "@/lib/gove/buttonStyle";
 import { backgroundStyle } from "@/lib/gove/background";
@@ -513,6 +514,7 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
       {page.sections.map((section: SectionBlock) => (
         <section
           key={section.id}
+          id={sectionAnchor(section)}
           className={bgAnimClass(section.box.animation)}
           onClick={() => onSelect(section.id)}
           style={{
@@ -535,6 +537,7 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
           ))}
         </section>
       ))}
+      <div id={END_ANCHOR} aria-hidden />
     </div>
   );
 }

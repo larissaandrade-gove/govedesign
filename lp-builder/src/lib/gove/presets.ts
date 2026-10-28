@@ -10,6 +10,11 @@ import {
 } from "./factories";
 import type { Identity, Leaf, PageContent, SectionBlock } from "./types";
 import { BB_COPY, BB_SCHEMES, applyScheme } from "./bb";
+import { TARGET_FORM } from "./anchors";
+
+/** CTA do hero: leva ao formulário de inscrição (ou ao final da página, enquanto não houver formulário). */
+const heroCta = (over: Parameters<typeof makeButton>[0] = {}) =>
+  makeButton({ linkMode: "section", target: TARGET_FORM, ...over });
 
 export type HeroPresetId = "blank" | "centered" | "split" | "form";
 
@@ -19,7 +24,7 @@ function heroCentered(): SectionBlock {
     makeColumn([
       makeText({ tag: "h1", content: "Sua proposta de valor em uma frase", size: 39, weight: "bold", align: "center", color: "#FFFFFF" }),
       makeText({ content: "Explique em uma linha o que o lead ganha nesta página.", size: 20, align: "center", color: "#F4F4F4" }),
-      makeButton({ align: "center" }),
+      heroCta({ align: "center" }),
     ]),
   ];
   return makeSection({
@@ -34,7 +39,7 @@ function heroSplit(): SectionBlock {
     makeColumn([
       makeText({ tag: "h1", content: "Título do hero dividido", size: 31, weight: "bold" }),
       makeText({ content: "Subtítulo com o principal benefício da oferta.", size: 20, color: "#5B6770" }),
-      makeButton({}),
+      heroCta(),
     ]),
     makeColumn([makeImage({ alt: "" })]),
   ];

@@ -2,6 +2,7 @@ import { checkContrast } from "./contrast";
 import { isLorem } from "./lorem";
 import { backgroundBehind } from "./tree";
 import type { PageContent } from "./types";
+import { resolveButtonLink } from "./anchors";
 
 export type AuditSeverity = "error" | "warning";
 
@@ -90,6 +91,19 @@ export function auditPage(page: PageContent): AuditIssue[] {
               rule: "Conteúdo",
               message: "Card ainda com texto lorem ipsum não editado.",
             });
+          }
+
+          if (leaf.type === "button") {
+            const link = resolveButtonLink(page, leaf);
+            if (link.missing) {
+              issues.push({
+                id: `anchor-${key}`,
+                nodeId: leaf.id,
+                severity: "warning",
+                rule: "Link do botão",
+                message: `Botão "${leaf.label}" apontava para uma seção excluída — agora leva para: ${link.label}.`,
+              });
+            }
           }
 
           if (leaf.type === "rdform" && !leaf.snippet.trim()) {

@@ -35,6 +35,7 @@ export function ExportDialog({
   const [copied, setCopied] = useState(false);
   const [override, setOverride] = useState(false);
   const errors = issues.filter((i) => i.severity === "error");
+  const warnings = issues.filter((i) => i.severity === "warning");
   const bbBlocked = (bbIssues?.length ?? 0) > 0;
   const blocked = bbBlocked || (errors.length > 0 && !override);
 
@@ -95,6 +96,19 @@ export function ExportDialog({
               Identidade BB aprovada: textos 4,5:1+, só cores da paleta, fontes BB embutidas.
             </p>
           )
+        ) : null}
+
+        {warnings.length > 0 ? (
+          <ul className="space-y-1 rounded-md border border-border bg-secondary p-3 text-sm">
+            {warnings.map((issue) => (
+              <li key={issue.id} className="flex items-start gap-2">
+                <Warning className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span>
+                  <strong>{issue.rule}:</strong> {issue.message}
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : null}
 
         {errors.length > 0 ? (

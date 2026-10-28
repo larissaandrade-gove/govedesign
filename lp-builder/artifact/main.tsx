@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createMemoryHistory, createRouter, type AnyRoute } from "@tanstack/react-router";
 import { routeTree } from "@/routeTree.gen";
-import { pagesReady } from "@artifact/storage";
+import { pagesReady, templatesReady } from "@artifact/storage";
 import { startTheme } from "./theme";
 import "./app.css";
 
@@ -20,7 +20,7 @@ const el = document.getElementById("root")!;
 el.innerHTML =
   '<p style="font:500 14px Inter,system-ui,sans-serif;padding:32px;color:var(--muted-foreground)">Carregando projetos…</p>';
 
-pagesReady.finally(() => {
+Promise.allSettled([pagesReady, templatesReady]).finally(() => {
   el.innerHTML = "";
   createRoot(el).render(
     <StrictMode>

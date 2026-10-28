@@ -50,7 +50,7 @@ const patches: Record<string, Patch[]> = {
     ["Landing page excluída deste navegador.", "Landing page excluída."],
     ["Carregando projetos locais…", "Carregando projetos…"],
   ],
-  "routes/editor.$id.tsx": [
+  "components/gove/Editor.tsx": [
     ["Landing page não encontrada neste navegador.", "Landing page não encontrada."],
     ["Landing page salva neste navegador.", "Landing page salva."],
     ["`Salvo localmente às ${", "`Salvo às ${"],

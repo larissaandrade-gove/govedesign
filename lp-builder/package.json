@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test:bb": "node --test scripts/bb-check.test.mjs"
+    "test:bb": "node --test scripts/bb-check.test.mjs",
+    "test:lp": "node --test scripts/bb-check.test.mjs scripts/anchors-templates.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

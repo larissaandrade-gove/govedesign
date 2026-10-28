@@ -60,6 +60,10 @@ export interface ButtonBlock extends TextStyle {
   type: "button";
   label: string;
   href: string;
+  /** Ausente = "url" (link externo em `href`). */
+  linkMode?: "url" | "section";
+  /** Modo "section": id da seção, "@form" (formulário de inscrição) ou "@end" (final da página). */
+  target?: string;
   variant: "filled" | "elevated" | "outline" | "glass" | "text";
   bgColor: string;
   radius: number;

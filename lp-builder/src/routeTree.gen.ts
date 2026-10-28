@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ModeloIdRouteImport } from './routes/modelo.$id'
 import { Route as EditorIdRouteImport } from './routes/editor.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModeloIdRoute = ModeloIdRouteImport.update({
+  id: '/modelo/$id',
+  path: '/modelo/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EditorIdRoute = EditorIdRouteImport.update({
@@ -26,27 +32,31 @@ const EditorIdRoute = EditorIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/editor/$id': typeof EditorIdRoute
+  '/modelo/$id': typeof ModeloIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/editor/$id': typeof EditorIdRoute
+  '/modelo/$id': typeof ModeloIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/editor/$id': typeof EditorIdRoute
+  '/modelo/$id': typeof ModeloIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/editor/$id'
+  fullPaths: '/' | '/editor/$id' | '/modelo/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/editor/$id'
-  id: '__root__' | '/' | '/editor/$id'
+  to: '/' | '/editor/$id' | '/modelo/$id'
+  id: '__root__' | '/' | '/editor/$id' | '/modelo/$id' | '/modelo/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EditorIdRoute: typeof EditorIdRoute
+  ModeloIdRoute: typeof ModeloIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modelo/$id': {
+      id: '/modelo/$id'
+      path: '/modelo/$id'
+      fullPath: '/modelo/$id'
+      preLoaderRoute: typeof ModeloIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/editor/$id': {
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EditorIdRoute: EditorIdRoute,
+  ModeloIdRoute: ModeloIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

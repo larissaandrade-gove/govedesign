@@ -19,9 +19,11 @@ import {
   type PageFonts,
 } from "./bb";
 import { BB_FONT_FACE_CSS } from "./bbFonts";
+import { END_ANCHOR, SMOOTH_SCROLL_CSS, resolveButtonLink, sectionAnchor } from "./anchors";
 
 /** Contexto de renderização: identidade, fontes e (BB) o fundo do contêiner. */
 interface RenderCtx {
+  page: PageContent;
   bb: boolean;
   fonts: PageFonts;
   container?: BBContext;
@@ -109,7 +111,7 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
           ? "bb-link"
           : "";
       const cls = [btnAnimClass(leaf.animation), visited].filter(Boolean).join(" ");
-      return `<div style="${wrapper}"><a href="${esc(leaf.href || "#")}"${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${esc(leaf.label)}</a></div>`;
+      return `<div style="${wrapper}"><a href="${esc(resolveButtonLink(ctx.page, leaf).href)}"${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${esc(leaf.label)}</a></div>`;
     }
     case "image": {
       if (!leaf.src) return "";
@@ -249,7 +251,7 @@ function sectionHtml(section: SectionBlock, ctx: RenderCtx): string {
       : null;
   const style = credit ? `position:relative;${boxStyle(section.box, ctx.bb)}` : boxStyle(section.box, ctx.bb);
   const data = credit ? ` data-pexels-id="${credit.id}"` : "";
-  return `<section${cls ? ` class="${cls}"` : ""}${data} style="${style}"><div class="gove-container" style="max-width:1120px;margin:0 auto;">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
+  return `<section id="${sectionAnchor(section)}"${cls ? ` class="${cls}"` : ""}${data} style="${style}"><div class="gove-container" style="max-width:1120px;margin:0 auto;">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
 }
 
 /** Faixa da logomarca BB: arquivo oficial sem recolorir, área de proteção x/2. */
@@ -312,7 +314,7 @@ function bbCss(fonts: PageFonts): string {
 
 export function exportHtml(page: PageContent, nome: string): string {
   const bb = isBB(page);
-  const ctx: RenderCtx = { bb, fonts: pageFonts(page.identity) };
+  const ctx: RenderCtx = { page, bb, fonts: pageFonts(page.identity) };
   const body = page.sections.map((section) => sectionHtml(section, ctx)).join("\n");
   return `<!-- ${nome} — gerado no GOVE LP Builder${bb ? " — identidade Banco do Brasil" : ""} -->
 <div class="gove-lp"${bb ? ' data-identity="bb"' : ""}>
@@ -320,6 +322,7 @@ export function exportHtml(page: PageContent, nome: string): string {
 .gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}
 .gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}
 .gove-lp img{max-width:100%;height:auto;}
+${SMOOTH_SCROLL_CSS}
 @media (max-width:768px){
   .gove-lp .gove-row{flex-direction:column;}
   .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}
@@ -332,6 +335,7 @@ ${bb ? bbCss(ctx.fonts) : ""}
 </style>
 ${bb ? logoHtml(page) : ""}
 ${body}
+<div id="${END_ANCHOR}" aria-hidden="true"></div>
 ${hasCountdown(page) ? COUNTDOWN_SCRIPT : ""}
 ${followerScript(page.cursor)}
 </div>`;
