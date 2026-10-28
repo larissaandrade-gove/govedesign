@@ -1,5 +1,32 @@
 export type Align = "left" | "center" | "right";
-export type Shadow = "none" | "sm" | "md";
+export type Shadow = "none" | "sm" | "md" | "lg";
+
+/** Lados com borda: todos, só em cima e embaixo (border-block), só à esquerda (destaque) ou nenhum. */
+export type BorderSides = "all" | "block" | "left" | "none";
+export type BorderStyle = "solid" | "dashed";
+/** Posição de um brilho radial decorativo. */
+export type GlowPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
+
+/** Brilho radial (cor da paleta, translúcida). */
+export interface Glow {
+  color: string;
+  position: GlowPosition;
+  /** Largura da elipse em px (a altura é ~55% dela). */
+  size: number;
+  /** 0-100: opacidade da cor no centro do brilho. */
+  intensity: number;
+}
+
+/** Camadas decorativas atrás do conteúdo (a caixa ganha overflow oculto). */
+export interface BoxDecor {
+  /** Grade de linhas de 56px com máscara radial. */
+  grid?: boolean;
+  gridColor?: string;
+  /** 1-20: opacidade das linhas da grade (ausente = 5). */
+  gridOpacity?: number;
+  /** Até 2 brilhos radiais. */
+  glows?: Glow[];
+}
 
 export type BoxFill = "solid" | "gradient" | "image";
 export type BgSize = "cover" | "contain" | "auto";
@@ -38,6 +65,20 @@ export interface BoxProps {
   animation?: BgAnimation;
   /** Crédito da imagem de fundo vinda do Pexels (null = imagem própria). */
   bgCredit?: ImageCredit | null;
+  /* Opções de layout e aparência (todas opcionais; ausentes = visual de antes). */
+  /** Altura mínima: px, ou "screen" (tela inteira, 100vh). Ausente/0 = livre. */
+  minHeight?: number | "screen";
+  /** Seção: conteúdo de ponta a ponta (sem a largura máxima do conteúdo). */
+  fullBleed?: boolean;
+  /** Ausente = "all" (borda em volta, como antes). */
+  borderSides?: BorderSides;
+  /** Ausente = "solid". */
+  borderStyle?: BorderStyle;
+  /** Vidro: desfoque do que está atrás (0-16px). */
+  glassBlur?: number;
+  /** Vidro: opacidade do preenchimento (0-100; ausente = 100, opaco). */
+  fillOpacity?: number;
+  decor?: BoxDecor;
 }
 
 export interface TextStyle {
@@ -152,13 +193,34 @@ export interface Column {
   children: Leaf[];
 }
 
+/** Linha no tablet e no celular: empilha tudo, 2 colunas no tablet (empilha no celular) ou mantém. */
+export type RowResponsive = "stack" | "tablet2" | "keep";
+/** Largura máxima da linha (px) ou "full". */
+export type RowMaxWidth = 640 | 720 | 840 | 960 | "full";
+
 export interface RowBlock {
   id: string;
   type: "row";
+  /** Espaço horizontal entre colunas (px). */
   gap: number;
   alignItems?: "start" | "center" | "end" | "stretch";
   box: BoxProps;
   columns: Column[];
+  /* Opções de layout (opcionais; ausentes = colunas iguais, como antes). */
+  /** Proporção das colunas em fr (ex.: [1.35, 0.9]); um valor por coluna. */
+  ratios?: number[];
+  /** Espaço vertical entre colunas empilhadas/quebradas (ausente = `gap`). */
+  rowGap?: number;
+  /** Alinhamento horizontal do conteúdo das colunas. Ausente = "start". */
+  justify?: "start" | "center" | "end";
+  /** Largura máxima da linha. Ausente = "full". */
+  maxWidth?: RowMaxWidth;
+  /** Alinhamento da linha com largura máxima. Ausente = "center". */
+  rowAlign?: "left" | "center";
+  /** Ausente = "stack". */
+  responsive?: RowResponsive;
+  /** Ordem invertida quando as colunas empilham. */
+  stackReverse?: boolean;
 }
 
 export interface SectionBlock {
@@ -184,8 +246,24 @@ export interface BBLogo {
   align: "left" | "center";
 }
 
+/** Largura máxima do conteúdo das seções. */
+export type ContentWidth = 960 | 1120 | 1140 | 1200 | 1280 | "full";
+
+/** Layout da página (opcional; ausente = 1120px e margens de antes). */
+export interface PageLayout {
+  /** Ausente = 1120. */
+  maxWidth?: ContentWidth;
+  /** Margem lateral do conteúdo no computador (px; ausente = 0, só o padding da seção). */
+  gutter?: number;
+  /** Margem lateral das seções no celular, até 640px (ausente = 24, como no tablet). */
+  gutterMobile?: number;
+  /** Compensação da rolagem até as âncoras (scroll-margin-top, px). Ausente = "auto". */
+  scrollOffset?: number | "auto";
+}
+
 export interface PageContent {
   version: 1;
+  layout?: PageLayout;
   sections: SectionBlock[];
   cursor?: PageCursor;
   /** Ausente = "gove". */

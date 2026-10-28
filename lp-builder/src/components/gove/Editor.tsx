@@ -15,6 +15,7 @@ import {
   FloppyDisk,
   SlidersHorizontal,
   DeviceMobile,
+  DeviceTablet,
   Cards,
   Timer,
   TextT,
@@ -30,7 +31,7 @@ import { TARGET_FORM, pageHasForm } from "@/lib/gove/anchors";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Canvas } from "@/components/gove/Canvas";
-import { PropertiesPanel } from "@/components/gove/PropertiesPanel";
+import { PageLayoutEditor, PropertiesPanel } from "@/components/gove/PropertiesPanel";
 import { normalizeCursor } from "@/lib/gove/cursor";
 import { ExportDialog } from "@/components/gove/ExportDialog";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ import {
   updateNode,
 } from "@/lib/gove/tree";
 import type { Identity, Leaf, PageContent } from "@/lib/gove/types";
+import type { Device } from "@/lib/gove/styleRules";
 import {
   applyScheme,
   bbAudit,
@@ -87,6 +89,13 @@ import {
 /** O editor serve a landing pages e a modelos (mesmos blocos; modelos não exportam). */
 export type EditorKind = "page" | "template";
 
+/** Modos de visualização do canvas (o tablet aplica as regras de até 980px). */
+const DEVICES: { value: Device; label: string; Icon: typeof Monitor }[] = [
+  { value: "desktop", label: "Computador", Icon: Monitor },
+  { value: "tablet", label: "Tablet", Icon: DeviceTablet },
+  { value: "mobile", label: "Celular", Icon: DeviceMobile },
+];
+
 /** Identidade BB: toda alteração passa pelo ajuste automático (pares aprovados, paleta). */
 const finalize = (p: PageContent) => (isBB(p) ? bbHarmonize(p) : p);
 
@@ -107,7 +116,7 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
   const [nome, setNome] = useState("");
   const [page, setPage] = useState<PageContent | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mobile, setMobile] = useState(false);
+  const [device, setDevice] = useState<Device>("desktop");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   // Abaixo de 900px o painel de propriedades vira uma gaveta (divulgação progressiva).
@@ -296,6 +305,18 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
       ) : null}
       <h2 className="text-[20px] font-bold">Página</h2>
       <IdentityToggle value={page.identity ?? "gove"} onChange={setIdentity} />
+      <PageLayoutEditor
+        layout={page.layout}
+        onChange={(layout) =>
+          setPage((current) => {
+            if (!current) return current;
+            const next = { ...current };
+            if (layout) next.layout = layout;
+            else delete next.layout;
+            return next;
+          })
+        }
+      />
       {bb ? (
         <>
           <BBStatus issues={bbIssues} onAutoFix={autoFix} />
@@ -361,28 +382,20 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
           className="min-h-11 min-w-0 max-w-xs flex-1 rounded-xl font-bold"
         />
         <div className="flex shrink-0 gap-0.5 rounded-xl bg-secondary p-0.5" role="group" aria-label="Visualização">
-          <Button
-            variant="ghost"
-            className={segment(!mobile)}
-            onClick={() => setMobile(false)}
-            aria-pressed={!mobile}
-            aria-label="Desktop"
-            title="Desktop"
-          >
-            <Monitor weight={!mobile ? "fill" : "regular"} aria-hidden />
-            <span className={`sr-only min-[900px]:not-sr-only`}>Desktop</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className={segment(mobile)}
-            onClick={() => setMobile(true)}
-            aria-pressed={mobile}
-            aria-label="Mobile"
-            title="Mobile"
-          >
-            <DeviceMobile weight={mobile ? "fill" : "regular"} aria-hidden />
-            <span className={`sr-only min-[900px]:not-sr-only`}>Mobile</span>
-          </Button>
+          {DEVICES.map(({ value, label, Icon }) => (
+            <Button
+              key={value}
+              variant="ghost"
+              className={segment(device === value)}
+              onClick={() => setDevice(value)}
+              aria-pressed={device === value}
+              aria-label={label}
+              title={label}
+            >
+              <Icon weight={device === value ? "fill" : "regular"} aria-hidden />
+              <span className={`sr-only min-[900px]:not-sr-only`}>{label}</span>
+            </Button>
+          ))}
         </div>
         <span className={`hidden text-xs text-muted-foreground min-[900px]:inline`} aria-live="polite">
           {savedLabel}
@@ -513,7 +526,7 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
               setSelectedId(nodeId);
               if (nodeId && window.matchMedia("(max-width: 899.98px)").matches) setPanelOpen(true);
             }}
-            mobile={mobile}
+            device={device}
             onMove={(dragId, targetId, position, kind) =>
               setPage((current) =>
                 current

@@ -1,4 +1,5 @@
-import { Warning, ArrowDown, ArrowUp, Trash, ArrowLineDown } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { Warning, ArrowDown, ArrowUp, Trash, ArrowLineDown, CaretDown, Plus } from "@phosphor-icons/react";
 import {
   END_ANCHOR,
   TARGET_END,
@@ -26,11 +27,30 @@ import {
   TYPE_PRESETS,
   TYPE_SCALE,
   type AnyNode,
+  type BoxDecor,
   type BoxProps,
   type ButtonBlock,
+  type ContentWidth,
+  type Glow,
+  type GlowPosition,
   type PageContent,
   type PageCursor,
+  type PageLayout,
+  type RowBlock,
 } from "@/lib/gove/types";
+import {
+  CONTENT_WIDTHS,
+  DEFAULT_CONTENT_WIDTH,
+  DEFAULT_GUTTER_MOBILE,
+  GLOW_POSITIONS,
+  GLOW_SIZES,
+  GUTTER_STEPS,
+  MAX_GLOWS,
+  RATIO_PRESETS,
+  ROW_MAX_WIDTHS,
+  hasDecor,
+  rowRatios,
+} from "@/lib/gove/styleRules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +59,7 @@ import { PaletteField, SchemePicker, TextColorField } from "./BBControls";
 import { useBBMode } from "@/lib/gove/bbMode";
 import {
   BB_FONTS,
+  BB_PALETTE,
   graphicColors,
   hex6,
   leafTextContext,
@@ -76,6 +97,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+const SELECT = "h-11 w-full rounded-md border border-input bg-background px-3 text-sm";
 
 const FILE_INPUT =
   "block min-h-11 w-full text-sm text-muted-foreground file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-xl file:border-0 file:bg-secondary file:px-4 file:text-sm file:font-semibold file:text-foreground";
@@ -411,6 +434,7 @@ function BoxEditor({
           <option value="none">Nenhuma</option>
           <option value="sm">Leve</option>
           <option value="md">Média</option>
+          <option value="lg">Grande</option>
         </select>
       </Field>
       <StepSelect label="Padding vertical" value={box.paddingY} steps={SPACING_STEPS} onChange={(v) => onChange({ paddingY: v })} />
@@ -432,6 +456,546 @@ function BoxEditor({
         </p>
       </Field>
     </>
+  );
+}
+
+/** Patch em que `undefined` remove a opção (volta ao padrão). */
+type Patch<T> = { [K in keyof T]?: T[K] | undefined };
+
+/** Aplica o patch e apaga as chaves `undefined` (o documento salvo fica limpo). */
+function withPatch<T extends object>(base: T, patch: Patch<T>): T {
+  const next = { ...base, ...patch } as Record<string, unknown>;
+  for (const key of Object.keys(next)) if (next[key] === undefined) delete next[key];
+  return next as T;
+}
+
+/** Grupo recolhível do painel (divulgação progressiva). */
+export function PanelGroup({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details open={defaultOpen} className="group rounded-xl border border-border">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-bold [&::-webkit-details-marker]:hidden">
+        {title}
+        <CaretDown className="size-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="space-y-4 border-t border-border p-4">{children}</div>
+    </details>
+  );
+}
+
+/** Opções em botões (escolha única), no padrão do "Preenchimento do fundo". */
+function ChoiceField<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+  columns = 3,
+}: {
+  label: string;
+  value: T;
+  options: readonly (readonly [T, string])[];
+  onChange: (v: T) => void;
+  columns?: 2 | 3 | 4;
+}) {
+  const cols = columns === 2 ? "grid-cols-2" : columns === 4 ? "grid-cols-4" : "grid-cols-3";
+  return (
+    <Field label={label}>
+      <div role="radiogroup" aria-label={label} className={`grid gap-2 ${cols}`}>
+        {options.map(([v, text]) => (
+          <button
+            key={String(v)}
+            type="button"
+            role="radio"
+            aria-checked={value === v}
+            onClick={() => onChange(v)}
+            className="min-h-11 rounded-lg border-2 px-2 py-2 text-xs font-bold leading-tight"
+            style={{ borderColor: value === v ? "var(--gove-primary)" : "var(--color-border)" }}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+/** Slider com valor no rótulo. */
+function RangeField({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  suffix = "",
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  suffix?: string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <Field label={`${label}: ${value}${suffix}`}>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="h-11 w-full accent-[var(--gove-primary)]"
+        aria-label={label}
+      />
+    </Field>
+  );
+}
+
+/** Só as cores da paleta (sem seletor livre): decorações não criam cor nova. */
+function SwatchField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const bb = useBBMode();
+  if (bb) return <PaletteField label={label} value={value} onChange={onChange} />;
+  return (
+    <Field label={label}>
+      <div className="flex flex-wrap gap-2">
+        {BRAND_SWATCHES.map(({ hex, nome }) => (
+          <button
+            key={hex}
+            type="button"
+            title={`${nome} (${hex})`}
+            aria-label={`Usar cor ${nome} (${hex})`}
+            aria-pressed={value.toUpperCase() === hex}
+            onClick={() => onChange(hex)}
+            className="size-11 rounded-lg border border-border"
+            style={{
+              backgroundColor: hex,
+              outline: value.toUpperCase() === hex ? "3px solid var(--gove-primary)" : undefined,
+              outlineOffset: 2,
+            }}
+          />
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+const MIN_HEIGHTS: readonly (readonly [string, string])[] = [
+  ["0", "Livre"],
+  ["320", "320px"],
+  ["480", "480px"],
+  ["640", "640px"],
+  ["screen", "Tela inteira"],
+];
+
+/** Layout da caixa: altura mínima e (seção) conteúdo de ponta a ponta. */
+function BoxLayoutFields({
+  box,
+  section,
+  onChange,
+}: {
+  box: BoxProps;
+  section: boolean;
+  onChange: (patch: Patch<BoxProps>) => void;
+}) {
+  const current = box.minHeight === "screen" ? "screen" : String(box.minHeight ?? 0);
+  return (
+    <>
+      <Field label="Altura mínima">
+        <select
+          className={SELECT}
+          value={MIN_HEIGHTS.some(([v]) => v === current) ? current : "custom"}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange({ minHeight: v === "screen" ? "screen" : Number(v) || undefined });
+          }}
+        >
+          {MIN_HEIGHTS.map(([v, text]) => (
+            <option key={v} value={v}>
+              {text}
+            </option>
+          ))}
+          {!MIN_HEIGHTS.some(([v]) => v === current) ? <option value="custom">{current}px</option> : null}
+        </select>
+      </Field>
+      {section ? (
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!box.fullBleed}
+            onChange={(e) => onChange({ fullBleed: e.target.checked || undefined })}
+          />
+          Conteúdo de ponta a ponta (sem largura máxima)
+        </label>
+      ) : null}
+    </>
+  );
+}
+
+/** Aparência nova da caixa: bordas por lado, vidro e camadas decorativas. */
+function BoxAppearanceFields({ box, onChange }: { box: BoxProps; onChange: (patch: Patch<BoxProps>) => void }) {
+  const bb = useBBMode();
+  const decor = box.decor ?? {};
+  const glows = decor.glows ?? [];
+  const setDecor = (patch: Patch<BoxDecor>) => {
+    const next = withPatch(decor, patch);
+    const empty = !next.grid && !next.glows?.length;
+    onChange({ decor: empty ? undefined : next });
+  };
+  const setGlow = (i: number, patch: Partial<Glow>) =>
+    setDecor({ glows: glows.map((g, j) => (j === i ? { ...g, ...patch } : g)) });
+  return (
+    <>
+      <ChoiceField
+        label="Lados da borda"
+        value={box.borderSides ?? "all"}
+        columns={2}
+        options={[
+          ["all", "Todos"],
+          ["block", "Em cima e embaixo"],
+          ["left", "Só à esquerda"],
+          ["none", "Nenhum"],
+        ]}
+        onChange={(v) => onChange({ borderSides: v === "all" ? undefined : v, borderWidth: v !== "none" && !box.borderWidth ? 1 : box.borderWidth })}
+      />
+      <ChoiceField
+        label="Estilo da borda"
+        value={box.borderStyle ?? "solid"}
+        columns={2}
+        options={[
+          ["solid", "Sólida"],
+          ["dashed", "Tracejada"],
+        ]}
+        onChange={(v) => onChange({ borderStyle: v === "solid" ? undefined : v })}
+      />
+      <RangeField
+        label="Vidro — desfoque do fundo"
+        value={box.glassBlur ?? 0}
+        min={0}
+        max={16}
+        suffix="px"
+        onChange={(v) => onChange({ glassBlur: v || undefined })}
+      />
+      <RangeField
+        label="Opacidade do preenchimento"
+        value={box.fillOpacity ?? 100}
+        min={0}
+        max={100}
+        step={5}
+        suffix="%"
+        onChange={(v) => onChange({ fillOpacity: v >= 100 ? undefined : v })}
+      />
+      {bb && (box.fillOpacity ?? 100) < 100 ? (
+        <p className="rounded-lg bg-secondary px-3 py-2 text-xs">
+          Fundo translúcido: a checagem BB passa a considerar a mistura com o fundo de baixo.
+        </p>
+      ) : null}
+
+      <h4 className="pt-2 text-xs font-bold tracking-wide uppercase">Decoração</h4>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!decor.grid} onChange={(e) => setDecor({ grid: e.target.checked || undefined })} />
+        Grade de linhas (56px, com esmaecimento)
+      </label>
+      {decor.grid ? (
+        <>
+          <SwatchField label="Cor da grade" value={decor.gridColor ?? "#FFFFFF"} onChange={(v) => setDecor({ gridColor: v })} />
+          <RangeField
+            label="Opacidade da grade"
+            value={decor.gridOpacity ?? 5}
+            min={1}
+            max={20}
+            suffix="%"
+            onChange={(v) => setDecor({ gridOpacity: v })}
+          />
+        </>
+      ) : null}
+      {glows.map((glow, i) => (
+        <div key={i} className="space-y-4 rounded-lg bg-secondary/60 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold">Brilho {i + 1}</span>
+            <Button
+              variant="ghost"
+              size="iconTouch"
+              aria-label={`Remover brilho ${i + 1}`}
+              title="Remover brilho"
+              onClick={() => setDecor({ glows: glows.filter((_, j) => j !== i) })}
+            >
+              <Trash aria-hidden />
+            </Button>
+          </div>
+          <SwatchField label="Cor do brilho" value={glow.color} onChange={(v) => setGlow(i, { color: v })} />
+          <Field label="Posição">
+            <select
+              className={SELECT}
+              value={glow.position}
+              onChange={(e) => setGlow(i, { position: e.target.value as GlowPosition })}
+            >
+              {GLOW_POSITIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <StepSelect label="Tamanho" value={glow.size} steps={GLOW_SIZES} onChange={(v) => setGlow(i, { size: v })} />
+          <RangeField
+            label="Intensidade"
+            value={glow.intensity}
+            min={0}
+            max={100}
+            step={2}
+            suffix="%"
+            onChange={(v) => setGlow(i, { intensity: v })}
+          />
+        </div>
+      ))}
+      {glows.length < MAX_GLOWS ? (
+        <Button
+          variant="outline"
+          size="touch"
+          className="w-full"
+          onClick={() =>
+            setDecor({
+              glows: [
+                ...glows,
+                {
+                  color: bb ? BB_PALETTE.amareloInstitucional : glows.length ? "#A278DA" : "#5AC2CD",
+                  position: glows.length ? "top-right" : "top-left",
+                  size: 900,
+                  intensity: 28,
+                },
+              ],
+            })
+          }
+        >
+          <Plus aria-hidden />
+          Adicionar brilho radial
+        </Button>
+      ) : null}
+      {hasDecor(box) ? (
+        <p className="text-xs text-muted-foreground">A decoração fica atrás do conteúdo e não vaza da caixa.</p>
+      ) : null}
+    </>
+  );
+}
+
+const ratioLabel = (ratios: number[]) => ratios.map((r) => String(r)).join(" / ");
+
+/** Layout da linha: proporção das colunas, espaços, alinhamentos e largura. */
+function RowLayoutFields({
+  row,
+  onChange,
+  onColumns,
+}: {
+  row: RowBlock;
+  onChange: (patch: Record<string, unknown>) => void;
+  onColumns: (count: number) => void;
+}) {
+  const count = row.columns.length;
+  const ratios = rowRatios(row);
+  const presets = RATIO_PRESETS.filter((p) => p.ratios.length === count);
+  const active = presets.find((p) => p.ratios.every((r, i) => r === ratios[i]));
+  const [draft, setDraft] = useState(ratioLabel(ratios));
+  useEffect(() => setDraft(ratioLabel(rowRatios(row))), [row]);
+  const applyCustom = () => {
+    const list = draft
+      .split(/[/:;\s]+/)
+      .map((v) => Number(v.replace(",", ".")))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    if (list.length === count) onChange({ ratios: list.every((v) => v === list[0]) ? undefined : list });
+    else setDraft(ratioLabel(ratios));
+  };
+  return (
+    <>
+      <StepSelect label="Colunas" value={count} steps={[1, 2, 3, 4]} suffix="" onChange={onColumns} />
+      {count > 1 ? (
+        <>
+          <ChoiceField
+            label="Proporção das colunas"
+            value={active?.id ?? "custom"}
+            columns={presets.length >= 3 ? 3 : 2}
+            options={[...presets.map((p) => [p.id, p.label] as const), ["custom", "Outra"] as const]}
+            onChange={(id) => {
+              const preset = presets.find((p) => p.id === id);
+              if (preset) onChange({ ratios: preset.ratios.every((r) => r === 1) ? undefined : preset.ratios });
+            }}
+          />
+          <Field label="Proporção personalizada (fr)">
+            <Input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={applyCustom}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyCustom();
+              }}
+              placeholder={count === 2 ? "1.35 / 0.9" : "1 / 1 / 1"}
+              aria-label="Proporção personalizada das colunas, em fr"
+            />
+            <p className="text-xs text-muted-foreground">Um número por coluna, separados por “/”. Ex.: 1.35 / 0.9.</p>
+          </Field>
+        </>
+      ) : null}
+      <StepSelect label="Espaço horizontal entre colunas" value={row.gap} steps={SPACING_STEPS} onChange={(v) => onChange({ gap: v })} />
+      <Field label="Espaço vertical (colunas empilhadas)">
+        <select
+          className={SELECT}
+          value={row.rowGap === undefined ? "same" : String(row.rowGap)}
+          onChange={(e) => onChange({ rowGap: e.target.value === "same" ? undefined : Number(e.target.value) })}
+        >
+          <option value="same">Igual ao horizontal</option>
+          {SPACING_STEPS.map((step) => (
+            <option key={step} value={step}>
+              {step}px
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Alinhamento vertical">
+        <select className={SELECT} value={row.alignItems ?? "start"} onChange={(e) => onChange({ alignItems: e.target.value })}>
+          <option value="start">Topo</option>
+          <option value="center">Centro</option>
+          <option value="end">Base</option>
+          <option value="stretch">Esticar (mesma altura)</option>
+        </select>
+      </Field>
+      <ChoiceField
+        label="Alinhamento horizontal do conteúdo"
+        value={row.justify ?? "start"}
+        options={[
+          ["start", "Esquerda"],
+          ["center", "Centro"],
+          ["end", "Direita"],
+        ]}
+        onChange={(v) => onChange({ justify: v === "start" ? undefined : v })}
+      />
+      <Field label="Largura máxima da linha">
+        <select
+          className={SELECT}
+          value={String(row.maxWidth ?? "full")}
+          onChange={(e) => onChange({ maxWidth: e.target.value === "full" ? undefined : Number(e.target.value) })}
+        >
+          {ROW_MAX_WIDTHS.map((w) => (
+            <option key={w} value={String(w)}>
+              {w === "full" ? "Total (largura do conteúdo)" : `${w}px`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {row.maxWidth && row.maxWidth !== "full" ? (
+        <ChoiceField
+          label="Posição da linha"
+          value={row.rowAlign ?? "center"}
+          columns={2}
+          options={[
+            ["left", "À esquerda"],
+            ["center", "Centralizada"],
+          ]}
+          onChange={(v) => onChange({ rowAlign: v === "center" ? undefined : v })}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** Linha no tablet (até 980px) e no celular (até 640px). */
+function RowResponsiveFields({ row, onChange }: { row: RowBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const mode = row.responsive ?? "stack";
+  return (
+    <>
+      <Field label="Colunas no tablet e no celular">
+        <select
+          className={SELECT}
+          value={mode}
+          onChange={(e) => onChange({ responsive: e.target.value === "stack" ? undefined : e.target.value })}
+        >
+          <option value="stack">Empilhar tudo (tablet e celular)</option>
+          <option value="tablet2">2 colunas no tablet, empilhar no celular</option>
+          <option value="keep">Manter as colunas</option>
+        </select>
+      </Field>
+      {mode !== "keep" ? (
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!row.stackReverse}
+            onChange={(e) => onChange({ stackReverse: e.target.checked || undefined })}
+          />
+          Inverter a ordem ao empilhar
+        </label>
+      ) : null}
+      <p className="text-xs text-muted-foreground">Confira no canvas com os modos Tablet e Celular.</p>
+    </>
+  );
+}
+
+/** Layout da página: largura do conteúdo, margens laterais e rolagem até as âncoras. */
+export function PageLayoutEditor({
+  layout = {},
+  onChange,
+}: {
+  layout?: PageLayout | undefined;
+  onChange: (layout: PageLayout | undefined) => void;
+}) {
+  const set = (patch: Patch<PageLayout>) => {
+    const next = withPatch(layout, patch);
+    onChange(Object.keys(next).length ? next : undefined);
+  };
+  return (
+    <PanelGroup title="Layout da página">
+      <Field label="Largura do conteúdo">
+        <select
+          className={SELECT}
+          value={String(layout.maxWidth ?? DEFAULT_CONTENT_WIDTH)}
+          onChange={(e) => {
+            const v = e.target.value === "full" ? "full" : (Number(e.target.value) as ContentWidth);
+            set({ maxWidth: v === DEFAULT_CONTENT_WIDTH ? undefined : v });
+          }}
+        >
+          {CONTENT_WIDTHS.map((w) => (
+            <option key={w} value={String(w)}>
+              {w === "full" ? "Largura total" : `${w}px${w === DEFAULT_CONTENT_WIDTH ? " (padrão)" : ""}`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <StepSelect
+        label="Margem lateral do conteúdo (computador)"
+        value={layout.gutter ?? 0}
+        steps={GUTTER_STEPS}
+        onChange={(v) => set({ gutter: v || undefined })}
+      />
+      <StepSelect
+        label="Margem lateral no celular (até 640px)"
+        value={layout.gutterMobile ?? DEFAULT_GUTTER_MOBILE}
+        steps={GUTTER_STEPS.filter((s) => s > 0)}
+        onChange={(v) => set({ gutterMobile: v === DEFAULT_GUTTER_MOBILE ? undefined : v })}
+      />
+      <p className="text-xs text-muted-foreground">
+        No tablet (até 980px) as seções usam 24px de margem lateral e as colunas empilham, salvo outra escolha na linha.
+      </p>
+      <Field label="Compensação ao rolar até as seções">
+        <select
+          className={SELECT}
+          value={String(layout.scrollOffset ?? "auto")}
+          onChange={(e) => set({ scrollOffset: e.target.value === "auto" ? undefined : Number(e.target.value) })}
+        >
+          <option value="auto">Automática (altura do cabeçalho fixo)</option>
+          {[0, 64, 72, 90, 120].map((v) => (
+            <option key={v} value={String(v)}>
+              {v}px
+            </option>
+          ))}
+        </select>
+      </Field>
+    </PanelGroup>
   );
 }
 
@@ -537,8 +1101,6 @@ function CursorEditor({
     </div>
   );
 }
-
-const SELECT = "h-11 w-full rounded-md border border-input bg-background px-3 text-sm";
 
 /** Ação do botão: URL externa ou rolar até uma seção da página (âncora, sem JS). */
 function ButtonLinkField({
@@ -731,6 +1293,17 @@ export function PropertiesPanel({
       </div>
 
       {node.type === "section" || node.type === "row" ? (
+        <PanelGroup title="Layout" defaultOpen={node.type === "row"}>
+          {node.type === "row" ? <RowLayoutFields row={node} onChange={onChange} onColumns={onColumns} /> : null}
+          <BoxLayoutFields
+            box={node.box}
+            section={node.type === "section"}
+            onChange={(patch) => onChange({ box: withPatch(normalizeBox(node.box), patch) })}
+          />
+        </PanelGroup>
+      ) : null}
+
+      {node.type === "section" || node.type === "row" ? (
         <BoxEditor
           box={node.box}
           onChange={(patch) => onChange({ box: { ...normalizeBox(node.box), ...patch } })}
@@ -740,23 +1313,20 @@ export function PropertiesPanel({
         />
       ) : null}
 
-      {node.type === "row" ? (
-        <>
-          <StepSelect label="Colunas" value={node.columns.length} steps={[1, 2, 3, 4]} suffix="" onChange={onColumns} />
-          <StepSelect label="Espaço entre colunas" value={node.gap} steps={SPACING_STEPS} onChange={(v) => onChange({ gap: v })} />
-          <Field label="Alinhamento vertical">
-            <select
-              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={node.alignItems ?? "start"}
-              onChange={(e) => onChange({ alignItems: e.target.value })}
-            >
-              <option value="start">Topo</option>
-              <option value="center">Centro</option>
-              <option value="end">Base</option>
-              <option value="stretch">Esticar (mesma altura)</option>
-            </select>
-          </Field>
-        </>
+      {node.type === "section" || node.type === "row" ? (
+        <div className="space-y-3">
+          <PanelGroup title="Aparência">
+            <BoxAppearanceFields
+              box={node.box}
+              onChange={(patch) => onChange({ box: withPatch(normalizeBox(node.box), patch) })}
+            />
+          </PanelGroup>
+          {node.type === "row" ? (
+            <PanelGroup title="Celular e tablet">
+              <RowResponsiveFields row={node} onChange={onChange} />
+            </PanelGroup>
+          ) : null}
+        </div>
       ) : null}
 
       {node.type === "text" ? (
@@ -1042,6 +1612,7 @@ export function PropertiesPanel({
               <option value="none">Nenhuma</option>
               <option value="sm">Leve</option>
               <option value="md">Média</option>
+              <option value="lg">Grande</option>
             </select>
           </Field>
         </>

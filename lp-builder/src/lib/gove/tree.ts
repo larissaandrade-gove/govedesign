@@ -238,7 +238,9 @@ export function setColumnCount(page: PageContent, rowId: string, count: number):
             };
           }
         }
-        return { ...row, columns };
+        // Proporção personalizada vale para a quantidade antiga de colunas: volta a iguais.
+        const { ratios: _ratios, ...rest } = row;
+        return { ...(count === row.columns.length ? row : rest), columns };
       }),
     })),
   };

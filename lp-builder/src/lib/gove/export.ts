@@ -1,5 +1,4 @@
 import { buttonCss } from "./buttonStyle";
-import { backgroundCss } from "./background";
 import { imageFrameCss } from "./imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "./animations";
 import { embedUrl } from "./video";
@@ -21,6 +20,19 @@ import {
 import { BB_FONT_FACE_CSS } from "./bbFonts";
 import { END_ANCHOR, SMOOTH_SCROLL_CSS, resolveButtonLink, sectionAnchor } from "./anchors";
 import { ICON_PATHS, ICON_VIEWBOX } from "./iconPaths";
+import {
+  BREAKPOINTS,
+  boxCss,
+  columnCss,
+  containerCss,
+  decorHtml,
+  hasDecor,
+  pageSheet,
+  rowCss,
+  shadowCss,
+  styleString,
+  type Sheet,
+} from "./styleRules";
 
 /** Contexto de renderização: identidade, fontes e (BB) o fundo do contêiner. */
 interface RenderCtx {
@@ -28,6 +40,8 @@ interface RenderCtx {
   bb: boolean;
   fonts: PageFonts;
   container?: BBContext;
+  /** Folha de regras da página (classes por elemento, pontos de quebra). */
+  sheet: Sheet;
 }
 
 const esc = (value: string) =>
@@ -37,31 +51,8 @@ const esc = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-/** Sombra; na identidade BB usa o Azul escuro da paleta (translúcido). */
-const shadowCss = (shadow: BoxProps["shadow"], bb = false) => {
-  const c = bb ? "51,51,189" : "11,32,39";
-  return shadow === "sm"
-    ? `0 2px 8px rgba(${c},.08)`
-    : shadow === "md"
-      ? `0 8px 24px rgba(${c},.16)`
-      : "none";
-};
-
-function styleString(entries: Record<string, string | undefined>) {
-  return Object.entries(entries)
-    .filter(([, v]) => v !== undefined && v !== "")
-    .map(([k, v]) => `${k}:${v}`)
-    .join(";");
-}
-
 function boxStyle(box: BoxProps, bb = false) {
-  return styleString({
-    ...backgroundCss(box),
-    "border-radius": box.radius ? `${box.radius}px` : undefined,
-    border: box.borderWidth ? `${box.borderWidth}px solid ${box.borderColor}` : undefined,
-    "box-shadow": box.shadow === "none" ? undefined : shadowCss(box.shadow, bb),
-    padding: `${box.paddingY}px ${box.paddingX}px`,
-  });
+  return styleString(boxCss(box, bb));
 }
 
 /** Caixa de proteção BB (Azul escuro + texto Branco) para texto sobre foto. */
@@ -136,7 +127,7 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
         color: leaf.color,
         border: leaf.borderWidth ? `${leaf.borderWidth}px solid ${leaf.borderColor}` : undefined,
         "border-radius": `${leaf.radius}px`,
-        "box-shadow": leaf.shadow === "none" ? undefined : shadowCss(leaf.shadow, ctx.bb),
+        "box-shadow": shadowCss(leaf.shadow, ctx.bb),
         padding: `${leaf.padding}px`,
         "text-align": leaf.align,
         "font-family": fonts.body,
@@ -198,32 +189,16 @@ function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string 
   const ctx: RenderCtx = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
   const cols = row.columns
     .map(
-      (col) =>
-        `<div class="gove-col" style="flex:1 1 0;min-width:0;">${col.children.map((leaf) => leafHtml(leaf, ctx)).join("")}</div>`,
+      (col, i) =>
+        `<div class="gove-col" style="${styleString(columnCss(row, i))};">${col.children.map((leaf) => leafHtml(leaf, ctx)).join("")}</div>`,
     )
     .join("");
-  const style = styleString({
-    display: "flex",
-    "flex-wrap": "wrap",
-    gap: `${row.gap}px`,
-    "align-items":
-      row.alignItems === "center"
-        ? "center"
-        : row.alignItems === "end"
-          ? "flex-end"
-          : row.alignItems === "stretch"
-            ? "stretch"
-            : "flex-start",
-    ...Object.fromEntries(
-      boxStyle(row.box, base.bb)
-        .split(";")
-        .filter(Boolean)
-        .map((pair) => pair.split(/:(.+)/) as [string, string]),
-    ),
-  });
+  const style = styleString(rowCss(row, base.bb));
   const credit = row.box.fill === "image" && row.box.bgImage && row.box.bgCredit ? row.box.bgCredit : null;
   const data = credit ? ` data-pexels-id="${credit.id}"` : "";
-  return `<div class="gove-row ${bgAnimClass(row.box.animation)}"${data} style="${credit ? "position:relative;" : ""}${style}">${cols}${credit ? creditHtml(credit, true, base.bb) : ""}</div>`;
+  const own = base.sheet.classOf(row.id);
+  const relative = credit && !hasDecor(row.box) ? "position:relative;" : "";
+  return `<div class="gove-row ${bgAnimClass(row.box.animation)}${own ? ` ${own}` : ""}"${data} style="${relative}${style}">${decorHtml(row.box)}${cols}${credit ? creditHtml(credit, true, base.bb) : ""}</div>`;
 }
 
 /**
@@ -251,14 +226,16 @@ function creditHtml(credit: ImageCredit, overlay: boolean, bb = false): string {
 }
 
 function sectionHtml(section: SectionBlock, ctx: RenderCtx): string {
-  const cls = bgAnimClass(section.box.animation);
+  const cls = [bgAnimClass(section.box.animation), ctx.sheet.classOf(section.id)].filter(Boolean).join(" ");
   const credit =
     section.box.fill === "image" && section.box.bgImage && section.box.bgCredit
       ? section.box.bgCredit
       : null;
-  const style = credit ? `position:relative;${boxStyle(section.box, ctx.bb)}` : boxStyle(section.box, ctx.bb);
+  const style =
+    credit && !hasDecor(section.box) ? `position:relative;${boxStyle(section.box, ctx.bb)}` : boxStyle(section.box, ctx.bb);
   const data = credit ? ` data-pexels-id="${credit.id}"` : "";
-  return `<section id="${sectionAnchor(section)}"${cls ? ` class="${cls}"` : ""}${data} style="${style}"><div class="gove-container" style="max-width:1120px;margin:0 auto;">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
+  const container = `${styleString(containerCss(ctx.page, section))};`;
+  return `<section id="${sectionAnchor(section)}"${cls ? ` class="${cls}"` : ""}${data} style="${style}">${decorHtml(section.box)}<div class="gove-container" style="${container}">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
 }
 
 /** Faixa da logomarca BB: arquivo oficial sem recolorir, área de proteção x/2. */
@@ -316,12 +293,12 @@ function bbCss(fonts: PageFonts): string {
   return `${BB_FONT_FACE_CSS}
 .gove-lp[data-identity="bb"]{font-family:${fonts.body};color:${BB_PALETTE.azulEscuro};}
 .gove-lp a.bb-link:visited{color:${BB_PALETTE.roxoEscuro} !important;}
-@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}`;
+@media (max-width:${BREAKPOINTS.tablet}px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}`;
 }
 
 export function exportHtml(page: PageContent, nome: string): string {
   const bb = isBB(page);
-  const ctx: RenderCtx = { page, bb, fonts: pageFonts(page.identity) };
+  const ctx: RenderCtx = { page, bb, fonts: pageFonts(page.identity), sheet: pageSheet(page) };
   const body = page.sections.map((section) => sectionHtml(section, ctx)).join("\n");
   return `<!-- ${nome} — gerado no GOVE LP Builder${bb ? " — identidade Banco do Brasil" : ""} -->
 <div class="gove-lp"${bb ? ' data-identity="bb"' : ""}>
@@ -330,11 +307,7 @@ export function exportHtml(page: PageContent, nome: string): string {
 .gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}
 .gove-lp img{max-width:100%;height:auto;}
 ${SMOOTH_SCROLL_CSS}
-@media (max-width:768px){
-  .gove-lp .gove-row{flex-direction:column;}
-  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}
-  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}
-}
+${ctx.sheet.toExport()}
 ${ANIMATION_CSS}
 ${cursorCss(page.cursor)}
 ${followerCss(page.cursor)}

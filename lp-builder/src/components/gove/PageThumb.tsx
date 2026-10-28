@@ -37,7 +37,7 @@ export function PageThumb({ page }: { page: PageContent }) {
           pointerEvents: "none",
         }}
       >
-        <Canvas page={page} selectedId={null} onSelect={noop} mobile={false} />
+        <Canvas page={page} selectedId={null} onSelect={noop} device="desktop" />
       </div>
     </div>
   );

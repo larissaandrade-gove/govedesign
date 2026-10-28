@@ -191,11 +191,18 @@ export function boxSamples(raw: BoxProps, under: string[]): string[] {
     base = [b.gradientFrom, b.gradientVia, b.gradientTo].map(hex6).filter((c): c is string => !!c);
   else {
     const c = hex6(b.bgColor);
-    base = c ? [c] : under;
+    // Vidro: preenchimento translúcido mistura com o fundo de baixo.
+    const op = b.fillOpacity ?? 100;
+    base = c ? (op < 100 ? under.map((u) => mix(c, u, Math.max(0, op) / 100)) : [c]) : under;
   }
   const overlay = hex6(b.overlayColor);
   if (b.overlay > 0 && overlay)
     base = base.map((s) => mix(overlay, s, Math.min(1, b.overlay / 100)));
+  // Brilhos decorativos: pior caso no centro de cada brilho.
+  for (const glow of b.decor?.glows ?? []) {
+    const g = hex6(glow.color);
+    if (g && glow.intensity > 0) base = [...base, ...base.map((s) => mix(g, s, Math.min(1, glow.intensity / 100)))];
+  }
   return uniq(base.length ? base : under);
 }
 
@@ -377,6 +384,13 @@ function harmonizeBox(raw: BoxProps, allowTransparent: boolean): BoxProps {
   next.gradientTo = snapPalette(box.gradientTo);
   next.gradientVia = box.gradientVia ? snapPalette(box.gradientVia) : "";
   next.borderColor = snapPalette(box.borderColor);
+  if (box.decor) {
+    next.decor = {
+      ...box.decor,
+      ...(box.decor.gridColor ? { gridColor: snapPalette(box.decor.gridColor) } : {}),
+      ...(box.decor.glows ? { glows: box.decor.glows.map((g) => ({ ...g, color: snapPalette(g.color) })) } : {}),
+    };
+  }
   if (next.borderWidth > 0) {
     // Borda só com >= 3:1 (Amarelo sobre Branco nunca em linha fina).
     const inner = hex6(next.bgColor) ?? WHITE;
@@ -557,6 +571,12 @@ export function bbAudit(page: PageContent): AuditIssue[] {
       add(`bg-${id}`, "Paleta BB", `${where}: fundo ${bg} fora dos esquemas BB.`, id);
     if (b.overlay > 0 && offPalette(b.overlayColor))
       add(`ov-${id}`, "Paleta BB", `${where}: sobreposição ${b.overlayColor} fora da paleta.`, id);
+    const decorColors = [
+      ...(b.decor?.grid && b.decor.gridColor ? [b.decor.gridColor] : []),
+      ...(b.decor?.glows ?? []).map((g) => g.color),
+    ];
+    for (const c of decorColors)
+      if (offPalette(c)) add(`dc-${id}-${c}`, "Paleta BB", `${where}: decoração ${c} fora da paleta.`, id);
     if (b.borderWidth > 0) {
       if (offPalette(b.borderColor))
         add(`bd-${id}`, "Paleta BB", `${where}: borda ${b.borderColor} fora da paleta.`, id);

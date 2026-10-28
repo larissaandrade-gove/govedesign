@@ -2,7 +2,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { END_ANCHOR, sectionAnchor } from "@/lib/gove/anchors";
 import { getIcon } from "./icons";
 import { buttonReactStyle } from "@/lib/gove/buttonStyle";
-import { backgroundStyle } from "@/lib/gove/background";
 import { imageFrameCss } from "@/lib/gove/imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "@/lib/gove/animations";
 import { cursorCss, followerCss, normalizeCursor } from "@/lib/gove/cursor";
@@ -22,6 +21,20 @@ import {
   type PageFonts,
 } from "@/lib/gove/bb";
 import { BB_FONT_FACE_CSS } from "@/lib/gove/bbFonts";
+import {
+  DEVICE_WIDTH,
+  boxCss,
+  columnCss,
+  containerCss,
+  decorLayers,
+  desktopCanvasWidth,
+  pageSheet,
+  reactStyle,
+  rowCss,
+  shadowCss,
+  type Device,
+  type Sheet,
+} from "@/lib/gove/styleRules";
 
 /** Identidade da página no canvas (fontes e, na BB, o fundo do contêiner). */
 interface Look {
@@ -30,30 +43,26 @@ interface Look {
   container?: BBContext;
 }
 
-const shadowCss = (shadow: BoxProps["shadow"], bb = false) => {
-  const c = bb ? "51,51,189" : "11,32,39";
-  return shadow === "sm"
-    ? `0 2px 8px rgba(${c},.08)`
-    : shadow === "md"
-      ? `0 8px 24px rgba(${c},.16)`
-      : undefined;
-};
+/** CSS da caixa (o mesmo do export) como estilo React. */
+const boxStyle = (box: BoxProps, bb = false) => reactStyle(boxCss(box, bb)) as CSSProperties;
 
-function boxStyle(box: BoxProps, bb = false): CSSProperties {
-  return {
-    ...(backgroundStyle(box) as CSSProperties),
-    borderRadius: box.radius || undefined,
-    border: box.borderWidth ? `${box.borderWidth}px solid ${box.borderColor}` : undefined,
-    boxShadow: shadowCss(box.shadow, bb),
-    padding: `${box.paddingY}px ${box.paddingX}px`,
-  };
+/** Camadas decorativas (grade e brilhos) atrás do conteúdo, como no export. */
+function DecorLayers({ box }: { box: BoxProps }) {
+  const layers = decorLayers(box);
+  if (!layers) return null;
+  return (
+    <div className="gove-decor" aria-hidden style={reactStyle(layers.glows) as CSSProperties}>
+      {layers.grid ? <div style={reactStyle(layers.grid) as CSSProperties} /> : null}
+    </div>
+  );
 }
 
 interface CanvasProps {
   page: PageContent;
   selectedId: string | null;
   onSelect: (id: string) => void;
-  mobile: boolean;
+  /** Computador, tablet (820px) ou celular (390px). */
+  device: Device;
   onMove?:
     | ((dragId: string, targetId: string, position: "before" | "after", kind: "leaf" | "row") => void)
     | undefined;
@@ -72,7 +81,7 @@ const outline = (active: boolean): CSSProperties =>
       }
     : {};
 
-function LeafView(props: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "mobile">) {
+function LeafView(props: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "device">) {
   const { leaf, look } = props;
   if (look.bb && look.container && needsProtection(leaf, look.container)) {
     // Caixa de proteção BB: texto sobre foto vai num bloco Azul escuro.
@@ -94,7 +103,7 @@ function LeafBody({
   selectedId,
   onSelect,
   onMove,
-}: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "mobile">) {
+}: { leaf: Leaf; look: Look } & Omit<CanvasProps, "page" | "device">) {
   const { fonts } = look;
   const selected = selectedId === leaf.id;
   const dnd = {
@@ -369,11 +378,11 @@ function RowView({
   row,
   section,
   look: base,
+  sheet,
   selectedId,
   onSelect,
-  mobile,
   onMove,
-}: { row: RowBlock; section: SectionBlock; look: Look } & Omit<CanvasProps, "page">) {
+}: { row: RowBlock; section: SectionBlock; look: Look; sheet: Sheet } & Omit<CanvasProps, "page" | "device">) {
   const look: Look = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
   return (
     <div
@@ -383,7 +392,7 @@ function RowView({
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/gove-row", row.id);
       }}
-      className={bgAnimClass(row.box.animation)}
+      className={["gove-row", bgAnimClass(row.box.animation), sheet.classOf(row.id)].filter(Boolean).join(" ")}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes("text/gove-row")) return;
         e.preventDefault();
@@ -404,25 +413,16 @@ function RowView({
         onSelect(row.id);
       }}
       style={{
-        ...boxStyle(row.box, look.bb),
+        ...(reactStyle(rowCss(row, look.bb)) as CSSProperties),
         ...outline(selectedId === row.id),
-        display: "flex",
-        flexDirection: mobile ? "column" : "row",
-        gap: row.gap,
-        alignItems:
-          row.alignItems === "center"
-            ? "center"
-            : row.alignItems === "end"
-              ? "flex-end"
-              : row.alignItems === "stretch"
-                ? "stretch"
-                : "flex-start",
         cursor: "grab",
       }}
     >
-      {row.columns.map((col) => (
+      <DecorLayers box={row.box} />
+      {row.columns.map((col, index) => (
         <div
           key={col.id}
+          className="gove-col"
           onClick={(e) => {
             e.stopPropagation();
             onSelect(col.id);
@@ -439,7 +439,7 @@ function RowView({
             e.stopPropagation();
             onMove?.(dragId, col.id, "after", "leaf");
           }}
-          style={{ flex: "1 1 0", minWidth: 0, width: mobile ? "100%" : undefined }}
+          style={reactStyle(columnCss(row, index)) as CSSProperties}
         >
           {col.children.length ? (
             col.children.map((leaf) => (
@@ -456,7 +456,9 @@ function RowView({
   );
 }
 
-export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasProps) {
+export function Canvas({ page, selectedId, onSelect, device, onMove }: CanvasProps) {
+  const mobile = device !== "desktop";
+  const sheet = pageSheet(page);
   const bb = isBB(page);
   const look: Look = { bb, fonts: pageFonts(page.identity) };
   const logo = bb && page.bbLogo?.src ? page.bbLogo : null;
@@ -469,7 +471,8 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
     <div
       className="gove-lp relative mx-auto w-full bg-white shadow-sm transition-all"
       data-identity={bb ? "bb" : undefined}
-      style={{ maxWidth: mobile ? 390 : 1120, fontFamily: bb ? look.fonts.body : "Montserrat, sans-serif" }}
+      data-device={device}
+      style={{ maxWidth: device === "desktop" ? desktopCanvasWidth(page.layout) : DEVICE_WIDTH[device], fontFamily: bb ? look.fonts.body : "Montserrat, sans-serif" }}
       onMouseMove={
         follower
           ? (e) => {
@@ -480,7 +483,7 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
       }
       onMouseLeave={follower ? () => setPos(null) : undefined}
     >
-      <style>{`${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}${bb ? `\n${BB_FONT_FACE_CSS}` : ""}`}</style>
+      <style>{`${sheet.toCanvas(device)}\n${ANIMATION_CSS}\n${cursorCss(page.cursor)}\n${followerCss(page.cursor)}${bb ? `\n${BB_FONT_FACE_CSS}` : ""}`}</style>
       {logo && logoBox ? (
         <header
           className="bb-logo"
@@ -515,7 +518,7 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
         <section
           key={section.id}
           id={sectionAnchor(section)}
-          className={bgAnimClass(section.box.animation)}
+          className={[bgAnimClass(section.box.animation), sheet.classOf(section.id)].filter(Boolean).join(" ") || undefined}
           onClick={() => onSelect(section.id)}
           style={{
             ...boxStyle(section.box, bb),
@@ -523,18 +526,21 @@ export function Canvas({ page, selectedId, onSelect, mobile, onMove }: CanvasPro
             cursor: cursor.mode !== "default" && cursor.url.trim() ? "inherit" : "pointer",
           }}
         >
-          {section.children.map((row) => (
-            <RowView
-              key={row.id}
-              row={row}
-              section={section}
-              look={look}
-              selectedId={selectedId}
-              onSelect={onSelect}
-              mobile={mobile}
-              onMove={onMove}
-            />
-          ))}
+          <DecorLayers box={section.box} />
+          <div className="gove-container" style={reactStyle(containerCss(page, section)) as CSSProperties}>
+            {section.children.map((row) => (
+              <RowView
+                key={row.id}
+                row={row}
+                section={section}
+                look={look}
+                sheet={sheet}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                onMove={onMove}
+              />
+            ))}
+          </div>
         </section>
       ))}
       <div id={END_ANCHOR} aria-hidden />

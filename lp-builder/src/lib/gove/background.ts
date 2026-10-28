@@ -3,6 +3,8 @@ import type { BoxProps } from "./types";
 /** Normaliza caixas antigas (salvas antes das opções de preenchimento). */
 export function normalizeBox(box: BoxProps): BoxProps {
   return {
+    // Mantém as opções novas (altura, bordas por lado, vidro, decoração...).
+    ...box,
     fill: box.fill ?? (box.bgImage ? "image" : "solid"),
     bgColor: box.bgColor ?? "#FFFFFF",
     bgImage: box.bgImage ?? "",

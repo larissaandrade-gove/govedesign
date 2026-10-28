@@ -1,0 +1,1662 @@
+[
+ {
+  "name": "modelo-base-centered-gove",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "m28lyekk",
+     "type": "section",
+     "box": {
+      "fill": "gradient",
+      "bgColor": "#3D0099",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 96,
+      "paddingX": 24,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "mkorf98k",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "a4b5xvtu",
+         "children": [
+          {
+           "id": "izkkhjrd",
+           "type": "text",
+           "tag": "h1",
+           "content": "Sua proposta de valor em uma frase",
+           "weight": "bold",
+           "italic": false,
+           "size": 39,
+           "color": "#FFFFFF",
+           "align": "center"
+          },
+          {
+           "id": "zbfwwgph",
+           "type": "text",
+           "tag": "p",
+           "content": "Explique em uma linha o que o lead ganha nesta página.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#F4F4F4",
+           "align": "center"
+          },
+          {
+           "id": "yv0n0fem",
+           "type": "button",
+           "label": "Quero saber mais",
+           "href": "#",
+           "variant": "filled",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "center",
+           "animation": "none",
+           "linkMode": "section",
+           "target": "@form"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "html": "<!-- modelo-base-centered-gove — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n\n</style>\n\n<section id=\"secao-m28lyekk\" style=\"background-color:#3D0099;background-image:linear-gradient(135deg, #20133D, #3D0099, #A278DA);padding:96px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:39px;font-weight:700;color:#FFFFFF;text-align:center;line-height:1.4\">Sua proposta de valor em uma frase</h1><p style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:20px;font-weight:400;color:#F4F4F4;text-align:center;line-height:1.4\">Explique em uma linha o que o lead ganha nesta página.</p><div style=\"text-align:center;margin:0 0 16px\"><a href=\"#fim-da-pagina\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#20133D;padding:16px 32px;background-color:#FFC72C\">Quero saber mais</a></div></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "modelo-base-split-gove",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "hlxhwvdo",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 80,
+      "paddingX": 24,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "py2zpmf4",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "ej9460wj",
+         "children": [
+          {
+           "id": "ge14o3pk",
+           "type": "text",
+           "tag": "h1",
+           "content": "Título do hero dividido",
+           "weight": "bold",
+           "italic": false,
+           "size": 31,
+           "color": "#2F3539",
+           "align": "left"
+          },
+          {
+           "id": "hlgwofer",
+           "type": "text",
+           "tag": "p",
+           "content": "Subtítulo com o principal benefício da oferta.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#5B6770",
+           "align": "left"
+          },
+          {
+           "id": "50232i7n",
+           "type": "button",
+           "label": "Quero saber mais",
+           "href": "#",
+           "variant": "filled",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "none",
+           "linkMode": "section",
+           "target": "@form"
+          }
+         ]
+        },
+        {
+         "id": "5k81535p",
+         "children": [
+          {
+           "id": "8wsh3hev",
+           "type": "image",
+           "src": "",
+           "alt": "",
+           "radius": 8,
+           "frame": "free",
+           "align": "center",
+           "width": 100
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "html": "<!-- modelo-base-split-gove — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n\n</style>\n\n<section id=\"secao-hlxhwvdo\" style=\"background-color:#FFFFFF;padding:80px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:31px;font-weight:700;color:#2F3539;text-align:left;line-height:1.4\">Título do hero dividido</h1><p style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:20px;font-weight:400;color:#5B6770;text-align:left;line-height:1.4\">Subtítulo com o principal benefício da oferta.</p><div style=\"text-align:left;margin:0 0 16px\"><a href=\"#fim-da-pagina\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#20133D;padding:16px 32px;background-color:#FFC72C\">Quero saber mais</a></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "modelo-base-form-gove",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "sr3escn7",
+     "type": "section",
+     "box": {
+      "fill": "gradient",
+      "bgColor": "#3D0099",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 80,
+      "paddingX": 24,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "2fb7j870",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "1jdli5xw",
+         "children": [
+          {
+           "id": "aah5u9hf",
+           "type": "text",
+           "tag": "h1",
+           "content": "Baixe o material gratuito",
+           "weight": "bold",
+           "italic": false,
+           "size": 31,
+           "color": "#FFFFFF",
+           "align": "left"
+          },
+          {
+           "id": "6vdebdx6",
+           "type": "text",
+           "tag": "p",
+           "content": "Liste de 2 a 3 motivos para o lead preencher o formulário.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#F4F4F4",
+           "align": "left"
+          }
+         ]
+        },
+        {
+         "id": "l94vvqz0",
+         "children": [
+          {
+           "id": "fdvxkk2u",
+           "type": "rdform",
+           "snippet": ""
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "html": "<!-- modelo-base-form-gove — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n\n</style>\n\n<section id=\"secao-sr3escn7\" style=\"background-color:#3D0099;background-image:linear-gradient(135deg, #20133D, #3D0099, #A278DA);padding:80px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:31px;font-weight:700;color:#FFFFFF;text-align:left;line-height:1.4\">Baixe o material gratuito</h1><p style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:20px;font-weight:400;color:#F4F4F4;text-align:left;line-height:1.4\">Liste de 2 a 3 motivos para o lead preencher o formulário.</p></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "modelo-base-centered-bb",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "pycjcfnn",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FCFC30",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 96,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": null
+     },
+     "children": [
+      {
+       "id": "am5g5ici",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "6xvxj552",
+         "children": [
+          {
+           "id": "noxp2x4b",
+           "type": "text",
+           "tag": "h1",
+           "content": "Seu próximo passo começa aqui",
+           "weight": "bold",
+           "italic": false,
+           "size": 39,
+           "color": "#3333BD",
+           "align": "center"
+          },
+          {
+           "id": "jnq0o6qg",
+           "type": "text",
+           "tag": "p",
+           "content": "Juntos, a gente simplifica a gestão do seu município. Veja como em poucos minutos.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#3333BD",
+           "align": "center"
+          },
+          {
+           "id": "raxwqa5f",
+           "type": "button",
+           "label": "Quero conhecer",
+           "href": "#",
+           "variant": "filled",
+           "bgColor": "#3333BD",
+           "color": "#FCFC30",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "center",
+           "animation": "none",
+           "linkMode": "section",
+           "target": "@form"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "identity": "bb"
+  },
+  "html": "<!-- modelo-base-centered-bb — gerado no GOVE LP Builder — identidade Banco do Brasil -->\n<div class=\"gove-lp\" data-identity=\"bb\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:800;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:400;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n.gove-lp[data-identity=\"bb\"]{font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;color:#3333BD;}\n.gove-lp a.bb-link:visited{color:#735CC6 !important;}\n@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}\n</style>\n\n<section id=\"secao-pycjcfnn\" style=\"background-color:#FCFC30;padding:96px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif;font-size:39px;font-weight:700;color:#3333BD;text-align:center;line-height:1.4\">Seu próximo passo começa aqui</h1><p style=\"margin:0 0 16px;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:20px;font-weight:400;color:#3333BD;text-align:center;line-height:1.4\">Juntos, a gente simplifica a gestão do seu município. Veja como em poucos minutos.</p><div style=\"text-align:center;margin:0 0 16px\"><a href=\"#fim-da-pagina\" style=\"display:inline-block;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#FCFC30;padding:16px 32px;background-color:#3333BD\">Quero conhecer</a></div></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "modelo-base-split-bb",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "5h3tw7ts",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 80,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": null
+     },
+     "children": [
+      {
+       "id": "gck64ag9",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "bn1cym8r",
+         "children": [
+          {
+           "id": "8m6c2ud4",
+           "type": "text",
+           "tag": "h1",
+           "content": "Gestão pública mais simples, para você e para a cidade",
+           "weight": "bold",
+           "italic": false,
+           "size": 31,
+           "color": "#3333BD",
+           "align": "left"
+          },
+          {
+           "id": "r92nhh8a",
+           "type": "text",
+           "tag": "p",
+           "content": "Conheça o caminho que já ajuda municípios a planejar melhor.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#3333BD",
+           "align": "left"
+          },
+          {
+           "id": "5in0br09",
+           "type": "button",
+           "label": "Quero conhecer",
+           "href": "#",
+           "variant": "filled",
+           "bgColor": "#3333BD",
+           "color": "#FFFFFF",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "none",
+           "linkMode": "section",
+           "target": "@form"
+          }
+         ]
+        },
+        {
+         "id": "8yz9khxv",
+         "children": [
+          {
+           "id": "evi490r9",
+           "type": "image",
+           "src": "",
+           "alt": "",
+           "radius": 8,
+           "frame": "free",
+           "align": "center",
+           "width": 100
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "identity": "bb"
+  },
+  "html": "<!-- modelo-base-split-bb — gerado no GOVE LP Builder — identidade Banco do Brasil -->\n<div class=\"gove-lp\" data-identity=\"bb\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:800;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:400;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n.gove-lp[data-identity=\"bb\"]{font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;color:#3333BD;}\n.gove-lp a.bb-link:visited{color:#735CC6 !important;}\n@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}\n</style>\n\n<section id=\"secao-5h3tw7ts\" style=\"background-color:#FFFFFF;padding:80px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif;font-size:31px;font-weight:700;color:#3333BD;text-align:left;line-height:1.4\">Gestão pública mais simples, para você e para a cidade</h1><p style=\"margin:0 0 16px;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:20px;font-weight:400;color:#3333BD;text-align:left;line-height:1.4\">Conheça o caminho que já ajuda municípios a planejar melhor.</p><div style=\"text-align:left;margin:0 0 16px\"><a href=\"#fim-da-pagina\" style=\"display:inline-block;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#FFFFFF;padding:16px 32px;background-color:#3333BD\">Quero conhecer</a></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "modelo-base-form-bb",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "zm8e9bbz",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#3333BD",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 80,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": null
+     },
+     "children": [
+      {
+       "id": "q515adu8",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "meeaqicj",
+         "children": [
+          {
+           "id": "9izv6fmt",
+           "type": "text",
+           "tag": "h1",
+           "content": "Baixe o material gratuito",
+           "weight": "bold",
+           "italic": false,
+           "size": 31,
+           "color": "#FFFFFF",
+           "align": "left"
+          },
+          {
+           "id": "1r58pl35",
+           "type": "text",
+           "tag": "p",
+           "content": "Preencha o formulário e receba o guia completo. É rápido e sem custo.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#FFFFFF",
+           "align": "left"
+          }
+         ]
+        },
+        {
+         "id": "8l36ombo",
+         "children": [
+          {
+           "id": "v61gm450",
+           "type": "rdform",
+           "snippet": ""
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "identity": "bb"
+  },
+  "html": "<!-- modelo-base-form-bb — gerado no GOVE LP Builder — identidade Banco do Brasil -->\n<div class=\"gove-lp\" data-identity=\"bb\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:800;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:400;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n.gove-lp[data-identity=\"bb\"]{font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;color:#3333BD;}\n.gove-lp a.bb-link:visited{color:#735CC6 !important;}\n@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}\n</style>\n\n<section id=\"secao-zm8e9bbz\" style=\"background-color:#3333BD;padding:80px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif;font-size:31px;font-weight:700;color:#FFFFFF;text-align:left;line-height:1.4\">Baixe o material gratuito</h1><p style=\"margin:0 0 16px;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:20px;font-weight:400;color:#FFFFFF;text-align:left;line-height:1.4\">Preencha o formulário e receba o guia completo. É rápido e sem custo.</p></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "preset-blank-gove",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "avvi9w9a",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "pux8s071",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "ehdlzahr",
+         "children": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "html": "<!-- preset-blank-gove — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n\n</style>\n\n<section id=\"secao-avvi9w9a\" style=\"background-color:#FFFFFF;padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "preset-blank-bb",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "x8mxtl51",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": null
+     },
+     "children": [
+      {
+       "id": "odo520v8",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "yalz09ti",
+         "children": []
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "identity": "bb"
+  },
+  "html": "<!-- preset-blank-bb — gerado no GOVE LP Builder — identidade Banco do Brasil -->\n<div class=\"gove-lp\" data-identity=\"bb\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:800;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:400;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n.gove-lp[data-identity=\"bb\"]{font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;color:#3333BD;}\n.gove-lp a.bb-link:visited{color:#735CC6 !important;}\n@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}\n</style>\n\n<section id=\"secao-x8mxtl51\" style=\"background-color:#FFFFFF;padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "manual-gove-completa",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "cuzlu87h",
+     "type": "section",
+     "box": {
+      "fill": "image",
+      "bgColor": "#FFFFFF",
+      "bgImage": "https://images.pexels.com/x.jpg",
+      "bgSize": "contain",
+      "bgPosition": "top",
+      "bgRepeat": true,
+      "overlay": 40,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "kenburns",
+      "bgCredit": {
+       "source": "pexels",
+       "id": 123,
+       "photographer": "Fulana de Tal",
+       "photographerUrl": "https://www.pexels.com/@fulana",
+       "pexelsUrl": "https://www.pexels.com/photo/123"
+      }
+     },
+     "children": [
+      {
+       "id": "s4xt8bzr",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "43s9i9w7",
+         "children": [
+          {
+           "id": "saherp8h",
+           "type": "text",
+           "tag": "h1",
+           "content": "Título",
+           "weight": "bold",
+           "italic": false,
+           "size": 40,
+           "color": "#FFFFFF",
+           "align": "center"
+          },
+          {
+           "id": "797asova",
+           "type": "button",
+           "label": "Ir ao formulário",
+           "href": "#",
+           "variant": "elevated",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "center",
+           "animation": "pulse",
+           "linkMode": "section",
+           "target": "@form"
+          },
+          {
+           "id": "f9so7uys",
+           "type": "button",
+           "label": "Fim",
+           "href": "#",
+           "variant": "text",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "shine",
+           "linkMode": "section",
+           "target": "@end"
+          },
+          {
+           "id": "u25n2m6y",
+           "type": "button",
+           "label": "Externo",
+           "href": "https://gove.digital/?a=1&b=2",
+           "variant": "outline",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 999,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "float"
+          },
+          {
+           "id": "kxe326sx",
+           "type": "button",
+           "label": "Vidro",
+           "href": "#",
+           "variant": "glass",
+           "bgColor": "#3D0099",
+           "color": "#FFFFFF",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "none"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "52qt3v9w",
+     "type": "section",
+     "box": {
+      "fill": "gradient",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 90,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "pan"
+     },
+     "children": [
+      {
+       "id": "o77flxui",
+       "type": "row",
+       "gap": 16,
+       "alignItems": "stretch",
+       "box": {
+        "fill": "solid",
+        "bgColor": "#FFFFFF",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 16,
+        "shadow": "sm",
+        "paddingY": 24,
+        "paddingX": 24,
+        "animation": "reveal"
+       },
+       "columns": [
+        {
+         "id": "d78oa261",
+         "children": [
+          {
+           "id": "wy3gufeh",
+           "type": "card",
+           "icon": "Rocket",
+           "iconColor": "#FFC72C",
+           "title": "Card",
+           "description": "Descreva em uma frase o benefício deste ponto.",
+           "align": "left",
+           "color": "#2F3539",
+           "bgColor": "#FFFFFF",
+           "borderColor": "#F4F4F4",
+           "borderWidth": 1,
+           "radius": 16,
+           "shadow": "md",
+           "padding": 24,
+           "size": 16
+          }
+         ]
+        },
+        {
+         "id": "yz7lhr9t",
+         "children": [
+          {
+           "id": "28l7plf3",
+           "type": "card",
+           "icon": "Inexistente",
+           "iconColor": "#FFC72C",
+           "title": "Título curto",
+           "description": "Descreva em uma frase o benefício deste ponto.",
+           "align": "center",
+           "color": "#2F3539",
+           "bgColor": "#FFFFFF",
+           "borderColor": "#F4F4F4",
+           "borderWidth": 0,
+           "radius": 16,
+           "shadow": "none",
+           "padding": 24,
+           "size": 16
+          }
+         ]
+        },
+        {
+         "id": "1esyub4c",
+         "children": [
+          {
+           "id": "4lx3ydmc",
+           "type": "image",
+           "src": "https://images.pexels.com/y.jpg",
+           "alt": "Foto",
+           "radius": 8,
+           "frame": "circle",
+           "align": "center",
+           "width": 60,
+           "credit": {
+            "source": "pexels",
+            "id": 123,
+            "photographer": "Fulana de Tal",
+            "photographerUrl": "https://www.pexels.com/@fulana",
+            "pexelsUrl": "https://www.pexels.com/photo/123"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "6wqus4a7",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "end",
+       "box": {
+        "fill": "image",
+        "bgColor": "#FFFFFF",
+        "bgImage": "https://images.pexels.com/z.jpg",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 64,
+        "paddingX": 24,
+        "animation": "shimmer",
+        "bgCredit": {
+         "source": "pexels",
+         "id": 123,
+         "photographer": "Fulana de Tal",
+         "photographerUrl": "https://www.pexels.com/@fulana",
+         "pexelsUrl": "https://www.pexels.com/photo/123"
+        }
+       },
+       "columns": [
+        {
+         "id": "097im9p1",
+         "children": [
+          {
+           "id": "zkz9x7fb",
+           "type": "image",
+           "src": "https://images.pexels.com/w.jpg",
+           "alt": "",
+           "radius": 8,
+           "frame": "rounded",
+           "align": "center",
+           "width": 100
+          }
+         ]
+        },
+        {
+         "id": "xudf71r1",
+         "children": [
+          {
+           "id": "8dphj2b6",
+           "type": "video",
+           "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+           "title": "Vídeo institucional GOVE",
+           "aspect": "4 / 3",
+           "width": 80,
+           "align": "center",
+           "radius": 16
+          }
+         ]
+        },
+        {
+         "id": "g9vzcuml",
+         "children": [
+          {
+           "id": "guha74wr",
+           "type": "image",
+           "src": "",
+           "alt": "vazia",
+           "radius": 8,
+           "frame": "free",
+           "align": "center",
+           "width": 100
+          },
+          {
+           "id": "cjbk4htf",
+           "type": "video",
+           "url": "",
+           "title": "Vídeo institucional GOVE",
+           "aspect": "16 / 9",
+           "width": 100,
+           "align": "center",
+           "radius": 16
+          }
+         ]
+        },
+        {
+         "id": "muibyka6",
+         "children": [
+          {
+           "id": "1w7sf9z1",
+           "type": "text",
+           "tag": "h3",
+           "content": "h3",
+           "weight": "regular",
+           "italic": false,
+           "size": 16,
+           "color": "#2F3539",
+           "align": "left"
+          },
+          {
+           "id": "iri1659e",
+           "type": "text",
+           "tag": "p",
+           "content": "p",
+           "weight": "regular",
+           "italic": false,
+           "size": 16,
+           "color": "#2F3539",
+           "align": "left"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "qfl7mtty",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#F4F4F4",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#3D0099",
+      "borderWidth": 2,
+      "radius": 24,
+      "shadow": "md",
+      "paddingY": 48,
+      "paddingX": 32,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "bp74keo2",
+       "type": "row",
+       "gap": 40,
+       "alignItems": "center",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "a9qrthlz",
+         "children": [
+          {
+           "id": "vidfn1yw",
+           "type": "text",
+           "tag": "h2",
+           "content": "Inscreva-se <agora> & \"já\"",
+           "weight": "bold",
+           "italic": true,
+           "size": 30,
+           "color": "#2F3539",
+           "align": "center"
+          },
+          {
+           "id": "mpk5rvrl",
+           "type": "countdown",
+           "target": "2027-03-01T10:00",
+           "mode": "dhm",
+           "align": "center",
+           "color": "#20133D",
+           "bgColor": "#FFC72C",
+           "accentColor": "#20133D",
+           "radius": 16,
+           "size": 39,
+           "expiredText": "Inscrições encerradas",
+           "variant": "glass",
+           "animation": "glow"
+          }
+         ]
+        },
+        {
+         "id": "jd6u38be",
+         "children": [
+          {
+           "id": "hyyqy7nm",
+           "type": "rdform",
+           "snippet": "<form id='rd-form'><input name='email'></form>"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "cursor": {
+    "mode": "follower",
+    "url": "https://x/cursor.gif",
+    "size": 48,
+    "hotspot": "center",
+    "hideNative": true
+   }
+  },
+  "html": "<!-- manual-gove-completa — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n.gove-lp,.gove-lp *{cursor:none;}\n.gove-cursor{position:fixed;top:0;left:0;width:48px;height:48px;background:url(\"https://x/cursor.gif\") center/contain no-repeat;pointer-events:none;z-index:9999;transform:translate(-9999px,-9999px);will-change:transform;transition:transform .04s linear;}\n@media (hover:none){.gove-cursor{display:none}.gove-lp,.gove-lp *{cursor:auto !important}}\n@media (prefers-reduced-motion:reduce){.gove-cursor{transition:none}}\n\n</style>\n\n<section id=\"secao-cuzlu87h\" class=\"gove-a-bg-kenburns\" data-pexels-id=\"123\" style=\"position:relative;background-color:#FFFFFF;background-image:linear-gradient(rgba(32,19,61,0.4), rgba(32,19,61,0.4)), url('https://images.pexels.com/x.jpg');background-size:contain;background-position:top;background-repeat:repeat;padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:40px;font-weight:700;color:#FFFFFF;text-align:center;line-height:1.4\">Título</h1><div style=\"text-align:center;margin:0 0 16px\"><a href=\"#secao-qfl7mtty\" class=\"gove-a-btn-pulse\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#20133D;padding:16px 32px;background-color:#FFC72C;box-shadow:0 12px 28px rgba(255, 199, 44, 0.38), 0 4px 10px rgba(255, 199, 44, 0.24)\">Ir ao formulário</a></div><div style=\"text-align:left;margin:0 0 16px\"><a href=\"#fim-da-pagina\" class=\"gove-a-btn-shine\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#20133D;padding:8px 0\">Fim</a></div><div style=\"text-align:left;margin:0 0 16px\"><a href=\"https://gove.digital/?a=1&amp;b=2\" class=\"gove-a-btn-float\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:999px;color:#20133D;padding:16px 32px;background-color:transparent;border:2px solid #FFC72C\">Externo</a></div><div style=\"text-align:left;margin:0 0 16px\"><a href=\"#\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#FFFFFF;padding:16px 32px;background-color:rgba(61, 0, 153, 0.18);border:1px solid rgba(61, 0, 153, 0.45);backdrop-filter:blur(12px) saturate(140%);box-shadow:0 8px 24px rgba(61, 0, 153, 0.22);-webkit-backdrop-filter:blur(12px) saturate(140%)\">Vidro</a></div></div></div></div><!-- Foto: Fulana de Tal no Pexels (https://www.pexels.com/photo/123) --><small class=\"gove-credit\" style=\"display:inline-block;position:absolute;right:8px;bottom:8px;font-size:12px;line-height:1.4;padding:2px 8px;border-radius:4px;background:rgba(32,19,61,0.85);color:#FFFFFF\">Foto: <a href=\"https://www.pexels.com/@fulana\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Fulana de Tal</a> / <a href=\"https://www.pexels.com/photo/123\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Pexels</a></small></section>\n<section id=\"secao-52qt3v9w\" class=\"gove-a-bg-pan\" style=\"background-color:#FFFFFF;background-image:linear-gradient(90deg, #20133D, #A278DA);padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row gove-a-bg-reveal\" style=\"display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;background-color:#FFFFFF;border-radius:16px;box-shadow:0 2px 8px rgba(11,32,39,.08);padding:24px 24px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"background-color:#FFFFFF;color:#2F3539;border:1px solid #F4F4F4;border-radius:16px;box-shadow:0 8px 24px rgba(11,32,39,.16);padding:24px;text-align:left;font-family:Montserrat, Arial, sans-serif;margin:0 0 16px\"><div style=\"color:#FFC72C;font-size:24px;margin-bottom:8px\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 256 256\" fill=\"#FFC72C\" aria-hidden=\"true\"><path d=\"M152,224a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,224ZM128,112a12,12,0,1,0-12-12A12,12,0,0,0,128,112Zm95.62,43.83-12.36,55.63a16,16,0,0,1-25.51,9.11L158.51,200h-61L70.25,220.57a16,16,0,0,1-25.51-9.11L32.38,155.83a16.09,16.09,0,0,1,3.32-13.71l28.56-34.26a123.07,123.07,0,0,1,8.57-36.67c12.9-32.34,36-52.63,45.37-59.85a16,16,0,0,1,19.6,0c9.34,7.22,32.47,27.51,45.37,59.85a123.07,123.07,0,0,1,8.57,36.67l28.56,34.26A16.09,16.09,0,0,1,223.62,155.83ZM99.43,184h57.14c21.12-37.54,25.07-73.48,11.74-106.88C156.55,47.64,134.49,29,128,24c-6.51,5-28.57,23.64-40.33,53.12C74.36,110.52,78.31,146.46,99.43,184Zm-15,5.85Q68.28,160.5,64.83,132.16L48,152.36,60.36,208l.18-.13ZM208,152.36l-16.83-20.2q-3.42,28.28-19.56,57.69l23.85,18,.18.13Z\"></path></svg></div><h3 style=\"margin:0 0 8px;font-size:20px;font-weight:700;\">Card</h3><p style=\"margin:0;font-size:16px;line-height:1.5;\">Descreva em uma frase o benefício deste ponto.</p></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"background-color:#FFFFFF;color:#2F3539;border-radius:16px;padding:24px;text-align:center;font-family:Montserrat, Arial, sans-serif;margin:0 0 16px\"><div style=\"color:#FFC72C;font-size:24px;margin-bottom:8px\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 256 256\" fill=\"#FFC72C\" aria-hidden=\"true\"><path d=\"M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z\"></path></svg></div><h3 style=\"margin:0 0 8px;font-size:20px;font-weight:700;\">Título curto</h3><p style=\"margin:0;font-size:16px;line-height:1.5;\">Descreva em uma frase o benefício deste ponto.</p></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"text-align:center;margin:0 0 16px\"><img src=\"https://images.pexels.com/y.jpg\" alt=\"Foto\" data-pexels-id=\"123\" style=\"max-width:100%;width:60%;border-radius:9999px;aspect-ratio:1 / 1;object-fit:cover;display:inline-block\" /><!-- Foto: Fulana de Tal no Pexels (https://www.pexels.com/photo/123) --><small class=\"gove-credit\" style=\"display:inline-block;margin:6px 0 0;font-size:12px;line-height:1.4;padding:2px 8px;border-radius:4px;background:rgba(32,19,61,0.85);color:#FFFFFF\">Foto: <a href=\"https://www.pexels.com/@fulana\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Fulana de Tal</a> / <a href=\"https://www.pexels.com/photo/123\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Pexels</a></small></div></div></div><div class=\"gove-row gove-a-bg-shimmer\" data-pexels-id=\"123\" style=\"position:relative;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;background-color:#FFFFFF;background-image:url('https://images.pexels.com/z.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:64px 24px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"text-align:center;margin:0 0 16px\"><img src=\"https://images.pexels.com/w.jpg\" alt=\"\" style=\"max-width:100%;width:100%;border-radius:8px;display:inline-block\" /></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"text-align:center;margin:0 0 16px\"><span style=\"display:inline-block;width:80%;max-width:100%;aspect-ratio:4 / 3;border-radius:16px;overflow:hidden\"><iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" title=\"Vídeo institucional GOVE\" loading=\"lazy\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen style=\"width:100%;height:100%;border:0;display:block;\"></iframe></span></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h3 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:400;color:#2F3539;text-align:left;line-height:1.4\">h3</h3><p style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:400;color:#2F3539;text-align:left;line-height:1.4\">p</p></div><!-- Foto: Fulana de Tal no Pexels (https://www.pexels.com/photo/123) --><small class=\"gove-credit\" style=\"display:inline-block;position:absolute;right:8px;bottom:8px;font-size:12px;line-height:1.4;padding:2px 8px;border-radius:4px;background:rgba(32,19,61,0.85);color:#FFFFFF\">Foto: <a href=\"https://www.pexels.com/@fulana\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Fulana de Tal</a> / <a href=\"https://www.pexels.com/photo/123\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Pexels</a></small></div></div></section>\n<section id=\"secao-qfl7mtty\" style=\"background-color:#F4F4F4;border-radius:24px;border:2px solid #3D0099;box-shadow:0 8px 24px rgba(11,32,39,.16);padding:48px 32px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:40px;align-items:center;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h2 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:30px;font-weight:700;font-style:italic;color:#2F3539;text-align:center;line-height:1.4\">Inscreva-se &lt;agora&gt; &amp; &quot;já&quot;</h2><div style=\"text-align:center;margin:0 0 16px\"><div class=\"gove-countdown\" data-target=\"2027-03-01T10:00\" data-mode=\"dhm\" data-expired=\"Inscrições encerradas\" data-unit-style=\"padding:12px 18px;background-color:rgba(255, 199, 44, 0.18);border:1px solid rgba(255, 199, 44, 0.45);backdrop-filter:blur(12px) saturate(140%);box-shadow:0 8px 24px rgba(255, 199, 44, 0.22);-webkit-backdrop-filter:blur(12px) saturate(140%);display:inline-block;color:#20133D;border-radius:16px;min-width:78px;text-align:center\" data-unit-class=\"gove-a-btn-glow\" data-num-size=\"39\" data-label-color=\"#20133D\" data-color=\"#20133D\" style=\"display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:Montserrat,Arial,sans-serif;\"></div></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><form id='rd-form'><input name='email'></form></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n<script>\n(function(){\n  var pad=function(n){return String(n).padStart(2,\"0\")};\n  var plural=function(v,a,b){return v===1?a:b};\n  function units(mode,ms){\n    var t=Math.max(0,Math.floor(ms/1000));\n    var d=Math.floor(t/86400),h=Math.floor((t%86400)/3600),m=Math.floor((t%3600)/60),s=t%60;\n    if(mode===\"d\")return [[d,plural(d,\"Dia\",\"Dias\")]];\n    if(mode===\"dh\")return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")]];\n    if(mode===\"dhm\")return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")],[m,\"Min\"]];\n    if(mode===\"m\")return [[Math.floor(t/60),plural(Math.floor(t/60),\"Minuto\",\"Minutos\")]];\n    return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")],[m,\"Min\"],[s,\"Seg\"]];\n  }\n  function render(el){\n    var left=new Date(el.getAttribute(\"data-target\")).getTime()-Date.now();\n    if(isNaN(left)||left<=0){\n      el.innerHTML='<span style=\"font-weight:700;color:'+el.getAttribute(\"data-color\")+';font-size:'+(Number(el.getAttribute(\"data-num-size\"))/2)+'px\">'+el.getAttribute(\"data-expired\")+'</span>';\n      return false;\n    }\n    var nf=el.getAttribute(\"data-num-font\");\n    el.innerHTML=units(el.getAttribute(\"data-mode\"),left).map(function(u){\n      return '<span class=\"'+(el.getAttribute(\"data-unit-class\")||\"\")+'\" style=\"'+el.getAttribute(\"data-unit-style\")+'\"><span style=\"display:block;'+(nf?'font-family:'+nf+';':'')+'font-size:'+el.getAttribute(\"data-num-size\")+'px;font-weight:700;line-height:1.1\">'+pad(u[0])+'</span><span style=\"display:block;font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:'+el.getAttribute(\"data-label-color\")+'\">'+u[1]+'</span></span>';\n    }).join(\"\");\n    return true;\n  }\n  var nodes=[].slice.call(document.querySelectorAll(\".gove-countdown\"));\n  nodes.forEach(render);\n  setInterval(function(){nodes.forEach(render)},1000);\n})();\n</script>\n<script>\n(function(){\n  if(window.matchMedia&&window.matchMedia(\"(hover:none)\").matches)return;\n  var el=document.createElement(\"div\");el.className=\"gove-cursor\";el.setAttribute(\"aria-hidden\",\"true\");\n  document.body.appendChild(el);\n  document.addEventListener(\"mousemove\",function(e){\n    el.style.transform=\"translate(\"+(e.clientX-24)+\"px,\"+(e.clientY-24)+\"px)\";\n  },{passive:true});\n})();\n</script>\n</div>"
+ },
+ {
+  "name": "manual-gove-cursor",
+  "page": {
+   "version": 1,
+   "sections": [
+    {
+     "id": "hisus4g3",
+     "type": "section",
+     "box": {
+      "fill": "gradient",
+      "bgColor": "#3D0099",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#20133D",
+      "gradientFrom": "#20133D",
+      "gradientVia": "#3D0099",
+      "gradientTo": "#A278DA",
+      "gradientAngle": 135,
+      "borderColor": "#F4F4F4",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 96,
+      "paddingX": 24,
+      "animation": "none"
+     },
+     "children": [
+      {
+       "id": "pxewfgtr",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#20133D",
+        "gradientFrom": "#20133D",
+        "gradientVia": "#3D0099",
+        "gradientTo": "#A278DA",
+        "gradientAngle": 135,
+        "borderColor": "#F4F4F4",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none"
+       },
+       "columns": [
+        {
+         "id": "hblybtxl",
+         "children": [
+          {
+           "id": "gf83pepw",
+           "type": "text",
+           "tag": "h1",
+           "content": "Sua proposta de valor em uma frase",
+           "weight": "bold",
+           "italic": false,
+           "size": 39,
+           "color": "#FFFFFF",
+           "align": "center"
+          },
+          {
+           "id": "2p3ua7vk",
+           "type": "text",
+           "tag": "p",
+           "content": "Explique em uma linha o que o lead ganha nesta página.",
+           "weight": "regular",
+           "italic": false,
+           "size": 20,
+           "color": "#F4F4F4",
+           "align": "center"
+          },
+          {
+           "id": "rgus26ux",
+           "type": "button",
+           "label": "Quero saber mais",
+           "href": "#",
+           "variant": "filled",
+           "bgColor": "#FFC72C",
+           "color": "#20133D",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "center",
+           "animation": "none",
+           "linkMode": "section",
+           "target": "@form"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "cursor": {
+    "mode": "image",
+    "url": "https://x/cursor.png",
+    "size": 32,
+    "hotspot": "topleft",
+    "hideNative": false
+   }
+  },
+  "html": "<!-- manual-gove-cursor — gerado no GOVE LP Builder -->\n<div class=\"gove-lp\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n.gove-lp,.gove-lp *{cursor:url(\"https://x/cursor.png\") 0 0, auto;}\n\n\n</style>\n\n<section id=\"secao-hisus4g3\" style=\"background-color:#3D0099;background-image:linear-gradient(135deg, #20133D, #3D0099, #A278DA);padding:96px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><h1 style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:39px;font-weight:700;color:#FFFFFF;text-align:center;line-height:1.4\">Sua proposta de valor em uma frase</h1><p style=\"margin:0 0 16px;font-family:Montserrat, Arial, sans-serif;font-size:20px;font-weight:400;color:#F4F4F4;text-align:center;line-height:1.4\">Explique em uma linha o que o lead ganha nesta página.</p><div style=\"text-align:center;margin:0 0 16px\"><a href=\"#fim-da-pagina\" style=\"display:inline-block;font-family:Montserrat, Arial, sans-serif;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;color:#20133D;padding:16px 32px;background-color:#FFC72C\">Quero saber mais</a></div></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n\n\n</div>"
+ },
+ {
+  "name": "manual-bb-logo",
+  "page": {
+   "version": 1,
+   "identity": "bb",
+   "bbLogo": {
+    "src": "data:image/png;base64,AA==",
+    "version": "horizontal",
+    "width": 160,
+    "aspect": 4,
+    "bg": "#FCFC30",
+    "align": "left"
+   },
+   "sections": [
+    {
+     "id": "x9164urj",
+     "type": "section",
+     "box": {
+      "fill": "image",
+      "bgColor": "#FFFFFF",
+      "bgImage": "https://images.pexels.com/bb.jpg",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 30,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": {
+       "source": "pexels",
+       "id": 123,
+       "photographer": "Fulana de Tal",
+       "photographerUrl": "https://www.pexels.com/@fulana",
+       "pexelsUrl": "https://www.pexels.com/photo/123"
+      }
+     },
+     "children": [
+      {
+       "id": "bzml6rb5",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "7za4yb62",
+         "children": [
+          {
+           "id": "8f9digpi",
+           "type": "text",
+           "tag": "h1",
+           "content": "BB",
+           "weight": "regular",
+           "italic": false,
+           "size": 16,
+           "color": "#FFFFFF",
+           "align": "left"
+          },
+          {
+           "id": "ib0fga6i",
+           "type": "button",
+           "label": "Quero saber mais",
+           "href": "#",
+           "variant": "text",
+           "bgColor": "#FCFC30",
+           "color": "#FFFFFF",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "none"
+          }
+         ]
+        },
+        {
+         "id": "2y2dhiia",
+         "children": [
+          {
+           "id": "2sarzd2o",
+           "type": "countdown",
+           "target": "2027-01-01T00:00",
+           "mode": "dhms",
+           "align": "center",
+           "color": "#3333BD",
+           "bgColor": "#FCFC30",
+           "accentColor": "#3333BD",
+           "radius": 16,
+           "size": 39,
+           "expiredText": "Inscrições encerradas",
+           "variant": "filled",
+           "animation": "none"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "z24i2akg",
+     "type": "section",
+     "box": {
+      "fill": "solid",
+      "bgColor": "#FFFFFF",
+      "bgImage": "",
+      "bgSize": "cover",
+      "bgPosition": "center",
+      "bgRepeat": false,
+      "overlay": 0,
+      "overlayColor": "#3333BD",
+      "gradientFrom": "#3333BD",
+      "gradientVia": "#3333BD",
+      "gradientTo": "#735CC6",
+      "gradientAngle": 135,
+      "borderColor": "#FFFFFF",
+      "borderWidth": 0,
+      "radius": 0,
+      "shadow": "none",
+      "paddingY": 64,
+      "paddingX": 24,
+      "animation": "none",
+      "bgCredit": null
+     },
+     "children": [
+      {
+       "id": "me5s3ni8",
+       "type": "row",
+       "gap": 24,
+       "alignItems": "start",
+       "box": {
+        "fill": "solid",
+        "bgColor": "transparent",
+        "bgImage": "",
+        "bgSize": "cover",
+        "bgPosition": "center",
+        "bgRepeat": false,
+        "overlay": 0,
+        "overlayColor": "#3333BD",
+        "gradientFrom": "#3333BD",
+        "gradientVia": "#3333BD",
+        "gradientTo": "#735CC6",
+        "gradientAngle": 135,
+        "borderColor": "#FFFFFF",
+        "borderWidth": 0,
+        "radius": 0,
+        "shadow": "none",
+        "paddingY": 0,
+        "paddingX": 0,
+        "animation": "none",
+        "bgCredit": null
+       },
+       "columns": [
+        {
+         "id": "ovaooktz",
+         "children": [
+          {
+           "id": "rnimhezn",
+           "type": "button",
+           "label": "Saiba mais",
+           "href": "#",
+           "variant": "text",
+           "bgColor": "#3333BD",
+           "color": "#3333BD",
+           "radius": 8,
+           "weight": "bold",
+           "italic": false,
+           "size": 16,
+           "align": "left",
+           "animation": "none"
+          },
+          {
+           "id": "daf00vx3",
+           "type": "card",
+           "icon": "Check",
+           "iconColor": "#735CC6",
+           "title": "Título curto",
+           "description": "Descreva em uma frase o benefício deste ponto.",
+           "align": "left",
+           "color": "#3333BD",
+           "bgColor": "#FFFFFF",
+           "borderColor": "#465EFF",
+           "borderWidth": 1,
+           "radius": 16,
+           "shadow": "sm",
+           "padding": 24,
+           "size": 16
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "html": "<!-- manual-bb-logo — gerado no GOVE LP Builder — identidade Banco do Brasil -->\n<div class=\"gove-lp\" data-identity=\"bb\">\n<style>\n.gove-lp{font-family:Montserrat,Arial,sans-serif;box-sizing:border-box;}\n.gove-lp *,.gove-lp *::before,.gove-lp *::after{box-sizing:border-box;}\n.gove-lp img{max-width:100%;height:auto;}\n@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth;}}\n@media (max-width:768px){\n  .gove-lp .gove-row{flex-direction:column;}\n  .gove-lp .gove-col{flex:1 1 100% !important;width:100%;}\n  .gove-lp section{padding-left:24px !important;padding-right:24px !important;}\n}\n\n@keyframes gove-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}\n@keyframes gove-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}\n@keyframes gove-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}\n@keyframes gove-shine{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}\n@keyframes gove-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}\n@keyframes gove-kenburns{0%{background-size:110%}100%{background-size:132%}}\n@keyframes gove-reveal{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}\n@keyframes gove-shimmer{0%{transform:translateX(-70%) skewX(-16deg)}100%{transform:translateX(220%) skewX(-16deg)}}\n.gove-a-btn-pulse{animation:gove-pulse 2.2s cubic-bezier(.4,0,.2,1) infinite;will-change:transform}\n.gove-a-btn-float{animation:gove-float 3s ease-in-out infinite;will-change:transform}\n.gove-a-btn-glow{animation:gove-glow 2s ease-in-out infinite}\n.gove-a-btn-shine{position:relative;overflow:hidden;isolation:isolate}\n.gove-a-btn-shine::after{content:\"\";position:absolute;top:-50%;left:0;width:40%;height:200%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 100%);animation:gove-shine 2.8s ease-in-out infinite;pointer-events:none}\n.gove-a-bg-pan{background-size:220% 220% !important;animation:gove-pan 14s ease-in-out infinite}\n.gove-a-bg-kenburns{animation:gove-kenburns 18s ease-in-out infinite alternate}\n.gove-a-bg-reveal{animation:gove-reveal .9s cubic-bezier(.16,1,.3,1) both}\n.gove-a-bg-shimmer{position:relative;overflow:hidden}\n.gove-a-bg-shimmer::before{content:\"\";position:absolute;inset:-20% auto -20% 0;width:35%;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 100%);animation:gove-shimmer 6s ease-in-out infinite;pointer-events:none}\n@media (prefers-reduced-motion: reduce){\n  .gove-a-btn-pulse,.gove-a-btn-float,.gove-a-btn-glow,.gove-a-bg-pan,.gove-a-bg-kenburns,.gove-a-bg-reveal{animation:none !important}\n  .gove-a-btn-shine::after,.gove-a-bg-shimmer::before{display:none}\n}\n\n\n\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Titulos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:800;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:400;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:500;font-style:normal;font-display:swap;}\n@font-face{font-family:\"BancoDoBrasil Textos\";src:url(data:font/woff2;base64,AA==) format(\"woff2\");font-weight:700;font-style:normal;font-display:swap;}\n.gove-lp[data-identity=\"bb\"]{font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;color:#3333BD;}\n.gove-lp a.bb-link:visited{color:#735CC6 !important;}\n@media (max-width:768px){.gove-lp .bb-logo{padding-left:16px !important;padding-right:16px !important;}}\n</style>\n<header class=\"bb-logo\" style=\"background-color:#FCFC30;padding:20px 24px;text-align:left\"><img src=\"data:image/png;base64,AA==\" alt=\"Banco do Brasil\" width=\"160\" style=\"display:inline-block;width:160px;max-width:none;height:auto;vertical-align:middle;\" /></header>\n<section id=\"secao-x9164urj\" data-pexels-id=\"123\" style=\"position:relative;background-color:#FFFFFF;background-image:linear-gradient(rgba(51,51,189,0.3), rgba(51,51,189,0.3)), url('https://images.pexels.com/bb.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div class=\"bb-protecao\" style=\"background-color:#3333BD;padding:12px 16px;border-radius:8px;margin:0 0 16px\"><h1 style=\"margin:0;font-family:'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif;font-size:16px;font-weight:500;color:#FFFFFF;text-align:left;line-height:1.4\">BB</h1></div><div class=\"bb-protecao\" style=\"background-color:#3333BD;padding:12px 16px;border-radius:8px;margin:0 0 16px\"><div style=\"text-align:left;margin:0\"><a href=\"#\" style=\"display:inline-block;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:16px;font-weight:700;text-decoration:underline;border-radius:8px;color:#FFFFFF;padding:8px 0\">Quero saber mais</a></div></div></div><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"text-align:center;margin:0 0 16px\"><div class=\"gove-countdown\" data-target=\"2027-01-01T00:00\" data-mode=\"dhms\" data-expired=\"Inscrições encerradas\" data-unit-style=\"padding:12px 18px;background-color:#FCFC30;display:inline-block;color:#3333BD;border-radius:16px;min-width:78px;text-align:center\" data-unit-class=\"\" data-num-size=\"39\" data-label-color=\"#3333BD\" data-color=\"#3333BD\" data-num-font=\"'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif\" style=\"display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;\"></div></div></div></div></div><!-- Foto: Fulana de Tal no Pexels (https://www.pexels.com/photo/123) --><small class=\"gove-credit\" style=\"display:inline-block;position:absolute;right:8px;bottom:8px;font-size:12px;line-height:1.4;padding:2px 8px;border-radius:4px;background:#3333BD;color:#FFFFFF\">Foto: <a href=\"https://www.pexels.com/@fulana\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Fulana de Tal</a> / <a href=\"https://www.pexels.com/photo/123\" target=\"_blank\" rel=\"noopener\" style=\"color:#FFFFFF;text-decoration:underline;\">Pexels</a></small></section>\n<section id=\"secao-z24i2akg\" style=\"background-color:#FFFFFF;padding:64px 24px\"><div class=\"gove-container\" style=\"max-width:1120px;margin:0 auto;\"><div class=\"gove-row \" style=\"display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding:0px 0px\"><div class=\"gove-col\" style=\"flex:1 1 0;min-width:0;\"><div style=\"text-align:left;margin:0 0 16px\"><a href=\"#\" class=\"bb-link\" style=\"display:inline-block;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;font-size:16px;font-weight:700;text-decoration:underline;border-radius:8px;color:#3333BD;padding:8px 0\">Saiba mais</a></div><div style=\"background-color:#FFFFFF;color:#3333BD;border:1px solid #465EFF;border-radius:16px;box-shadow:0 2px 8px rgba(51,51,189,.08);padding:24px;text-align:left;font-family:'BancoDoBrasil Textos', Helvetica, Arial, sans-serif, sans-serif;margin:0 0 16px\"><div style=\"color:#735CC6;font-size:24px;margin-bottom:8px\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 256 256\" fill=\"#735CC6\" aria-hidden=\"true\"><path d=\"M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z\"></path></svg></div><h3 style=\"margin:0 0 8px;font-family:'BancoDoBrasil Titulos', Helvetica, Arial, sans-serif, sans-serif;font-size:20px;font-weight:700;\">Título curto</h3><p style=\"margin:0;font-size:16px;line-height:1.5;\">Descreva em uma frase o benefício deste ponto.</p></div></div></div></div></section>\n<div id=\"fim-da-pagina\" aria-hidden=\"true\"></div>\n<script>\n(function(){\n  var pad=function(n){return String(n).padStart(2,\"0\")};\n  var plural=function(v,a,b){return v===1?a:b};\n  function units(mode,ms){\n    var t=Math.max(0,Math.floor(ms/1000));\n    var d=Math.floor(t/86400),h=Math.floor((t%86400)/3600),m=Math.floor((t%3600)/60),s=t%60;\n    if(mode===\"d\")return [[d,plural(d,\"Dia\",\"Dias\")]];\n    if(mode===\"dh\")return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")]];\n    if(mode===\"dhm\")return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")],[m,\"Min\"]];\n    if(mode===\"m\")return [[Math.floor(t/60),plural(Math.floor(t/60),\"Minuto\",\"Minutos\")]];\n    return [[d,plural(d,\"Dia\",\"Dias\")],[h,plural(h,\"Hora\",\"Horas\")],[m,\"Min\"],[s,\"Seg\"]];\n  }\n  function render(el){\n    var left=new Date(el.getAttribute(\"data-target\")).getTime()-Date.now();\n    if(isNaN(left)||left<=0){\n      el.innerHTML='<span style=\"font-weight:700;color:'+el.getAttribute(\"data-color\")+';font-size:'+(Number(el.getAttribute(\"data-num-size\"))/2)+'px\">'+el.getAttribute(\"data-expired\")+'</span>';\n      return false;\n    }\n    var nf=el.getAttribute(\"data-num-font\");\n    el.innerHTML=units(el.getAttribute(\"data-mode\"),left).map(function(u){\n      return '<span class=\"'+(el.getAttribute(\"data-unit-class\")||\"\")+'\" style=\"'+el.getAttribute(\"data-unit-style\")+'\"><span style=\"display:block;'+(nf?'font-family:'+nf+';':'')+'font-size:'+el.getAttribute(\"data-num-size\")+'px;font-weight:700;line-height:1.1\">'+pad(u[0])+'</span><span style=\"display:block;font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:'+el.getAttribute(\"data-label-color\")+'\">'+u[1]+'</span></span>';\n    }).join(\"\");\n    return true;\n  }\n  var nodes=[].slice.call(document.querySelectorAll(\".gove-countdown\"));\n  nodes.forEach(render);\n  setInterval(function(){nodes.forEach(render)},1000);\n})();\n</script>\n\n</div>"
+ }
+]
