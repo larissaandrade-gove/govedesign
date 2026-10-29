@@ -151,3 +151,47 @@ export const QUESTIONS: { axis: string; items: string[] }[] = [
 ];
 
 export const colorByHex = (hex: string) => BRAND_COLORS.find((c) => c.hex === hex)!;
+
+/**
+ * Prompt para um agente revisar o esquema de cores de uma peça conforme a pauta
+ * selecionada na Colorimetria em pauta (e, se houver, as palavras da aba Tom).
+ */
+export function topicReviewPrompt(index: number, words: number[] = []): string {
+  const t = TOPICS[index];
+  const hexes = new Set(t.mix.map((m) => m.hex));
+  const related = ATTRIBUTES.filter((a) => a.colors.some((h) => hexes.has(h))).map((a) => a.name);
+  const tone = words.map((i) => ATTRIBUTES[i]?.name).filter(Boolean);
+  const mix = t.mix.map((m) => {
+    const c = colorByHex(m.hex);
+    return `- ${c.name} ${c.hex}: ${m.share}%. Uso: ${c.use} Transmite: ${c.meaning} Na narrativa: ${c.story}`;
+  });
+  const palette = BRAND_COLORS.map((c) => `${c.name} ${c.hex}`).join(', ');
+  return [
+    'Você é um revisor de identidade visual da Gove Digital. Revise o esquema de cores da peça que vou anexar (imagem, PDF, layout ou código) de acordo com a pauta abaixo, seguindo a Colorimetria em pauta do Design System Gove.',
+    '',
+    `## Pauta: ${t.name}`,
+    `Assuntos: ${t.subjects}`,
+    `Foco da comunicação: ${t.focus}`,
+    '',
+    '## Predominância de cores esperada (proporção aproximada da área)',
+    ...mix,
+    '',
+    `Atributos da bússola ligados a estas cores: ${related.join(', ')}.`,
+    ...(tone.length ? [`Tom desejado para esta peça: ${tone.join(', ')}.`] : []),
+    '',
+    '## Regras da marca',
+    `- Use apenas as cores oficiais: ${palette}. Qualquer outra cor é desvio.`,
+    '- Texto com contraste mínimo de 4,5:1 com o fundo (WCAG AA).',
+    '- Amarelo #FFC72C só para a ação principal e destaques pontuais; texto sobre Amarelo em Noite #20133D.',
+    '- Texto sobre Roxo #3D0099 em branco; Lavanda #A278DA não é usada como texto em fundo claro.',
+    '',
+    '## Antes de revisar, considere',
+    ...QUESTIONS.map((q) => `- ${q.axis}: ${q.items.join(' ')}`),
+    '',
+    '## Responda em PT-BR com',
+    '1. Diagnóstico: a peça comunica a pauta? Por quê.',
+    '2. Proporções medidas: estimativa da área de cada cor presente, comparada à predominância esperada.',
+    '3. Desvios: cores fora da paleta, proporções distantes da pauta e falhas de contraste (com a razão calculada).',
+    '4. Sugestões: troca a troca, com o elemento, a cor atual e a cor oficial sugerida (nome e HEX).',
+  ].join('\n');
+}

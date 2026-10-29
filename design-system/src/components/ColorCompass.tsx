@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CaretDown, ChatCircle, Check, Copy, MapPin, User } from '@phosphor-icons/react';
-import { ATTRIBUTES, BRAND_COLORS, QUESTIONS, TOPICS, colorByHex, type BrandColor } from '../data/colorCompass';
+import { ATTRIBUTES, BRAND_COLORS, QUESTIONS, TOPICS, colorByHex, topicReviewPrompt, type BrandColor } from '../data/colorCompass';
+import { copy } from './color-tools/shared';
 import { FEATURES } from '../data/features';
 import { ColorTools } from './color-tools/ColorTools';
 
@@ -96,7 +97,7 @@ export function ColorCompass() {
                     </button>
                   ))}
                 </div>
-                {topic !== null ? <TopicResult index={topic} /> : <p className="text-caption text-text-secondary">Escolha uma pauta para ver a predominância de cores.</p>}
+                {topic !== null ? <TopicResult index={topic} words={words} /> : <p className="text-caption text-text-secondary">Escolha uma pauta para ver a predominância de cores.</p>}
               </>
             )}
 
@@ -267,8 +268,13 @@ function ColorItem({ c }: { c: BrandColor }) {
   );
 }
 
-function TopicResult({ index }: { index: number }) {
+function TopicResult({ index, words }: { index: number; words: number[] }) {
   const t = TOPICS[index];
+  const [copied, setCopied] = useState<boolean | null>(null);
+  async function copyPrompt() {
+    setCopied(await copy(topicReviewPrompt(index, words)));
+    setTimeout(() => setCopied(null), 2000);
+  }
   return (
     <div className="flex flex-col gap-space-1 rounded-md border border-secondary bg-background p-space-2">
       <ul className="flex flex-col gap-1">
@@ -288,6 +294,19 @@ function TopicResult({ index }: { index: number }) {
       <p className="text-caption text-text-secondary">
         <span className="font-semibold text-text-primary">Foco:</span> {t.focus}
       </p>
+      <div className="mt-space-1 flex flex-wrap items-center gap-space-1 border-t border-secondary pt-space-2">
+        <button
+          type="button"
+          onClick={copyPrompt}
+          className="inline-flex min-h-11 items-center gap-space-1 rounded-md border border-secondary bg-surface px-space-2 text-caption font-semibold text-text-primary transition-colors hover:border-primary focus-visible:border-primary focus-visible:shadow-glow-purple focus-visible:outline-none"
+        >
+          {copied ? <Check className="size-4 text-success" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+          {copied ? 'Copiado' : 'Copiar prompt de revisão'}
+        </button>
+        <span role="status" aria-live="polite" className="text-caption text-text-secondary">
+          {copied === false ? 'Não foi possível copiar.' : copied ? `Prompt da pauta “${t.name}” na área de transferência.` : ''}
+        </span>
+      </div>
     </div>
   );
 }
