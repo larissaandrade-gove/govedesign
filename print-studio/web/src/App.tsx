@@ -24,14 +24,25 @@ function readQueue(): QueueItem[] {
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('editor');
+  const [tab, setTab] = useState<Tab>('municipios');
   const [fontsReady, setFontsReady] = useState(false);
   const [fontError, setFontError] = useState(false);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [municipiosLoaded, setMunicipiosLoaded] = useState(false);
+  /** Município da produção: escolhido na etapa inicial (Municípios) ou no próprio editor. */
+  const [municipioId, setMunicipioId] = useState<number | null>(null);
   const [logos, setLogos] = useState<LogosFixos>({ gove: null, bb: null });
   const [queue, setQueue] = useState<QueueItem[]>(readQueue);
 
-  const refreshMunicipios = useCallback(() => api.municipios().then(setMunicipios).catch(() => undefined), []);
+  const refreshMunicipios = useCallback(
+    () =>
+      api
+        .municipios()
+        .then(setMunicipios)
+        .catch(() => undefined)
+        .finally(() => setMunicipiosLoaded(true)),
+    [],
+  );
   const refreshLogos = useCallback(() => api.logosFixos().then(setLogos).catch(() => undefined), []);
 
   useEffect(() => {
@@ -54,8 +65,8 @@ export default function App() {
 
   const pieces = queue.reduce((n, q) => n + q.layouts.length, 0);
   const tabs: { id: Tab; label: string; icon: PhosphorIcon; count?: number }[] = [
-    { id: 'editor', label: 'Editor de layout', icon: Layout },
     { id: 'municipios', label: 'Municípios', icon: MapPin },
+    { id: 'editor', label: 'Editor de layout', icon: Layout },
     { id: 'fila', label: 'Fila de exportação', icon: ListNumbers, count: pieces },
     { id: 'config', label: 'Logos fixos', icon: ImageIcon },
   ];
@@ -66,7 +77,7 @@ export default function App() {
         {!EMBEDDED && (
           <button
             type="button"
-            onClick={() => setTab('editor')}
+            onClick={() => setTab('municipios')}
             className="flex min-h-11 shrink-0 items-center rounded-md px-1 font-display text-base font-bold text-foreground sm:text-lg"
           >
             Print Studio
@@ -121,9 +132,22 @@ export default function App() {
                 logosFixos={logos}
                 onMunicipioSaved={() => void refreshMunicipios()}
                 onAddToQueue={(item) => setQueue((q) => [...q, item])}
+                municipioId={municipioId}
+                onMunicipioIdChange={setMunicipioId}
               />
             </div>
-            {tab === 'municipios' && <Municipios municipios={municipios} onChanged={() => void refreshMunicipios()} />}
+            {tab === 'municipios' && (
+              <Municipios
+                municipios={municipios}
+                loaded={municipiosLoaded}
+                onChanged={() => void refreshMunicipios()}
+                currentId={municipioId}
+                onStart={(id) => {
+                  setMunicipioId(id);
+                  setTab('editor');
+                }}
+              />
+            )}
             {tab === 'fila' && <Fila queue={queue} onRemove={(k) => setQueue((q) => q.filter((x) => x.key !== k))} onClear={() => setQueue([])} />}
             {tab === 'config' && <Configuracoes logos={logos} onChanged={() => void refreshLogos()} />}
           </>

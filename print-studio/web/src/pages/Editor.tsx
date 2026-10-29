@@ -24,6 +24,9 @@ type Props = {
   logosFixos: LogosFixos;
   onMunicipioSaved: (m: Municipio) => void;
   onAddToQueue: (item: QueueItem) => void;
+  /** Município da produção, controlado pelo App (etapa inicial em Municípios). */
+  municipioId: number | null;
+  onMunicipioIdChange: (id: number | null) => void;
 };
 
 /** Captura do site: celular de 390×844 pt com densidade 3 (server/capture.js). */
@@ -62,10 +65,9 @@ function Section({ title, icon: Icon, aside, collapsible, children }: SectionPro
   );
 }
 
-export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue }: Props) {
+export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue, municipioId, onMunicipioIdChange: setMunicipioId }: Props) {
   const [selected, setSelected] = useState<string[]>(LAYOUTS.map((l: { id: string }) => l.id));
   const [active, setActive] = useState<string>('flyer-a4');
-  const [municipioId, setMunicipioId] = useState<number | null>(null);
   const [includeBB, setIncludeBB] = useState(false);
   // Identidade visual das peças: GOVE (padrão) ou Banco do Brasil; persistida por município
   const [identity, setIdentity] = useState<Identity>('gove');
@@ -94,13 +96,22 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue 
 
   function chooseMunicipio(id: number | null) {
     setMunicipioId(id);
-    const m = municipios.find((x) => x.id === id);
-    if (m) {
-      setIncludeBB(m.incluir_logo_banco_do_brasil);
-      setIdentity(m.identidade === 'bb' ? 'bb' : 'gove');
-      setBbScheme(m.bb_esquema ?? 'capa');
-    }
   }
+
+  /* Ao trocar de município (aqui ou na etapa inicial do App), aplica os padrões
+     dele uma única vez; quando ainda não está na lista (recém-cadastrado), espera chegar. */
+  const appliedMunicipio = useRef<number | null>(null);
+  useEffect(() => {
+    if (!municipio) {
+      appliedMunicipio.current = null;
+      return;
+    }
+    if (appliedMunicipio.current === municipio.id) return;
+    appliedMunicipio.current = municipio.id;
+    setIncludeBB(municipio.incluir_logo_banco_do_brasil);
+    setIdentity(municipio.identidade === 'bb' ? 'bb' : 'gove');
+    setBbScheme(municipio.bb_esquema ?? 'capa');
+  }, [municipio]);
 
   /** Troca a identidade/esquema e grava no município selecionado (vale para as próximas sessões). */
   function chooseIdentity(next: Identity, scheme = bbScheme) {
