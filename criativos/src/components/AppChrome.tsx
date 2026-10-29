@@ -87,23 +87,21 @@ export function AppHeader({ actions }: { actions?: ReactNode }) {
 }
 
 /** Glifo com a proporção real do formato (maior lado = 20px). */
-export function FormatGlyph({ w, h, hd = false }: { w: number; h: number; hd?: boolean }) {
+export function FormatGlyph({ w, h }: { w: number; h: number }) {
   const max = 20;
   const gw = Math.round(w >= h ? max : (max * w) / h);
   const gh = Math.round(h >= w ? max : (max * h) / w);
   return (
     <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
       <span
-        className="flex items-center justify-center rounded-[3px] border-2 border-current text-[6px] font-bold leading-none"
+        className="rounded-[3px] border-2 border-current"
         style={{ width: gw, height: gh }}
-      >
-        {hd ? "HD" : null}
-      </span>
+      />
     </span>
   );
 }
 
-/** "Feed 4:5 (1080x1350)" → "Feed 4:5". */
+/** "Vertical 4:5 (1080x1350)" → "Vertical 4:5". */
 export const shortFormatLabel = (label: string) => label.replace(/\s*\(.*\)\s*$/, "");
 
 export function FormatChip({
@@ -127,6 +125,7 @@ export function FormatChip({
     <button
       type="button"
       aria-pressed={active}
+      data-format={format}
       title={title ?? label}
       onClick={onSelect}
       className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -135,7 +134,7 @@ export function FormatChip({
           : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
-      <FormatGlyph w={w} h={h} hd={String(format).includes("1200")} />
+      <FormatGlyph w={w} h={h} />
       <span className={RESPONSIVE_LABEL}>{shortFormatLabel(label)}</span>
     </button>
   );

@@ -46,6 +46,7 @@ import {
 import { loadImageFromFile } from "@/lib/creative/renderer";
 import {
   FOLLOWUP_BGS,
+  DEFAULT_FOLLOWUP_FORMAT,
   FOLLOWUP_FORMATS,
   FOLLOWUP_MAX,
   followupSize,
@@ -72,7 +73,7 @@ export const Route = createFileRoute("/follow-ups")({
       {
         name: "description",
         content:
-          "Peças de follow-up GOVE em 4:3 e 1:1: atualização de produto e confirmação de evento, com travas de marca e logomarca oficial.",
+          "Peças de follow-up GOVE em 1:1, 5:4 e Onepage (1920x1080): atualização de produto e confirmação de evento, com travas de marca e logomarca oficial.",
       },
     ],
   }),
@@ -146,7 +147,7 @@ function Followups() {
   // Modelo vem da aba superior: Eventos (?modelo=evento) ou Atualizações
   const search = useSearch({ strict: false }) as { modelo?: string };
   const model: FollowupModel = search.modelo === "evento" ? "event" : "product";
-  const [format, setFormat] = useState<FollowupFormat>("4x3");
+  const [format, setFormat] = useState<FollowupFormat>(DEFAULT_FOLLOWUP_FORMAT);
   const [bgPreset, setBgPreset] = useState("deep");
   const [bgImage, setBgImage] = useState<{
     img: HTMLImageElement;
@@ -627,7 +628,7 @@ function Followups() {
             </div>
             {bgImage?.credit && <PexelsCredit photo={bgImage.credit} />}
             <PexelsPicker
-              orientation={format === "4x3" ? "landscape" : "square"}
+              orientation={format === "1x1" ? "square" : "landscape"}
               label="Buscar foto de fundo no Pexels"
               onPick={(img, photo) => setBgImage({ img, credit: photo })}
             />

@@ -115,16 +115,42 @@ const LAYOUT_BASE: Partial<Record<CreativeLayout, CreativeLayout>> = {
   "expert-band": "band-bottom",
 };
 
-export type CreativeFormat = "feed-45" | "square-11" | "square-1200" | "story-916" | "linkedin-191";
+export type CreativeFormat =
+  | "square-11"
+  | "landscape-54"
+  | "feed-45"
+  | "onepage-169"
+  | "story-916"
+  | "linkedin-191";
 
 /** Todos exportados em 72 dpi (1 px = 1 pt na base de 1080). */
 export const FORMATS: { key: CreativeFormat; label: string; w: number; h: number }[] = [
-  { key: "feed-45", label: "Feed 4:5 (1080x1350)", w: 1080, h: 1350 },
   { key: "square-11", label: "Quadrado 1:1 (1080x1080)", w: 1080, h: 1080 },
-  { key: "square-1200", label: "Quadrado HD (1200x1200)", w: 1200, h: 1200 },
+  { key: "landscape-54", label: "Horizontal 5:4 (1350x1080)", w: 1350, h: 1080 },
+  { key: "feed-45", label: "Vertical 4:5 (1080x1350)", w: 1080, h: 1350 },
+  { key: "onepage-169", label: "Onepage (1920x1080)", w: 1920, h: 1080 },
   { key: "story-916", label: "Story 9:16 (1080x1920)", w: 1080, h: 1920 },
   { key: "linkedin-191", label: "LinkedIn 1.91:1 (1920x1005)", w: 1920, h: 1005 },
 ];
+
+/** Formato padrão das peças (vertical 4:5). */
+export const DEFAULT_FORMAT: CreativeFormat = "feed-45";
+
+/**
+ * Formatos que saíram da lista → o permitido mais próximo (estado salvo,
+ * links e integrações antigas continuam abrindo sem erro).
+ */
+const LEGACY_FORMATS: Record<string, CreativeFormat> = {
+  "square-1200": "square-11",
+  "4x3": "landscape-54",
+  "1x1": "square-11",
+};
+
+/** Normaliza qualquer chave recebida para um formato permitido. */
+export function normalizeFormat(key: string | null | undefined): CreativeFormat {
+  if (key && FORMATS.some((f) => f.key === key)) return key as CreativeFormat;
+  return (key && LEGACY_FORMATS[key]) || DEFAULT_FORMAT;
+}
 
 /** Biblioteca de fundos da marca (camada independente da diagramação). */
 export type BgPreset = {
@@ -185,8 +211,9 @@ export const BG_PRESETS: BgPreset[] = [
   },
 ];
 
-export function formatSize(key: CreativeFormat | undefined) {
-  return FORMATS.find((f) => f.key === key) ?? FORMATS[0]!;
+export function formatSize(key: CreativeFormat | string | undefined) {
+  const k = normalizeFormat(key);
+  return FORMATS.find((f) => f.key === k)!;
 }
 
 export type CreativeSpec = {
@@ -577,7 +604,11 @@ function renderCreativeOnce(
 
   const CARD_PAD = BASE_CARD_PAD;
   // Em peças largas o bloco de texto é limitado para não gerar linhas quilométricas.
-  const CONTENT_W = wide ? Math.round(CANVAS_W * 0.62) : CANVAS_W - M * 2;
+  // No horizontal 5:4 a coluna segue a medida do quadrado (≈ 0,9 × altura) e a
+  // largura extra fica para a foto/fundo respirar; verticais e 1:1 não mudam.
+  const CONTENT_W = wide
+    ? Math.round(CANVAS_W * 0.62)
+    : Math.min(CANVAS_W - M * 2, Math.round(CANVAS_H * 0.9));
   const RS = Math.max(0.1, Math.min(1, spec.renderScale ?? 1));
   canvas.width = Math.round(CANVAS_W * RS);
   canvas.height = Math.round(CANVAS_H * RS);

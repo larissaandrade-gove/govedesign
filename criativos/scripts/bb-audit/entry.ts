@@ -3,8 +3,9 @@
  *  - modo BB: todos os layouts × formatos × esquemas × fundos (sólido e fotos
  *    sintéticas) × com/sem logomarca BB → sobreposição, contraste ≥ 4,5:1 de
  *    cada texto contra os pixels reais e paleta (cores efetivamente aplicadas);
- *  - follow-ups BB: 2 modelos × 2 formatos × esquemas × fundos × logo;
- *  - regressão GOVE (opcional): compara pixel a pixel com o renderer do HEAD.
+ *  - follow-ups BB: 2 modelos × 3 formatos × esquemas × fundos × logo;
+ *  - regressão GOVE (opcional): compara pixel a pixel com o renderer do HEAD
+ *    (só nos formatos que existem nos dois lados, com o mesmo tamanho).
  *
  * A "logomarca BB" usada aqui é um retângulo sintético SÓ para teste de
  * layout (não é a marca); o app usa o arquivo oficial enviado pelo usuário.
@@ -24,10 +25,18 @@ import { loadLogoLibrary } from "@/lib/creative/logos";
 import { validateCreative } from "@/lib/creative/brand";
 import { BB_COPY, BB_PALETTE, BB_SCHEMES, bbFontsReady, loadBBFonts } from "@/lib/creative/bb";
 
+type Size = { key: string; w: number; h: number };
 type Old = {
   renderCreative?: (c: HTMLCanvasElement, s: CreativeSpec) => unknown;
   renderFollowup?: (c: HTMLCanvasElement, s: FollowupSpec) => unknown;
+  /** Formatos do HEAD: a regressão só compara os que existem nos dois lados. */
+  FORMATS?: Size[];
+  FOLLOWUP_FORMATS?: Size[];
 };
+
+/** Formatos atuais que já existiam no HEAD com o mesmo tamanho (novos ficam de fora). */
+const shared = <T extends Size>(now: T[], before: Size[] | undefined) =>
+  before ? now.filter((f) => before.some((b) => b.key === f.key && b.w === f.w && b.h === f.h)) : now;
 
 const P = BB_PALETTE;
 
@@ -266,7 +275,7 @@ export async function run(opts: { old?: Old; quick?: boolean } = {}) {
       return true;
     };
     for (const layout of layouts)
-      for (const f of FORMATS)
+      for (const f of shared(FORMATS, opts.old.FORMATS))
         for (const sc of SCHEMES)
           for (const [bgName, bg] of [["sem foto", null], ["foto", ph.busy]] as const) {
             const preset = BG_PRESETS[(gove.compared * 7) % BG_PRESETS.length]!.key;
@@ -293,7 +302,7 @@ export async function run(opts: { old?: Old; quick?: boolean } = {}) {
           }
     if (opts.old.renderFollowup)
       for (const model of ["product", "event"] as const)
-        for (const f of FOLLOWUP_FORMATS)
+        for (const f of shared(FOLLOWUP_FORMATS, opts.old.FOLLOWUP_FORMATS))
           for (const p of BG_PRESETS)
             for (const bg of [null, ph.busy]) {
               const spec: FollowupSpec = {

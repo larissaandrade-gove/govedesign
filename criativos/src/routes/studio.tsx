@@ -89,7 +89,7 @@ export const Route = createFileRoute("/studio")({
       {
         name: "description",
         content:
-          "Editor ao vivo de criativos GOVE: biblioteca de fundos institucionais, 8 diagramações fixas, remix de artes prontas e download PNG em Feed 4:5, Quadrado, Story 9:16 ou LinkedIn 1.91:1.",
+          "Editor ao vivo de criativos GOVE: biblioteca de fundos institucionais, 8 diagramações fixas, remix de artes prontas e download PNG em Quadrado 1:1, Horizontal 5:4, Vertical 4:5, Onepage, Story 9:16 ou LinkedIn 1.91:1.",
       },
       { property: "og:title", content: "Studio ao vivo | Criativos GOVE" },
       {

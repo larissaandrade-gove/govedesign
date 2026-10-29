@@ -15,7 +15,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdirSync, readFileSync, writeFileSync, copyFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -51,14 +51,18 @@ if (withGove) {
   // Renderer e follow-up do último commit + módulos auxiliares atuais.
   const creative = path.join(app, "src/lib/creative");
   try {
+    // Os auxiliares (bb, brand, icons, logos) vêm do app atual por caminho
+    // absoluto: assim os imports relativos deles (fontes, logos) continuam valendo.
     for (const f of ["renderer.ts", "followup.ts"]) {
-      const src = execFileSync("git", ["show", `HEAD:criativos/src/lib/creative/${f}`], { cwd: repo });
-      writeFileSync(path.join(out, "old", f), src);
+      const src = execFileSync("git", ["show", `HEAD:criativos/src/lib/creative/${f}`], { cwd: repo, encoding: "utf8" });
+      writeFileSync(
+        path.join(out, "old", f),
+        src.replace(/from "\.\/(bb|brand|icons|logos)"/g, (_, m) => `from ${JSON.stringify(path.join(creative, m))}`),
+      );
     }
-    for (const f of ["brand.ts", "icons.ts", "logos.ts"]) copyFileSync(path.join(creative, f), path.join(out, "old", f));
     writeFileSync(
       path.join(out, "old/entry.ts"),
-      `import { renderCreative } from "./renderer";\nimport { renderFollowup } from "./followup";\n(window as any).__old = { renderCreative, renderFollowup };\n`,
+      `import { FORMATS, renderCreative } from "./renderer";\nimport { FOLLOWUP_FORMATS, renderFollowup } from "./followup";\n(window as any).__old = { renderCreative, renderFollowup, FORMATS, FOLLOWUP_FORMATS };\n`,
     );
     await lib(path.join(out, "old/entry.ts"), "oldRenderer", "old.js");
     hasOld = true;

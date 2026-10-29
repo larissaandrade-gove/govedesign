@@ -1,6 +1,6 @@
 /**
- * Gerador de follow-ups: peças de comunicação interna/relacionamento em 4:3
- * (1440×1080) e 1:1 (1080×1080), com as mesmas travas de marca do gerador de
+ * Gerador de follow-ups: peças de comunicação interna/relacionamento em 1:1
+ * (1080×1080), 5:4 (1350×1080) e Onepage (1920×1080), com as mesmas travas de marca do gerador de
  * criativos — fundos da biblioteca, textos só na paleta oficial com contraste
  * ≥ 4,5:1 e logomarca oficial escolhida pelo contraste do fundo real.
  *
@@ -43,14 +43,34 @@ import {
   type LogoVariantId,
 } from "./logos";
 
-export type FollowupFormat = "4x3" | "1x1";
+export type FollowupFormat = "1x1" | "5x4" | "onepage";
 export type FollowupModel = "product" | "event";
 export type FollowupMarker = "check" | "zap" | "arrow" | "dot" | "number";
 
 export const FOLLOWUP_FORMATS: { key: FollowupFormat; label: string; w: number; h: number }[] = [
-  { key: "4x3", label: "4:3 (1440x1080)", w: 1440, h: 1080 },
-  { key: "1x1", label: "1:1 (1080x1080)", w: 1080, h: 1080 },
+  { key: "1x1", label: "Quadrado 1:1 (1080x1080)", w: 1080, h: 1080 },
+  { key: "5x4", label: "Horizontal 5:4 (1350x1080)", w: 1350, h: 1080 },
+  { key: "onepage", label: "Onepage (1920x1080)", w: 1920, h: 1080 },
 ];
+
+/** Formato padrão dos follow-ups (horizontal 5:4). */
+export const DEFAULT_FOLLOWUP_FORMAT: FollowupFormat = "5x4";
+
+/** Formatos antigos → o permitido mais próximo (estado salvo não quebra). */
+const LEGACY_FOLLOWUP_FORMATS: Record<string, FollowupFormat> = {
+  "4x3": "5x4",
+  "square-11": "1x1",
+  "square-1200": "1x1",
+  "landscape-54": "5x4",
+  "onepage-169": "onepage",
+  "linkedin-191": "onepage",
+};
+
+/** Normaliza qualquer chave recebida para um formato de follow-up permitido. */
+export function normalizeFollowupFormat(key: string | null | undefined): FollowupFormat {
+  if (key && FOLLOWUP_FORMATS.some((f) => f.key === key)) return key as FollowupFormat;
+  return (key && LEGACY_FOLLOWUP_FORMATS[key]) || DEFAULT_FOLLOWUP_FORMAT;
+}
 
 export const FOLLOWUP_MAX = {
   title: 60,
@@ -149,8 +169,9 @@ export async function loadFollowupFonts() {
   await Promise.all(FOLLOWUP_FONTS.map((f) => document.fonts.load(f).catch(() => null)));
 }
 
-export function followupSize(key: FollowupFormat) {
-  return FOLLOWUP_FORMATS.find((f) => f.key === key) ?? FOLLOWUP_FORMATS[0]!;
+export function followupSize(key: FollowupFormat | string) {
+  const k = normalizeFollowupFormat(key);
+  return FOLLOWUP_FORMATS.find((f) => f.key === k)!;
 }
 
 /** Fundos da biblioteca usados nos follow-ups (roxo noite, roxo Gove, claro). */
@@ -474,7 +495,7 @@ function renderFollowupOnce(
     paintPreset(ctx, preset, W, H);
   }
 
-  const M = spec.format === "4x3" ? 96 : 88;
+  const M = W > H ? 96 : 88;
   const checks: FollowupCheck[] = [];
   const textPairs: [string, string, string[]][] = [];
   const boxes: LayoutBox[] = [];
@@ -575,7 +596,7 @@ function renderFollowupOnce(
 
   if (spec.model === "product") {
     const p = spec.product;
-    const square = spec.format === "1x1";
+    const square = W === H;
     const logoH = 60;
     const lb = drawLogo(M, M, logoH);
     const version = level >= 3 ? "" : p.version.trim();
@@ -760,7 +781,7 @@ function renderFollowupOnce(
     }
   } else {
     const e = spec.event;
-    const square = spec.format === "1x1";
+    const square = W === H;
     const shrink = level >= 4 ? 0.7 : level >= 1 ? 0.84 : 1;
     const D = Math.round((square ? 360 : 500) * shrink);
     const ring = square ? 12 : 14;
