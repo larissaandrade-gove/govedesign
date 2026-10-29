@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Check, Copy, DownloadSimple, Plus, Trash } from '@phosphor-icons/react';
-import { meshCss, meshSvg, textGradientCss, toCss, type GradientKind, type GradientStop, type Hex, type MeshPoint, type Space } from '../../lib/color';
+import { colorName, meshCss, meshSvg, textGradientCss, toCss, type GradientKind, type GradientStop, type Hex, type MeshPoint, type Space } from '../../lib/color';
 import { downloadText } from '../../lib/download';
+import { BaseColorPicker } from './BaseColorPicker';
 import { Choice, Field, copy } from './shared';
 
 const KINDS = [
@@ -46,7 +47,10 @@ function CopyBlock({ code, file }: { code: string; file?: [string, string, strin
   );
 }
 
-/** Gradientes linear, radial, cônico e mesh (CSS com fallback + SVG) e texto com gradiente. */
+/**
+ * Gradientes linear, radial, cônico e mesh (CSS com fallback + SVG) e texto com
+ * gradiente. As paradas são só cores da paleta; a transição entre elas é derivada.
+ */
 export function GradientTool({ base }: { base: Hex }) {
   const [kind, setKind] = useState<GradientKind>('linear');
   const [space, setSpace] = useState<Space>('oklch');
@@ -87,20 +91,26 @@ export function GradientTool({ base }: { base: Hex }) {
       </div>
 
       <fieldset className="flex flex-col gap-space-1">
-        <legend className="mb-space-1 text-caption text-text-secondary">Cores ({kind === 'mesh' ? 'manchas sobre Noite' : 'paradas'})</legend>
+        <legend className="mb-space-1 text-caption text-text-secondary">Cores da paleta ({kind === 'mesh' ? 'manchas sobre Noite' : 'paradas'}) · só a transição entre elas fica fora da paleta</legend>
         {list.map((s, i) => (
-          <div key={i} className="flex flex-wrap items-center gap-space-1">
-            <input type="color" value={s.hex} disabled={i === 0} onChange={(e) => setStop(i, { hex: e.target.value.toLowerCase() })} aria-label={`Cor ${i + 1}`} className="h-11 w-12 cursor-pointer rounded-md border border-secondary bg-background p-1 disabled:cursor-default" />
-            <span className="w-20 font-mono text-caption text-text-primary">{s.hex.toUpperCase()}</span>
-            {kind !== 'mesh' && <input type="range" min={0} max={100} value={s.at} onChange={(e) => setStop(i, { at: Number(e.target.value) })} aria-label={`Posição da cor ${i + 1}`} className="h-11 min-w-0 flex-1" />}
+          <div key={i} className="flex flex-col gap-1 rounded-md border border-secondary p-space-1">
             {i === 0 ? (
-              <span className="text-caption text-text-secondary">cor base</span>
+              <span className="text-caption text-text-secondary">
+                Cor 1 · <span className="font-semibold text-text-primary">{colorName(s.hex)}</span> <span className="font-mono">{s.hex.toUpperCase()}</span> · cor base (troque acima)
+              </span>
             ) : (
-              list.length > 2 && (
-                <button type="button" aria-label={`Remover cor ${i + 1}`} title="Remover" onClick={() => setStops((st) => st.filter((_, k) => k !== i))} className="flex size-11 items-center justify-center rounded-md text-text-secondary hover:text-text-primary">
-                  <Trash className="size-5" aria-hidden />
-                </button>
-              )
+              <BaseColorPicker label={`Cor ${i + 1}`} value={s.hex} onChange={(hex) => setStop(i, { hex })} compact />
+            )}
+            {(kind !== 'mesh' || i > 0) && (
+              <div className="flex items-center gap-space-1">
+                {kind !== 'mesh' && <input type="range" min={0} max={100} value={s.at} onChange={(e) => setStop(i, { at: Number(e.target.value) })} aria-label={`Posição da cor ${i + 1}`} className="h-11 min-w-0 flex-1" />}
+                {kind !== 'mesh' && <span className="w-10 text-right font-mono text-caption text-text-secondary">{s.at}%</span>}
+                {i > 0 && list.length > 2 && (
+                  <button type="button" aria-label={`Remover cor ${i + 1}`} title="Remover" onClick={() => setStops((st) => st.filter((_, k) => k !== i))} className="ml-auto flex size-11 items-center justify-center rounded-md text-text-secondary hover:text-text-primary">
+                    <Trash className="size-5" aria-hidden />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))}

@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ImageSquare, UploadSimple } from '@phosphor-icons/react';
-import { extractPalette, type Hex } from '../../lib/color';
+import { extractPalette, nearestBrand, type Hex } from '../../lib/color';
 import { ExportMenu, Swatch, pill } from './shared';
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -29,7 +29,11 @@ async function pixelsOf(file: File): Promise<Uint8ClampedArray> {
   }
 }
 
-/** Paleta extraída de uma imagem, com a cor oficial mais próxima de cada cor. */
+/**
+ * Paleta de uma imagem levada para a paleta: cada cor dominante vira a cor
+ * permitida mais próxima (ΔE 2000), sem repetir; a cor original fica só como
+ * referência.
+ */
 export function ImageTool({ onUse }: { onUse: (hex: Hex) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState('');
@@ -39,6 +43,16 @@ export function ImageTool({ onUse }: { onUse: (hex: Hex) => void }) {
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [drag, setDrag] = useState(false);
+  // Cor permitida → cores da imagem que caíram nela (na ordem de frequência)
+  const mapped = useMemo(() => {
+    const by = new Map<Hex, { hex: Hex; deltaE: number }[]>();
+    for (const c of colors) {
+      const n = nearestBrand(c);
+      by.set(n.hex, [...(by.get(n.hex) ?? []), { hex: c, deltaE: n.deltaE }]);
+    }
+    return [...by].map(([hex, from]) => ({ hex, from }));
+  }, [colors]);
+  const allowed = mapped.map((m) => m.hex);
 
   async function load(f: File | undefined, n = count) {
     if (!f) return;
@@ -107,17 +121,29 @@ export function ImageTool({ onUse }: { onUse: (hex: Hex) => void }) {
               </button>
             ))}
           </div>
+          <p className="text-caption text-text-secondary">
+            {colors.length} cores dominantes na imagem → {allowed.length} {allowed.length === 1 ? 'cor' : 'cores'} da paleta (a mais próxima de cada uma). O original aparece só como referência.
+          </p>
           <div className="grid grid-cols-2 gap-space-1 sm:grid-cols-4">
-            {colors.map((c) => (
-              <div key={c} className="flex flex-col gap-1">
-                <Swatch hex={c} big />
-                <button type="button" onClick={() => onUse(c)} className="min-h-11 rounded-md text-caption font-semibold text-highlight hover:underline">
+            {mapped.map((m) => (
+              <div key={m.hex} className="flex min-w-0 flex-col gap-1">
+                <Swatch hex={m.hex} big />
+                <span className="flex flex-wrap items-center gap-1 px-1 text-[11px] text-text-secondary">
+                  Na imagem:
+                  {m.from.map((f) => (
+                    <span key={f.hex} className="inline-flex items-center gap-0.5 font-mono" title={`${f.hex.toUpperCase()} · ΔE ${f.deltaE.toLocaleString('pt-BR')} da cor da paleta`}>
+                      <span className="size-3 rounded-sm border border-text-primary/25" style={{ background: f.hex }} aria-hidden />
+                      {f.hex.toUpperCase()}
+                    </span>
+                  ))}
+                </span>
+                <button type="button" onClick={() => onUse(m.hex)} className="min-h-11 rounded-md text-caption font-semibold text-highlight hover:underline">
                   Usar como base
                 </button>
               </div>
             ))}
           </div>
-          <ExportMenu data={{ name: 'paleta da imagem', colors }} colors={colors} />
+          <ExportMenu data={{ name: 'paleta da imagem', colors: allowed }} colors={allowed} />
         </section>
       )}
     </div>

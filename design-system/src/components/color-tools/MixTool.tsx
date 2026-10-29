@@ -9,7 +9,10 @@ const SPACES: { id: Space; label: string; note: string }[] = [
   { id: 'oklch', label: 'OKLCH', note: 'perceptual; luminosidade e saturação mais uniformes' },
 ];
 
-/** Mistura de duas cores, comparando a interpolação em RGB, HSL e OKLCH. */
+/**
+ * Mistura de duas cores da paleta, comparando a interpolação em RGB, HSL e
+ * OKLCH. As pontas são travadas na paleta; o meio é derivado (fora da paleta).
+ */
 export function MixTool({ base }: { base: Hex }) {
   const [b, setB] = useState<Hex>('#ffc72c');
   const [t, setT] = useState(50);
@@ -18,6 +21,7 @@ export function MixTool({ base }: { base: Hex }) {
   return (
     <div className="flex flex-col gap-space-3">
       <BaseColorPicker label="Segunda cor" value={b} onChange={setB} />
+      <p className="text-caption text-text-secondary">As duas pontas são cores da paleta. A mistura e os passos do meio são derivados: aparecem como fora da paleta, com a cor permitida mais próxima.</p>
       <div className="grid gap-space-2 sm:grid-cols-2">
         <Field label={`Proporção: ${100 - t}% base · ${t}% segunda`}>
           <input type="range" min={0} max={100} value={t} onChange={(e) => setT(Number(e.target.value))} className="h-11 accent-[var(--gove-primary,#3D0099)]" />

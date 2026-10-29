@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CirclesThreePlus, Drop, Eye, Gradient, ImageSquare } from '@phosphor-icons/react';
-import { nearestBrand, type Hex } from '../../lib/color';
+import { colorName, type Hex } from '../../lib/color';
 import { BaseColorPicker } from './BaseColorPicker';
 import { GradientTool } from './GradientTool';
 import { ImageTool } from './ImageTool';
@@ -18,15 +18,17 @@ const TOOLS = [
 type Tool = (typeof TOOLS)[number]['id'];
 
 /**
- * Ferramentas de cor da Bússola: partem de uma cor oficial (ou qualquer HEX,
- * com o aviso de fora da paleta). Lógica em lib/color; aqui só a interface.
+ * Ferramentas de cor da Bússola, travadas na paleta: toda cor escolhida é uma
+ * das 10 institucionais ou o branco/preto puros (TOOL_COLORS). Lógica em
+ * lib/color; aqui só a interface.
  */
 export function ColorTools() {
   const [tool, setTool] = useState<Tool>('paletas');
   const [base, setBase] = useState<Hex>('#3d0099');
-  const name = nearestBrand(base).exact ? nearestBrand(base).name : `cor ${base.slice(1)}`;
+  const name = colorName(base);
   return (
     <div className="flex min-w-0 flex-col gap-space-3">
+      <p className="text-caption text-text-secondary">Só as cores da paleta institucional, mais o branco e o preto puros para peças com mais contraste.</p>
       <div role="tablist" aria-label="Ferramentas de cor" className="-mx-space-2 flex gap-1 overflow-x-auto px-space-2 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
         {TOOLS.map(({ id, label, icon: Icon }) => (
           <button

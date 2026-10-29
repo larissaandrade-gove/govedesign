@@ -1,48 +1,64 @@
-import { useEffect, useState } from 'react';
-import { BRAND_COLORS } from '../../data/colorCompass';
-import { nearestBrand, normalizeHex, type Hex } from '../../lib/color';
+import { useId, useRef, type KeyboardEvent } from 'react';
+import { TOOL_COLORS, colorName, type Hex } from '../../lib/color';
 
-/** Cor base: uma das 10 cores oficiais ou qualquer HEX (com aviso de fora da paleta). */
-export function BaseColorPicker({ label = 'Cor base', value, onChange }: { label?: string; value: Hex; onChange: (hex: Hex) => void }) {
-  const [text, setText] = useState(value.toUpperCase());
-  useEffect(() => setText(value.toUpperCase()), [value]);
-  const near = nearestBrand(value);
+/**
+ * Escolha de cor travada na paleta: as 10 cores institucionais e o branco e o
+ * preto puros (TOOL_COLORS). Sem HEX livre. Grupo de rádio acessível: setas
+ * (e Home/End) mudam a cor; só a cor marcada entra na ordem do Tab.
+ * `compact`: só as amostras, para listas (paradas de gradiente).
+ */
+export function BaseColorPicker({ label = 'Cor base', value, onChange, compact = false }: { label?: string; value: Hex; onChange: (hex: Hex) => void; compact?: boolean }) {
+  const id = useId();
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const current = Math.max(0, TOOL_COLORS.findIndex((c) => c.hex === value.toLowerCase()));
+  const move = (e: KeyboardEvent, i: number) => {
+    const last = TOOL_COLORS.length - 1;
+    const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: last }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const k = (next + TOOL_COLORS.length) % TOOL_COLORS.length;
+    onChange(TOOL_COLORS[k].hex);
+    refs.current[k]?.focus();
+  };
   return (
-    <fieldset className="flex min-w-0 flex-col gap-space-1">
-      <legend className="mb-space-1 text-caption text-text-secondary">{label}</legend>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${label}: cores oficiais`}>
-        {BRAND_COLORS.map((c) => {
-          const on = c.hex.toLowerCase() === value;
+    <div className="flex min-w-0 flex-col gap-space-1">
+      <span className="flex flex-wrap items-baseline gap-x-space-1 text-caption text-text-secondary" id={id}>
+        {label}
+        <span className="font-semibold text-text-primary">
+          {colorName(value)} · <span className="font-mono">{value.toUpperCase()}</span>
+        </span>
+      </span>
+      <div
+        role="radiogroup"
+        aria-labelledby={id}
+        className={compact ? 'flex flex-wrap gap-1' : 'grid grid-cols-4 gap-1 sm:grid-cols-6 xl:grid-cols-12'}
+      >
+        {TOOL_COLORS.map((c, i) => {
+          const on = i === current && c.hex === value.toLowerCase();
           return (
             <button
               key={c.hex}
+              ref={(el) => {
+                refs.current[i] = el;
+              }}
               type="button"
-              aria-pressed={on}
-              aria-label={c.name}
-              title={c.name}
-              onClick={() => onChange(c.hex.toLowerCase())}
-              className={`flex size-11 items-center justify-center rounded-full border-2 transition-colors ${on ? 'border-primary' : 'border-transparent hover:border-secondary'}`}
+              role="radio"
+              aria-checked={on}
+              aria-label={`${c.name} ${c.hex.toUpperCase()}`}
+              title={`${c.name} · ${c.hex.toUpperCase()}${c.pure ? ' · para mais contraste' : ''}`}
+              tabIndex={i === current ? 0 : -1}
+              onClick={() => onChange(c.hex)}
+              onKeyDown={(e) => move(e, i)}
+              className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                compact ? 'size-11 justify-center' : 'min-h-11 px-0.5 py-1'
+              } ${on ? 'border-primary bg-secondary/30' : 'border-transparent hover:border-secondary'}`}
             >
-              <span className="size-8 rounded-full border border-text-primary/25" style={{ background: c.hex }} />
+              <span className="size-8 shrink-0 rounded-full border border-text-primary/25" style={{ background: c.hex }} aria-hidden />
+              {!compact && <span className={`w-full truncate text-center text-[11px] leading-tight ${on ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>{c.name}</span>}
             </button>
           );
         })}
       </div>
-      <div className="flex items-center gap-space-1">
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value.toLowerCase())} aria-label={`${label}: seletor`} className="h-11 w-12 shrink-0 cursor-pointer rounded-md border border-secondary bg-background p-1" />
-        <input
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            const n = normalizeHex(e.target.value);
-            if (n) onChange(n.hex);
-          }}
-          aria-label={`${label}: HEX`}
-          spellCheck={false}
-          className="h-11 w-28 rounded-md border border-secondary bg-background px-space-1 font-mono text-body uppercase text-text-primary focus:border-primary focus:outline-none"
-        />
-        <span className={`min-w-0 truncate text-caption ${near.exact ? 'text-highlight' : 'text-text-secondary'}`}>{near.exact ? `${near.name} · cor oficial` : `Fora da paleta · mais próxima: ${near.name}`}</span>
-      </div>
-    </fieldset>
+    </div>
   );
 }

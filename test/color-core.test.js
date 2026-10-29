@@ -1,10 +1,9 @@
 // Núcleo de cor do Design System (design-system/src/lib/color): conversões, harmonias,
-// escalas, mistura, gradientes, extração de paleta, daltonismo e exportações.
+// mistura, gradientes, extração de paleta, daltonismo e exportações.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 const c = await import('../design-system/src/lib/color/index.ts');
-const hueOf = (hex) => c.toSpaces(hex).oklch.h;
 const hslHue = (hex) => c.toSpaces(hex).hsl.h;
 const hueDist = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
@@ -46,24 +45,8 @@ test('harmonias: ângulos do matiz e monocromática no mesmo matiz', () => {
   assert.ok(hueDist(hslHue(tri[1]), hslHue(base) + 120) <= 2);
   assert.equal(c.harmony(base, 'tetradica').length, 4);
   assert.equal(c.harmony(base, 'analoga').length, 3);
-  for (const m of c.harmony(base, 'monocromatica')) assert.ok(hueDist(hueOf(m), hueOf(base)) < 8, `monocromática ${m}`);
-});
-
-test('escala 50–950: 11 passos, do mais claro ao mais escuro, com a base', () => {
-  const s = c.shades('#3d0099');
-  assert.deepEqual(s.map((x) => x.step), [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]);
-  const l = s.map((x) => c.toSpaces(x.hex).oklch.l);
-  for (let i = 1; i < l.length; i++) assert.ok(l[i] < l[i - 1], `passo ${s[i].step} mais escuro`);
-  assert.ok(s.some((x) => x.hex === '#3d0099'));
-  for (const g of c.shades('#808080')) assert.ok(c.toSpaces(g.hex).oklch.c < 0.01, 'cinza continua cinza');
-});
-
-test('tema claro/escuro: texto e primária com contraste mínimo', () => {
-  const t = c.themeFrom('#3d0099');
-  assert.ok(c.contrastRatio(t.light.text, t.light.surface) >= 4.5);
-  assert.ok(c.contrastRatio(t.dark.text, t.dark.surface) >= 4.5);
-  assert.ok(c.contrastRatio(t.light.primary, '#ffffff') >= 4.5);
-  assert.ok(c.contrastRatio(t.light.onPrimary, t.light.primary) >= 4.5);
+  // Monocromática deixou de gerar tons livres: só a base (os tons vêm da paleta em brandHarmony)
+  assert.deepEqual(c.harmony(base, 'monocromatica'), [base]);
 });
 
 test('mistura: pontas, cinza no meio e matiz pelo caminho curto', () => {
@@ -121,12 +104,12 @@ test('daltonismo: preto e branco não mudam; vermelho e verde se confundem', () 
 });
 
 test('exportações: CSS, JSON, Tailwind e SVG', () => {
-  const shades = c.shades('#3d0099');
+  const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step, i) => ({ step, hex: `#3d00${(i * 10 + 10).toString(16).padStart(2, '0')}` }));
   const css = c.toCssVars({ name: 'Roxo Gove', shades });
   assert.match(css, /^:root \{\n {2}--roxo-gove-50: #[0-9a-f]{6};/);
   assert.equal(Object.keys(JSON.parse(c.toJson({ name: 'Roxo', shades })).roxo).length, 11);
   const tw = c.toTailwind({ name: 'Roxo', shades });
   assert.match(tw, /'roxo': \{\n {10}50: '#[0-9a-f]{6}',/);
-  assert.match(c.toCssVars({ name: 'Tema', theme: c.themeFrom('#3d0099') }), /--tema-light-on-primary:/);
+  assert.match(c.toCssVars({ name: 'Tema', theme: c.brandTheme('#3d0099') }), /--tema-light-on-primary:/);
   assert.match(c.paletteSvg(['#3d0099', '#ffc72c']), /width="240"/);
 });

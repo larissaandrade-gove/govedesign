@@ -30,7 +30,7 @@ export async function copy(text: string) {
   }
 }
 
-/** Amostra: clique copia o HEX; marca "fora da paleta" e mostra a cor oficial mais próxima. */
+/** Amostra: clique copia o HEX; marca "fora da paleta" (misturas e gradientes) e mostra a cor permitida mais próxima. */
 export function Swatch({ hex, label, big = false }: { hex: Hex; label?: ReactNode; big?: boolean }) {
   const [done, setDone] = useState(false);
   const near = nearestBrand(hex);
@@ -43,7 +43,7 @@ export function Swatch({ hex, label, big = false }: { hex: Hex; label?: ReactNod
           setTimeout(() => setDone(false), 1200);
         }
       }}
-      title={near.exact ? `${near.name} (cor oficial) — copiar` : `Fora da paleta: mais próxima é ${near.name} (ΔE ${near.deltaE.toLocaleString('pt-BR')}) — copiar`}
+      title={near.exact ? `${near.name} (cor da paleta) — copiar` : `Fora da paleta: mais próxima é ${near.name} (ΔE ${near.deltaE.toLocaleString('pt-BR')}) — copiar`}
       className="flex min-w-0 flex-col overflow-hidden rounded-md border border-secondary bg-background text-left transition-colors hover:border-primary"
     >
       <span className={`block w-full border-b border-text-primary/10 ${big ? 'h-20' : 'h-12'}`} style={{ background: hex }} aria-hidden />
@@ -55,7 +55,7 @@ export function Swatch({ hex, label, big = false }: { hex: Hex; label?: ReactNod
         </span>
         <span className={`flex items-center gap-1 truncate text-[11px] ${near.exact ? 'text-highlight' : 'text-text-secondary'}`}>
           {near.exact ? <Check className="size-3 shrink-0" aria-hidden /> : <WarningCircle className="size-3 shrink-0" aria-hidden />}
-          {near.exact ? near.name : `≈ ${near.name}`}
+          {near.exact ? near.name : `Fora da paleta · ≈ ${near.name}`}
         </span>
       </span>
     </button>

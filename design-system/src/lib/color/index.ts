@@ -1,5 +1,6 @@
 // Núcleo de cor do Design System: funções puras, sem UI (docs/ferramentas-de-cor.md).
 export * from './types.ts';
+export * from './allowed.ts';
 export * from './convert.ts';
 export * from './palettes.ts';
 export * from './mix.ts';

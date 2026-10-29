@@ -1,6 +1,6 @@
 // Conversões entre espaços de cor e a cor oficial Gove mais próxima.
 import { converter, differenceCiede2000, formatHex, parse, toGamut } from 'culori';
-import { BRAND_COLORS } from '../../data/colorCompass.ts';
+import { TOOL_COLORS } from './allowed.ts';
 import type { Hex } from './types.ts';
 
 const toRgb = converter('rgb');
@@ -62,11 +62,14 @@ export function toSpaces(hex: Hex) {
 /** Diferença perceptual (ΔE 2000) entre duas cores. */
 export const deltaE = (a: Hex, b: Hex) => de(a, b);
 
-/** Cor oficial Gove mais próxima (ΔE 2000); `exact` quando é a própria cor da marca. */
+/**
+ * Cor permitida mais próxima (ΔE 2000) entre as 12 das ferramentas: as 10
+ * institucionais e o branco e o preto puros. `exact` quando é a própria cor.
+ */
 export function nearestBrand(hex: Hex) {
-  let best = BRAND_COLORS[0];
+  let best = TOOL_COLORS[0];
   let dist = Infinity;
-  for (const c of BRAND_COLORS) {
+  for (const c of TOOL_COLORS) {
     const d = de(hex, c.hex);
     if (d < dist) [best, dist] = [c, d];
   }
