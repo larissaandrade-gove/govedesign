@@ -34,6 +34,7 @@ import { normalizeBox } from "./background";
 import { HIGHLIGHT_DEFAULT } from "./blockStyle";
 import { parseRich, plainText } from "./richText";
 import { CURSOR_PRESETS } from "./cursor";
+import { colorOf, colorParts, isNewBlock, rdFieldParts, type ColorPart } from "./blockColors";
 import type { AuditIssue } from "./audit";
 import type {
   BBLogo,
@@ -510,9 +511,48 @@ function harmonizeLeaf(raw: Leaf, container: BBContext): Leaf {
         borderColor,
       };
     }
+    case "rdform":
+      return leaf.fields ? { ...leaf, fields: harmonizeParts(leaf.fields, rdFieldParts(leaf), container, "bgColor") } : leaf;
     default:
-      return leaf;
+      return isNewBlock(leaf) ? harmonizeParts(leaf, colorParts(leaf), leafTextContext(leaf, container)) : leaf;
   }
+}
+
+/**
+ * Blocos novos: superfícies e detalhes na paleta, formas com >= 3:1 sobre o
+ * fundo e textos com par aprovado (sobre o fundo próprio da parte, se houver).
+ * `shapeOn`: campo do fundo das formas (ex.: campos do RD); ausente = o contexto.
+ */
+function harmonizeParts<T extends object>(obj: T, parts: ColorPart[], ctx: BBContext, shapeOn?: string): T {
+  const next = { ...obj } as Record<string, unknown>;
+  const get = (key: string) => String(next[key] ?? "");
+  for (const p of parts) if (p.role === "surface" || p.role === "deco") next[p.key] = snapPalette(get(p.key));
+  const bg = shapeOn ? hex6(get(shapeOn)) ?? undefined : solidBg(ctx);
+  for (const p of parts)
+    if (p.role === "shape") next[p.key] = bg ? graphicOn(snapPalette(get(p.key)), bg, []) : snapPalette(get(p.key));
+  for (const p of parts)
+    if (p.role === "text") {
+      const on = p.on ? hex6(get(p.on)) : null;
+      next[p.key] = deriveText(on ? textContext([on]) : ctx, get(p.key));
+    }
+  return next as T;
+}
+
+/** Seção do cabeçalho com a logomarca BB (a faixa separada some). */
+function headerWithLogo(page: PageContent): SectionBlock | null {
+  if (!page.bbLogo?.src) return null;
+  const section = page.sections.find((s) => s.role === "header");
+  const nav = section?.children.flatMap((r) => r.columns.flatMap((c) => c.children)).find((l) => l.type === "navbar");
+  return section && nav?.type === "navbar" && nav.logo ? section : null;
+}
+
+/** Cabeçalho com a logomarca: fundo opaco em Amarelo institucional, Azul institucional ou Branco. */
+function harmonizeHeaderBox(box: BoxProps): BoxProps {
+  const allowed = BB_LOGO_RULES.centralHorizontalBackgrounds;
+  const bg = hex6(box.bgColor);
+  const next: BoxProps = { ...box, bgColor: bg && allowed.includes(bg) ? bg : nearest(bg ?? WHITE, allowed) };
+  delete next.fillOpacity;
+  return next;
 }
 
 export function harmonizeLogo(logo: BBLogo): BBLogo {
@@ -532,8 +572,10 @@ export function harmonizeLogo(logo: BBLogo): BBLogo {
  * que já passam. Idempotente.
  */
 export function bbHarmonize(page: PageContent): PageContent {
+  const logoHeader = headerWithLogo(page);
   const sections = page.sections.map((section) => {
-    const s: SectionBlock = { ...section, box: harmonizeBox(section.box, false) };
+    const box = harmonizeBox(section.box, false);
+    const s: SectionBlock = { ...section, box: section === logoHeader ? harmonizeHeaderBox(box) : box };
     s.children = section.children.map((row) => {
       const r: RowBlock = { ...row, box: harmonizeBox(row.box, true) };
       const ctx = textContext(rowSamples(s, r));
@@ -574,6 +616,32 @@ function leafLabel(leaf: Leaf): string {
       return `Card “${clip(leaf.title, 24)}”`;
     case "countdown":
       return "Contagem regressiva";
+    case "badge":
+      return `Selo “${clip(leaf.text, 24)}”`;
+    case "list":
+      return "Lista";
+    case "infolist":
+      return "Lista de informações";
+    case "tags":
+      return "Etiquetas";
+    case "stats":
+      return "Estatísticas";
+    case "timeline":
+      return "Cronograma";
+    case "faq":
+      return "FAQ";
+    case "date":
+      return "Bloco de data";
+    case "person":
+      return `Card de pessoa “${clip(leaf.name, 24)}”`;
+    case "divider":
+      return "Divisória";
+    case "navbar":
+      return "Cabeçalho com menu";
+    case "footer":
+      return "Rodapé";
+    case "rdform":
+      return "Formulário RD Station";
     default:
       return "Bloco";
   }
@@ -778,12 +846,39 @@ export function bbAudit(page: PageContent): AuditIssue[] {
               }
               break;
             }
+            case "rdform":
+              for (const p of rdFieldParts(leaf)) {
+                const color = String((leaf.fields as unknown as Record<string, unknown>)[p.key] ?? "");
+                if (offPalette(color)) add(`pal-${leaf.id}-${p.key}`, "Paleta BB", `${leafLabel(leaf)}${p.part}: cor ${color} fora da paleta.`, leaf.id);
+              }
+              break;
             default:
+              if (!isNewBlock(leaf)) break;
+              for (const p of colorParts(leaf)) {
+                const color = colorOf(leaf, p.key);
+                const on = p.on ? hex6(colorOf(leaf, p.on)) : null;
+                if (p.role === "text") checkText(leaf, p.part, color, on ? textContext([on]) : ctx);
+                else if (p.role === "shape") checkShape(leaf, p.part, color, solidBg(ctx));
+                else if (offPalette(color))
+                  add(`pal-${leaf.id}-${p.key}`, "Paleta BB", `${leafLabel(leaf)}${p.part}: cor ${color} fora da paleta.`, leaf.id);
+              }
               break;
           }
         }
     });
   });
+
+  const logoHeader = headerWithLogo(page);
+  if (logoHeader) {
+    const bg = hex6(logoHeader.box.bgColor);
+    if (!bg || !BB_LOGO_RULES.centralHorizontalBackgrounds.includes(bg) || (logoHeader.box.fillOpacity ?? 100) < 100)
+      add(
+        "logo-header-bg",
+        "Logomarca BB",
+        "Cabeçalho com a logomarca: fundo opaco em Amarelo institucional, Azul institucional ou Branco.",
+        logoHeader.id,
+      );
+  }
 
   if (usesGoveCursor(page))
     add("cursor", "Paleta BB", "Cursor pronto da GOVE usa cores fora da paleta BB.");

@@ -13,7 +13,7 @@
     "format": "prettier --write .",
     "icons": "node scripts/build-icons.mjs",
     "test:bb": "node --test scripts/bb-check.test.mjs",
-    "test:lp": "node --test scripts/bb-check.test.mjs scripts/anchors-templates.test.mjs scripts/export-baseline.test.mjs scripts/layout.test.mjs scripts/block-style.test.mjs",
+    "test:lp": "node --test scripts/bb-check.test.mjs scripts/anchors-templates.test.mjs scripts/export-baseline.test.mjs scripts/layout.test.mjs scripts/block-style.test.mjs scripts/new-blocks.test.mjs",
     "baseline:lp": "node scripts/export-baseline.mjs"
   },
   "dependencies": {

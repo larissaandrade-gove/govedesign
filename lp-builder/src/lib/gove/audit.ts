@@ -5,6 +5,7 @@ import type { PageContent } from "./types";
 import { resolveButtonLink } from "./anchors";
 import { highlightColors } from "./blockStyle";
 import { parseRich } from "./richText";
+import { colorOf, colorParts, isNewBlock, textSize } from "./blockColors";
 
 export type AuditSeverity = "error" | "warning";
 
@@ -33,6 +34,52 @@ export function auditPage(page: PageContent): AuditIssue[] {
           const bg = backgroundBehind(page, leaf.id);
 
           if (leaf.type === "rdform") hasRdForm = true;
+
+          // Blocos novos: tamanho mínimo e contraste de cada cor de texto (sobre o fundo próprio da parte).
+          if (isNewBlock(leaf)) {
+            const size = textSize(leaf);
+            if (size !== null && size < MIN_FONT_SIZE)
+              issues.push({
+                id: `size-${key}`,
+                nodeId: leaf.id,
+                severity: "error",
+                rule: "Tamanho de texto",
+                message: `Texto com ${size}px — o mínimo é ${MIN_FONT_SIZE}px.`,
+              });
+            for (const part of colorParts(leaf)) {
+              if (part.role !== "text") continue;
+              const on = part.on ? colorOf(leaf, part.on) : bg;
+              const result = checkContrast(colorOf(leaf, part.key), on, size ?? MIN_FONT_SIZE, !!part.bold);
+              if (result.ratio !== null && result.ratio < 4.5)
+                issues.push({
+                  id: `contrast-${key}-${part.key}`,
+                  nodeId: leaf.id,
+                  severity: "error",
+                  rule: "Contraste",
+                  message: `Contraste de ${result.ratio.toFixed(2)}:1${part.part} — o mínimo exigido é 4.5:1.`,
+                });
+            }
+            if (leaf.type === "person" && leaf.photo && !leaf.name.trim())
+              issues.push({
+                id: `alt-${key}`,
+                nodeId: leaf.id,
+                severity: "error",
+                rule: "Texto alternativo",
+                message: "Card de pessoa com foto e sem nome (o nome é o texto alternativo da foto).",
+              });
+            // Área de clique: links do menu/rodapé têm 44px (12px + 20px + 12px); o botão do cabeçalho é o M.
+            if (leaf.type === "navbar" && leaf.ctaLabel.trim()) {
+              const height = Math.round(14 * 2 + leaf.size * 1.2);
+              if (height < 44)
+                issues.push({
+                  id: `target-${key}`,
+                  nodeId: leaf.id,
+                  severity: "warning",
+                  rule: "Área de clique",
+                  message: `Botão do cabeçalho com cerca de ${height}px de altura — o recomendado é 44px ou mais.`,
+                });
+            }
+          }
 
           if (leaf.type === "image") {
             if (leaf.src && !leaf.alt.trim()) {

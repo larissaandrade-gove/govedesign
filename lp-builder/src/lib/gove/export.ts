@@ -15,6 +15,8 @@ import {
   textExtrasCss,
 } from "./blockStyle";
 import { parseRich } from "./richText";
+import { blockTree, headerShowsBBLogo, vnodeHtml } from "./blocks";
+import { isNewBlock } from "./blockColors";
 import { cursorCss, followerCss, followerScript } from "./cursor";
 import {
   BB_PALETTE,
@@ -54,6 +56,8 @@ interface RenderCtx {
   container?: BBContext;
   /** Folha de regras da página (classes por elemento, pontos de quebra). */
   sheet: Sheet;
+  /** Seção do bloco (fundo para a versão do logo GOVE). */
+  section?: SectionBlock;
 }
 
 const esc = (value: string) =>
@@ -114,6 +118,8 @@ function richHtml(leaf: TextBlock, ctx: RenderCtx, heading: boolean): string {
 
 function leafInner(leaf: Leaf, ctx: RenderCtx): string {
   const { fonts } = ctx;
+  if (isNewBlock(leaf))
+    return vnodeHtml(blockTree(leaf, { page: ctx.page, bb: ctx.bb, fonts, sheet: ctx.sheet, sectionBg: ctx.section?.box.bgColor }));
   switch (leaf.type) {
     case "text": {
       const heading = leaf.tag !== "p";
@@ -181,7 +187,7 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
     }
     case "rdform": {
       // Snippet do RD Station preservado exatamente como colado pelo usuário.
-      if (!hasBlockStyle(leaf)) return leaf.snippet;
+      if (!hasBlockStyle(leaf) && !leaf.fields) return leaf.snippet;
       return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, undefined, ctx.bb)}">${leaf.snippet}</div>`;
     }
     case "video": {
@@ -228,7 +234,7 @@ export function iconSvg(name: string, color: string, size = "28") {
 }
 
 function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string {
-  const ctx: RenderCtx = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
+  const ctx: RenderCtx = { ...base, section, ...(base.bb ? { container: textContext(rowSamples(section, row)) } : {}) };
   const cols = row.columns
     .map(
       (col, i) =>
@@ -277,7 +283,8 @@ function sectionHtml(section: SectionBlock, ctx: RenderCtx): string {
     credit && !hasDecor(section.box) ? `position:relative;${boxStyle(section.box, ctx.bb)}` : boxStyle(section.box, ctx.bb);
   const data = credit ? ` data-pexels-id="${credit.id}"` : "";
   const container = `${styleString(containerCss(ctx.page, section))};`;
-  return `<section id="${sectionAnchor(section)}"${cls ? ` class="${cls}"` : ""}${data} style="${style}">${decorHtml(section.box)}<div class="gove-container" style="${container}">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
+  const role = section.role === "header" ? ' role="banner"' : "";
+  return `<section id="${sectionAnchor(section)}"${role}${cls ? ` class="${cls}"` : ""}${data} style="${style}">${decorHtml(section.box)}<div class="gove-container" style="${container}">${section.children.map((row) => rowHtml(row, section, ctx)).join("")}</div>${credit ? creditHtml(credit, true, ctx.bb) : ""}</section>`;
 }
 
 /** Faixa da logomarca BB: arquivo oficial sem recolorir, área de proteção x/2. */
@@ -355,7 +362,7 @@ ${cursorCss(page.cursor)}
 ${followerCss(page.cursor)}
 ${bb ? bbCss(ctx.fonts) : ""}
 </style>
-${bb ? logoHtml(page) : ""}
+${bb && !headerShowsBBLogo(page) ? logoHtml(page) : ""}
 ${body}
 <div id="${END_ANCHOR}" aria-hidden="true"></div>
 ${hasCountdown(page) ? COUNTDOWN_SCRIPT : ""}

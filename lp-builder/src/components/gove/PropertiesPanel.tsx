@@ -26,7 +26,12 @@ import {
   SPACING_STEPS,
   TYPE_PRESETS,
   TYPE_SCALE,
+  type Align,
   type AnyNode,
+  type NavLink,
+  type RdFieldStyle,
+  type RdFormBlock,
+  type TimelineItem,
   type BoxDecor,
   type BoxProps,
   type BlockStyle,
@@ -64,6 +69,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PaletteField, SchemePicker, TextColorField } from "./BBControls";
 import { useBBMode } from "@/lib/gove/bbMode";
+import { isNewBlock, type NewBlock } from "@/lib/gove/blockColors";
+import { initialsOf } from "@/lib/gove/blocks";
+import { FORM_CARD_STYLE, defaultRdFields } from "@/lib/gove/factories";
 import {
   BLOCK_MAX_WIDTHS,
   BUTTON_SIZES,
@@ -1347,6 +1355,630 @@ function ButtonExtraFields({ node, onChange }: { node: ButtonBlock; onChange: (p
 }
 
 /** Layout da página: largura do conteúdo, margens laterais e rolagem até as âncoras. */
+/* ----------------------------------------------------------- blocos novos */
+
+/** Um item por linha (lista, etiquetas, subitens). */
+function LinesField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  hint?: string;
+}) {
+  return (
+    <Field label={label}>
+      <Textarea
+        rows={Math.min(8, Math.max(3, value.length + 1))}
+        value={value.join("\n")}
+        onChange={(e) => onChange(e.target.value.split("\n"))}
+        onBlur={(e) => onChange(e.target.value.split("\n").map((l) => l.trim()).filter(Boolean))}
+      />
+      <p className="text-xs text-muted-foreground">{hint ?? "Um item por linha."}</p>
+    </Field>
+  );
+}
+
+type RecordField<T> = { key: keyof T & string; label: string; multiline?: boolean };
+
+/** Lista de registros (linhas de informação, estatísticas, perguntas, itens do cronograma). */
+function RecordsField<T extends object>({
+  label,
+  items,
+  fields,
+  make,
+  onChange,
+  itemLabel,
+  extra,
+}: {
+  label: string;
+  items: T[];
+  fields: RecordField<T>[];
+  make: () => T;
+  onChange: (items: T[]) => void;
+  itemLabel: string;
+  extra?: (item: T, set: (patch: Partial<T>) => void) => React.ReactNode;
+}) {
+  const set = (i: number, patch: Partial<T>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= items.length) return;
+    const next = [...items];
+    [next[i], next[j]] = [next[j]!, next[i]!];
+    onChange(next);
+  };
+  return (
+    <Field label={label}>
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div key={i} className="space-y-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-muted-foreground">
+                {itemLabel} {i + 1}
+              </span>
+              <div className="flex shrink-0">
+                <Button variant="ghost" size="iconTouch" aria-label={`Subir ${itemLabel} ${i + 1}`} title="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
+                  <ArrowUp aria-hidden />
+                </Button>
+                <Button variant="ghost" size="iconTouch" aria-label={`Descer ${itemLabel} ${i + 1}`} title="Descer" disabled={i === items.length - 1} onClick={() => move(i, 1)}>
+                  <ArrowDown aria-hidden />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="iconTouch"
+                  aria-label={`Remover ${itemLabel} ${i + 1}`}
+                  title="Remover"
+                  className="hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => onChange(items.filter((_, j) => j !== i))}
+                >
+                  <Trash aria-hidden />
+                </Button>
+              </div>
+            </div>
+            {fields.map((f) =>
+              f.multiline ? (
+                <Textarea
+                  key={f.key}
+                  rows={2}
+                  aria-label={`${f.label} (${itemLabel} ${i + 1})`}
+                  placeholder={f.label}
+                  value={String(item[f.key] ?? "")}
+                  onChange={(e) => set(i, { [f.key]: e.target.value } as Partial<T>)}
+                />
+              ) : (
+                <Input
+                  key={f.key}
+                  aria-label={`${f.label} (${itemLabel} ${i + 1})`}
+                  placeholder={f.label}
+                  value={String(item[f.key] ?? "")}
+                  onChange={(e) => set(i, { [f.key]: e.target.value } as Partial<T>)}
+                />
+              ),
+            )}
+            {extra ? extra(item, (patch) => set(i, patch)) : null}
+          </div>
+        ))}
+        <Button variant="outline" size="touch" className="w-full" onClick={() => onChange([...items, make()])}>
+          <Plus aria-hidden />
+          Adicionar {itemLabel.toLowerCase()}
+        </Button>
+      </div>
+    </Field>
+  );
+}
+
+/** Destinos de link: seções da página (pelas âncoras), formulário ou final. */
+function TargetSelect({
+  label,
+  value,
+  page,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  page: PageContent | undefined;
+  onChange: (v: string) => void;
+}) {
+  const sections = page?.sections.filter((s) => s.role !== "header") ?? [];
+  const exists = value === TARGET_FORM || value === TARGET_END || sections.some((s) => s.id === value);
+  return (
+    <select aria-label={label} className={SELECT} value={exists ? value : ""} onChange={(e) => onChange(e.target.value)}>
+      {!exists ? (
+        <option value="" disabled>
+          Seção excluída — escolha outra
+        </option>
+      ) : null}
+      <option value={TARGET_FORM}>Formulário de inscrição</option>
+      {page
+        ? sections.map((section) => (
+            <option key={section.id} value={section.id}>
+              {sectionLabel(page, section)}
+            </option>
+          ))
+        : null}
+      <option value={TARGET_END}>Final da página</option>
+    </select>
+  );
+}
+
+/** Links do menu/rodapé: texto + seção de destino. */
+function LinksField({
+  links,
+  page,
+  onChange,
+}: {
+  links: NavLink[];
+  page: PageContent | undefined;
+  onChange: (links: NavLink[]) => void;
+}) {
+  return (
+    <RecordsField<NavLink>
+      label="Links para as seções"
+      itemLabel="Link"
+      items={links}
+      fields={[{ key: "label", label: "Texto do link" }]}
+      make={() => ({ label: "Seção", target: TARGET_FORM })}
+      onChange={onChange}
+      extra={(item, set) => (
+        <TargetSelect label="Seção de destino" value={item.target} page={page} onChange={(target) => set({ target })} />
+      )}
+    />
+  );
+}
+
+function AlignField({ value, onChange }: { value: Align; onChange: (v: Align) => void }) {
+  return (
+    <ChoiceField
+      label="Alinhamento"
+      value={value}
+      options={[
+        ["left", "Esquerda"],
+        ["center", "Centro"],
+        ["right", "Direita"],
+      ]}
+      onChange={onChange}
+    />
+  );
+}
+
+/** Tamanho do texto (mínimo de 16px, regra do guia). */
+function SizeField({ label = "Tamanho do texto", value, onChange }: { label?: string; value: number; onChange: (v: number) => void }) {
+  return <StepSelect label={label} value={value} steps={[16, 18, 20, 24]} onChange={onChange} />;
+}
+
+/** Conteúdo e estilo dos blocos novos. */
+function NewBlockFields({
+  node,
+  page,
+  onChange,
+}: {
+  node: NewBlock;
+  page: PageContent | undefined;
+  onChange: (patch: Record<string, unknown>) => void;
+}) {
+  let content: React.ReactNode = null;
+  let style: React.ReactNode = null;
+  switch (node.type) {
+    case "badge":
+      content = (
+        <>
+          <Field label="Texto">
+            <Input value={node.text} onChange={(e) => onChange({ text: e.target.value })} />
+            <p className="text-xs text-muted-foreground">Fica em caixa alta. Use poucas palavras.</p>
+          </Field>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={!!node.dot} onChange={(e) => onChange({ dot: e.target.checked || undefined })} />
+            Ponto pulsante
+          </label>
+          <p className="text-xs text-muted-foreground">Quem pede menos movimento no sistema vê o ponto parado.</p>
+        </>
+      );
+      style = (
+        <>
+          <ChoiceField label="Estilo" value={node.variant} columns={2} options={[["pill", "Pílula"], ["text", "Só texto"]]} onChange={(variant) => onChange({ variant })} />
+          <SwatchField label="Cor do texto" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor do ponto e da pílula" value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+          <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+        </>
+      );
+      break;
+    case "list":
+      content = <LinesField label="Itens" value={node.items} onChange={(items) => onChange({ items })} hint="Um item por linha. Use **negrito**." />;
+      style = (
+        <>
+          <ChoiceField
+            label="Marcador"
+            value={node.marker}
+            options={[
+              ["checkCircle", "Check em círculo"],
+              ["check", "Check"],
+              ["dot", "Ponto"],
+              ["dash", "Traço"],
+              ["number", "Número"],
+            ]}
+            onChange={(marker) => onChange({ marker })}
+          />
+          <StepSelect label="Espaço entre itens" value={node.gap} steps={[4, 8, 12, 16, 20, 24]} onChange={(gap) => onChange({ gap })} />
+          <ChoiceField label="Divisória entre itens" value={node.divider} options={[["none", "Nenhuma"], ["line", "Linha"], ["dashed", "Tracejada"]]} onChange={(divider) => onChange({ divider })} />
+          <SwatchField label="Cor do texto" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos marcadores" value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          {node.divider !== "none" ? <SwatchField label="Cor da divisória" value={node.dividerColor} onChange={(v) => onChange({ dividerColor: v })} /> : null}
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+    case "infolist":
+      content = (
+        <RecordsField
+          label="Linhas"
+          itemLabel="Linha"
+          items={node.rows}
+          fields={[
+            { key: "label", label: "Rótulo" },
+            { key: "value", label: "Valor" },
+          ]}
+          make={() => ({ label: "Rótulo", value: "Valor" })}
+          onChange={(rows) => onChange({ rows })}
+        />
+      );
+      style = (
+        <>
+          <SwatchField label="Cor dos rótulos" value={node.labelColor} onChange={(v) => onChange({ labelColor: v })} />
+          <SwatchField label="Cor dos valores" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor do tracejado" value={node.dividerColor} onChange={(v) => onChange({ dividerColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+    case "tags":
+      content = <LinesField label="Etiquetas" value={node.items} onChange={(items) => onChange({ items })} hint="Uma etiqueta por linha." />;
+      style = (
+        <>
+          <StepSelect label="Espaço entre etiquetas" value={node.gap} steps={[8, 12, 16, 20]} onChange={(gap) => onChange({ gap })} />
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.hover !== false} onChange={(e) => onChange({ hover: e.target.checked ? undefined : false })} />
+            Destacar ao passar o mouse
+          </label>
+          <SwatchField label="Cor do texto" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor da borda e do fundo" value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+          <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+        </>
+      );
+      break;
+    case "stats":
+      content = (
+        <RecordsField
+          label="Números"
+          itemLabel="Número"
+          items={node.items}
+          fields={[
+            { key: "value", label: "Número (ex.: +500)" },
+            { key: "label", label: "Rótulo" },
+          ]}
+          make={() => ({ value: "0", label: "Rótulo" })}
+          onChange={(items) => onChange({ items })}
+        />
+      );
+      style = (
+        <>
+          <ChoiceField label="Por linha no computador" value={node.perRow} options={[[2, "2"], [3, "3"], [4, "4"]]} onChange={(perRow) => onChange({ perRow })} />
+          <p className="text-xs text-muted-foreground">No tablet e no celular ficam 2 por linha.</p>
+          <StepSelect label="Tamanho dos números" value={node.numberSize} steps={[24, 28, 32, 40, 48, 56]} onChange={(numberSize) => onChange({ numberSize })} />
+          <SizeField label="Tamanho dos rótulos" value={node.size} onChange={(size) => onChange({ size })} />
+          <SwatchField label="Cor dos números" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos rótulos" value={node.labelColor} onChange={(v) => onChange({ labelColor: v })} />
+          <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+        </>
+      );
+      break;
+    case "timeline":
+      content = (
+        <RecordsField<TimelineItem>
+          label="Itens"
+          itemLabel="Item"
+          items={node.items}
+          fields={[
+            { key: "time", label: "Horário" },
+            { key: "who", label: "Responsável" },
+            { key: "title", label: "Título" },
+            { key: "text", label: "Texto", multiline: true },
+          ]}
+          make={() => ({ time: "00h00", who: "", title: "Título", text: "", subitems: [] })}
+          onChange={(items) => onChange({ items })}
+          extra={(item, set) => (
+            <Textarea
+              rows={2}
+              aria-label="Subitens (um por linha)"
+              placeholder="Subitens (um por linha)"
+              value={item.subitems.join("\n")}
+              onChange={(e) => set({ subitems: e.target.value.split("\n") })}
+              onBlur={(e) => set({ subitems: e.target.value.split("\n").map((l) => l.trim()).filter(Boolean) })}
+            />
+          )}
+        />
+      );
+      style = (
+        <>
+          <StepSelect label="Largura da coluna de horário" value={node.timeWidth} steps={[64, 76, 86, 100, 120, 140]} onChange={(timeWidth) => onChange({ timeWidth })} />
+          <p className="text-xs text-muted-foreground">No celular, a coluna fica com até 64px e o texto mais perto da linha.</p>
+          <SwatchField label="Cor dos horários e títulos" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos textos" value={node.textColor} onChange={(v) => onChange({ textColor: v })} />
+          <SwatchField label="Cor da linha e dos marcadores" value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          <SwatchField label="Miolo dos marcadores" value={node.markerBg} onChange={(v) => onChange({ markerBg: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+    case "faq":
+      content = (
+        <>
+          <RecordsField
+            label="Perguntas"
+            itemLabel="Pergunta"
+            items={node.items}
+            fields={[
+              { key: "q", label: "Pergunta" },
+              { key: "a", label: "Resposta", multiline: true },
+            ]}
+            make={() => ({ q: "Nova pergunta?", a: "Resposta." })}
+            onChange={(items) => onChange({ items })}
+          />
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.single} onChange={(e) => onChange({ single: e.target.checked })} />
+            Um aberto por vez
+          </label>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.firstOpen} onChange={(e) => onChange({ firstOpen: e.target.checked })} />
+            Primeira pergunta aberta
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Sem JavaScript: em navegadores antigos, “um aberto por vez” vira livre.
+          </p>
+        </>
+      );
+      style = (
+        <>
+          <SwatchField label="Cor das perguntas" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor das respostas" value={node.textColor} onChange={(v) => onChange({ textColor: v })} />
+          <SwatchField label="Cor da seta" value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          <SwatchField label="Cor das divisórias" value={node.dividerColor} onChange={(v) => onChange({ dividerColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+    case "date":
+      content = (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Dia">
+              <Input value={node.day} onChange={(e) => onChange({ day: e.target.value })} />
+            </Field>
+            <Field label="Mês">
+              <Input value={node.month} onChange={(e) => onChange({ month: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Dia da semana">
+            <Input value={node.weekday} onChange={(e) => onChange({ weekday: e.target.value })} />
+          </Field>
+          <Field label="Horário">
+            <Input value={node.time} onChange={(e) => onChange({ time: e.target.value })} />
+          </Field>
+        </>
+      );
+      style = (
+        <>
+          <SwatchField label="Fundo do dia" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+          <SwatchField label="Texto do dia e do mês" value={node.boxColor} onChange={(v) => onChange({ boxColor: v })} />
+          <SwatchField label="Cor do dia da semana" value={node.labelColor} onChange={(v) => onChange({ labelColor: v })} />
+          <SwatchField label="Cor do horário" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+        </>
+      );
+      break;
+    case "person":
+      content = (
+        <>
+          <Field label="Nome">
+            <Input value={node.name} onChange={(e) => onChange({ name: e.target.value })} />
+          </Field>
+          <Field label="Função (pílula)">
+            <Input value={node.role} onChange={(e) => onChange({ role: e.target.value })} />
+          </Field>
+          <Field label="Organização">
+            <Input value={node.org} onChange={(e) => onChange({ org: e.target.value })} />
+          </Field>
+          <Field label="Bio">
+            <Textarea rows={3} value={node.bio} onChange={(e) => onChange({ bio: e.target.value })} />
+          </Field>
+          <Field label="Foto (URL)">
+            <Input value={node.photo} onChange={(e) => onChange({ photo: e.target.value })} placeholder="https://… (vazio = iniciais)" />
+          </Field>
+          <Field label="Upload da foto">
+            <ImageUpload onLoad={(photo) => onChange({ photo })} />
+          </Field>
+          {!node.photo ? (
+            <Field label="Iniciais">
+              <Input value={node.initials ?? ""} maxLength={3} placeholder={initialsOf(node.name)} onChange={(e) => onChange({ initials: e.target.value || undefined })} />
+            </Field>
+          ) : (
+            <Button variant="outline" size="touch" className="w-full" onClick={() => onChange({ photo: "" })}>
+              Usar iniciais
+            </Button>
+          )}
+        </>
+      );
+      style = (
+        <>
+          <SwatchField label={node.photo ? "Cor do anel" : "Cor do avatar e do anel"} value={node.accentColor} onChange={(v) => onChange({ accentColor: v })} />
+          {!node.photo ? <SwatchField label="Cor das iniciais" value={node.avatarColor} onChange={(v) => onChange({ avatarColor: v })} /> : null}
+          <SwatchField label="Cor da função" value={node.roleColor} onChange={(v) => onChange({ roleColor: v })} />
+          <SwatchField label="Cor do nome" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos textos" value={node.textColor} onChange={(v) => onChange({ textColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+          <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+        </>
+      );
+      break;
+    case "divider":
+      content = (
+        <ChoiceField
+          label="Tipo"
+          value={node.variant}
+          options={[
+            ["solid", "Linha sólida"],
+            ["dashed", "Tracejada"],
+            ["space", "Só espaço"],
+          ]}
+          onChange={(variant) => onChange({ variant })}
+        />
+      );
+      style =
+        node.variant === "space" ? (
+          <StepSelect label="Altura do espaço" value={node.height} steps={[8, 16, 24, 32, 48, 64, 80, 96, 128]} onChange={(height) => onChange({ height })} />
+        ) : (
+          <>
+            <StepSelect label="Espessura" value={node.thickness} steps={[1, 2, 3, 4]} onChange={(thickness) => onChange({ thickness })} />
+            <SwatchField label="Cor da linha" value={node.color} onChange={(v) => onChange({ color: v })} />
+          </>
+        );
+      break;
+    case "navbar":
+      content = (
+        <>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.logo} onChange={(e) => onChange({ logo: e.target.checked })} />
+            Mostrar o logo oficial
+          </label>
+          <LinksField links={node.links} page={page} onChange={(links) => onChange({ links })} />
+          <Field label="Botão de ação">
+            <Input value={node.ctaLabel} placeholder="Vazio = sem botão" onChange={(e) => onChange({ ctaLabel: e.target.value })} />
+          </Field>
+          {node.ctaLabel.trim() ? (
+            <TargetSelect label="Destino do botão" value={node.ctaTarget} page={page} onChange={(ctaTarget) => onChange({ ctaTarget })} />
+          ) : null}
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.sticky} onChange={(e) => onChange({ sticky: e.target.checked })} />
+            Fixo no topo
+          </label>
+          <p className="text-xs text-muted-foreground">
+            O fundo, o vidro (desfoque) e o espaçamento ficam na seção do cabeçalho. No tablet e no celular o menu
+            some e ficam o logo e o botão.
+          </p>
+        </>
+      );
+      style = (
+        <>
+          {node.logo ? <StepSelect label="Altura do logo" value={node.logoHeight} steps={[24, 28, 32, 36, 40, 48]} onChange={(logoHeight) => onChange({ logoHeight })} /> : null}
+          <SwatchField label="Cor dos links" value={node.linkColor} onChange={(v) => onChange({ linkColor: v })} />
+          {node.ctaLabel.trim() ? (
+            <>
+              <ChoiceField label="Estilo do botão" value={node.ctaVariant} columns={2} options={[["filled", "Preenchido"], ["outline", "Contorno"]]} onChange={(ctaVariant) => onChange({ ctaVariant })} />
+              <SwatchField label={node.ctaVariant === "filled" ? "Cor do botão" : "Cor da borda"} value={node.ctaBgColor} onChange={(v) => onChange({ ctaBgColor: v })} />
+              <SwatchField label="Cor do texto do botão" value={node.ctaColor} onChange={(v) => onChange({ ctaColor: v })} />
+            </>
+          ) : null}
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+    case "footer":
+      content = (
+        <>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.logo} onChange={(e) => onChange({ logo: e.target.checked })} />
+            Mostrar o logo oficial
+          </label>
+          <Field label="Texto">
+            <Textarea rows={2} value={node.text} onChange={(e) => onChange({ text: e.target.value })} />
+          </Field>
+          <LinksField links={node.links} page={page} onChange={(links) => onChange({ links })} />
+          <p className="text-xs text-muted-foreground">No celular, tudo fica empilhado e centralizado.</p>
+        </>
+      );
+      style = (
+        <>
+          {node.logo ? <StepSelect label="Altura do logo" value={node.logoHeight} steps={[20, 24, 28, 32, 40]} onChange={(logoHeight) => onChange({ logoHeight })} /> : null}
+          <SwatchField label="Cor do texto" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos links" value={node.linkColor} onChange={(v) => onChange({ linkColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      );
+      break;
+  }
+  return (
+    <div className="space-y-3">
+      <PanelGroup title="Conteúdo" defaultOpen>
+        {content}
+      </PanelGroup>
+      <PanelGroup title="Estilo do bloco">{style}</PanelGroup>
+    </div>
+  );
+}
+
+/** Card do formulário RD: fundo, raio, preenchimento e sombra + CSS dos campos. */
+function RdCardFields({ node, onChange }: { node: RdFormBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const bb = useBBMode();
+  const [bs, set] = useBlockStyle(node, onChange);
+  const card = !!bs.bgColor;
+  const fields = node.fields;
+  const setFields = (patch: Partial<RdFieldStyle>) => onChange({ fields: { ...(fields ?? defaultRdFields()), ...patch } });
+  return (
+    <>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={card}
+          onChange={(e) =>
+            set(
+              e.target.checked
+                ? { ...FORM_CARD_STYLE, ...(bb ? { bgColor: BB_PALETTE.branco } : {}) }
+                : { bgColor: undefined, radius: undefined, paddingY: undefined, paddingX: undefined, shadow: undefined, fillOpacity: undefined, glassBlur: undefined },
+            )
+          }
+        />
+        Mostrar o formulário num card
+      </label>
+      {card ? (
+        <>
+          <SwatchField label="Fundo do card" value={bs.bgColor ?? "#FFFFFF"} onChange={(v) => set({ bgColor: v })} />
+          <RadiusField label="Raio do card" value={bs.radius ?? 0} onChange={(v) => set({ radius: v || undefined })} />
+          <StepSelect label="Preenchimento do card" value={bs.paddingX ?? 0} steps={[16, 24, 32, 40, 48]} onChange={(v) => set({ paddingX: v, paddingY: v })} />
+          <Field label="Sombra do card">
+            <select className={SELECT} value={bs.shadow ?? "none"} onChange={(e) => set({ shadow: e.target.value === "none" ? undefined : (e.target.value as Shadow) })}>
+              <option value="none">Nenhuma</option>
+              <option value="sm">Leve</option>
+              <option value="md">Média</option>
+              <option value="lg">Grande</option>
+            </select>
+          </Field>
+        </>
+      ) : null}
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={!!fields}
+          onChange={(e) => onChange({ fields: e.target.checked ? (bb ? { ...defaultRdFields(), borderColor: BB_PALETTE.azulEscuro, focusColor: BB_PALETTE.azulEscuro, bgColor: BB_PALETTE.branco } : defaultRdFields()) : undefined })}
+        />
+        Estilizar os campos do RD
+      </label>
+      {fields ? (
+        <>
+          <p className="text-xs text-muted-foreground">Preenchimento 13×15, borda de 1,5px e anel de foco. Vale no HTML exportado, dentro do RD Station.</p>
+          <RadiusField label="Raio dos campos" value={fields.radius} onChange={(radius) => setFields({ radius })} />
+          <SwatchField label="Borda dos campos" value={fields.borderColor} onChange={(borderColor) => setFields({ borderColor })} />
+          <SwatchField label="Cor do foco" value={fields.focusColor} onChange={(focusColor) => setFields({ focusColor })} />
+          <SwatchField label="Fundo dos campos" value={fields.bgColor} onChange={(bgColor) => setFields({ bgColor })} />
+        </>
+      ) : null}
+    </>
+  );
+}
+
 export function PageLayoutEditor({
   layout = {},
   onChange,
@@ -2212,6 +2844,14 @@ export function PropertiesPanel({
         </>
       ) : null}
 
+      {leafNode && isNewBlock(leafNode) ? <NewBlockFields node={leafNode} page={page} onChange={onChange} /> : null}
+
+      {node.type === "rdform" ? (
+        <PanelGroup title="Card do formulário">
+          <RdCardFields node={node} onChange={onChange} />
+        </PanelGroup>
+      ) : null}
+
       {node.type === "rdform" ? (
         <Field label="Snippet do formulário RD Station">
           <Textarea
@@ -2263,6 +2903,18 @@ function labelFor(type: string) {
     rdform: "Formulário RD Station",
     video: "Vídeo (embed)",
     countdown: "Contagem regressiva",
+    badge: "Selo",
+    list: "Lista",
+    infolist: "Lista de informações",
+    tags: "Etiquetas",
+    stats: "Estatísticas",
+    timeline: "Cronograma",
+    faq: "Perguntas frequentes (FAQ)",
+    date: "Bloco de data",
+    person: "Card de pessoa",
+    divider: "Divisória / espaçador",
+    navbar: "Cabeçalho com menu",
+    footer: "Rodapé",
   };
   return map[type] ?? type;
 }

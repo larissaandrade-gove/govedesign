@@ -18,6 +18,8 @@ export function moveLeaf(
       }
   if (!dragged) return page;
   const moving = dragged;
+  // O menu fica no cabeçalho; nada entra no cabeçalho arrastando.
+  if (moving.type === "navbar" || isInHeader(page, targetId)) return page;
 
   return {
     ...page,
@@ -59,6 +61,7 @@ export function moveRow(
   }
   if (!dragged) return page;
   const moving = dragged;
+  if (isInHeader(page, dragId) || isInHeader(page, targetId)) return page;
 
   return {
     ...page,
@@ -75,13 +78,29 @@ export function moveRow(
   };
 }
 
+/** Seção do cabeçalho com menu (só uma, sempre a primeira). */
+export const isHeaderSection = (section: Pick<SectionBlock, "role">) => section.role === "header";
+
+/** O id é o cabeçalho ou algo dentro dele? */
+export function isInHeader(page: PageContent, id: string): boolean {
+  const section = page.sections.find(isHeaderSection);
+  if (!section) return false;
+  if (section.id === id) return true;
+  return section.children.some(
+    (row) => row.id === id || row.columns.some((col) => col.id === id || col.children.some((leaf) => leaf.id === id)),
+  );
+}
+
 /** Posição de uma seção, linha ou bloco entre os irmãos (para mover sem arrastar). */
 export function siblingInfo(page: PageContent, id: string): { index: number; count: number } | null {
   const at = <T extends { id: string }>(list: T[]) => {
     const index = list.findIndex((item) => item.id === id);
     return index === -1 ? null : { index, count: list.length };
   };
-  const top = at(page.sections);
+  // O cabeçalho não se move e nenhuma seção passa à frente dele.
+  const header = page.sections.find(isHeaderSection);
+  if (header?.id === id) return { index: 0, count: 1 };
+  const top = at(page.sections.filter((s) => !isHeaderSection(s)));
   if (top) return top;
   for (const section of page.sections) {
     const row = at(section.children);
@@ -97,10 +116,15 @@ export function siblingInfo(page: PageContent, id: string): { index: number; cou
 
 /** Sobe (-1) ou desce (+1) uma seção, linha ou bloco dentro do mesmo pai. */
 export function moveSibling(page: PageContent, id: string, dir: -1 | 1): PageContent {
+  const header = (item: unknown) => {
+    const node = item as { type?: string; role?: string };
+    return node.type === "section" && node.role === "header";
+  };
   const swap = <T extends { id: string }>(list: T[]): T[] => {
     const i = list.findIndex((item) => item.id === id);
     const j = i + dir;
     if (i === -1 || j < 0 || j >= list.length) return list;
+    if (header(list[i]) || header(list[j])) return list;
     const next = [...list];
     [next[i], next[j]] = [next[j]!, next[i]!];
     return next;
@@ -150,6 +174,24 @@ export function backgroundBehind(page: PageContent, id: string): string {
   return "#FFFFFF";
 }
 
+/**
+ * Cor dominante do fundo de uma coluna (para as cores-padrão de um bloco
+ * novo): a linha, se tiver fundo; senão a seção. Degradê = cor do meio;
+ * foto = a sobreposição (ou preto, o pior caso para texto escuro).
+ */
+export function columnBackground(page: PageContent, columnId: string): string {
+  for (const section of page.sections)
+    for (const row of section.children)
+      if (row.columns.some((col) => col.id === columnId)) {
+        const own = row.box.fill === "gradient" || row.box.fill === "image" || (row.box.bgColor && row.box.bgColor !== "transparent");
+        const box = own ? row.box : section.box;
+        if (box.fill === "gradient") return box.gradientVia || box.gradientFrom;
+        if (box.fill === "image" && box.bgImage) return box.overlay > 0 ? box.overlayColor : "#000000";
+        return box.bgColor && box.bgColor !== "transparent" ? box.bgColor : "#FFFFFF";
+      }
+  return "#FFFFFF";
+}
+
 export function updateNode(page: PageContent, id: string, patch: Record<string, unknown>): PageContent {
   return {
     ...page,
@@ -194,7 +236,12 @@ export function removeNode(page: PageContent, id: string): PageContent {
   };
 }
 
+/** Adiciona a seção no fim; o cabeçalho entra no topo e só uma vez. */
 export function addSection(page: PageContent, section: SectionBlock): PageContent {
+  if (isHeaderSection(section)) {
+    if (page.sections.some(isHeaderSection)) return page;
+    return { ...page, sections: [section, ...page.sections] };
+  }
   return { ...page, sections: [...page.sections, section] };
 }
 
@@ -251,6 +298,8 @@ export function setColumnCount(page: PageContent, rowId: string, count: number):
 
 /** Encontra o primeiro column id disponível para inserir um bloco. */
 export function firstColumnId(page: PageContent, preferId?: string | null): string | null {
+  // Blocos novos não entram no cabeçalho.
+  if (preferId && isInHeader(page, preferId)) preferId = null;
   if (preferId) {
     for (const section of page.sections)
       for (const row of section.children)
@@ -260,7 +309,7 @@ export function firstColumnId(page: PageContent, preferId?: string | null): stri
           if (col.children.some((leaf) => leaf.id === preferId)) return col.id;
         }
   }
-  const lastSection = page.sections[page.sections.length - 1];
+  const lastSection = [...page.sections].reverse().find((s) => !isHeaderSection(s));
   const lastRow = lastSection?.children[lastSection.children.length - 1];
   return lastRow?.columns[0]?.id ?? null;
 }

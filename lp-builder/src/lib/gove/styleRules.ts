@@ -19,6 +19,7 @@
  */
 import { backgroundCss, normalizeBox, rgba } from "./background";
 import { leafRules, sectionRules, shadowCss } from "./blockStyle";
+import { headerHeight, headerRules, newBlockRules } from "./blocks";
 import type {
   BoxProps,
   ContentWidth,
@@ -406,11 +407,11 @@ export class Sheet {
 /* ------------------------------------------------------------ regras da página */
 
 /**
- * Altura do cabeçalho fixo da página (0 = não há). Gancho para o cabeçalho com
- * menu (etapa 3): a rolagem até as âncoras compensa essa altura no modo "auto".
+ * Altura do cabeçalho fixo da página (0 = não há): a rolagem até as âncoras
+ * compensa essa altura no modo "auto" (scroll-margin-top das seções).
  */
-export function stickyHeaderHeight(_page: PageContent): number {
-  return 0;
+export function stickyHeaderHeight(page: PageContent): number {
+  return headerHeight(page);
 }
 
 /** Linha empilhada (tablet/celular): coluna normal ou invertida. */
@@ -495,6 +496,7 @@ export function pageSheet(page: PageContent): Sheet {
   if (scroll > 0) sheet.add("section", { "scroll-margin-top": `${scroll}px` });
 
   const bb = page.identity === "bb";
+  headerRules(sheet, page);
   for (const section of page.sections) {
     sectionRules(sheet, section);
     if (hasDecor(section.box))
@@ -503,7 +505,11 @@ export function pageSheet(page: PageContent): Sheet {
       if (hasDecor(row.box))
         sheet.shared("decor", ".gove-decor~*", { position: "relative", "z-index": "1" });
       rowRules(sheet, row);
-      for (const col of row.columns) for (const leaf of col.children) leafRules(sheet, leaf, bb);
+      for (const col of row.columns)
+        for (const leaf of col.children) {
+          leafRules(sheet, leaf, bb);
+          newBlockRules(sheet, leaf, bb);
+        }
     }
   }
   return sheet;

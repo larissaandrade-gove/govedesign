@@ -35,6 +35,7 @@ export const pageHasForm = (page: PageContent) => formSection(page) !== null;
 export function sectionLabel(page: PageContent, section: SectionBlock): string {
   const index = page.sections.findIndex((s) => s.id === section.id);
   const n = index + 1;
+  if (section.role === "header") return `${n}. Cabeçalho`;
   if (hasForm(section)) return `${n}. Formulário de inscrição`;
   let heading = "";
   for (const row of section.children)

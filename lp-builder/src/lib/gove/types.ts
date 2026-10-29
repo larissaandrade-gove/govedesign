@@ -229,11 +229,23 @@ export interface CardBlock {
   blockStyle?: BlockStyle;
 }
 
+/** Estilo dos campos do RD dentro do card do formulário. */
+export interface RdFieldStyle {
+  radius: number;
+  borderColor: string;
+  /** Borda e anel de foco. */
+  focusColor: string;
+  bgColor: string;
+}
+
 export interface RdFormBlock {
   id: string;
   type: "rdform";
   snippet: string;
+  /** Card do formulário: fundo, raio, preenchimento e sombra ficam em `blockStyle`. */
   blockStyle?: BlockStyle;
+  /** CSS dos campos do RD (preenchimento 13×15, borda de 1,5px, anel de foco). */
+  fields?: RdFieldStyle;
 }
 
 export interface VideoBlock {
@@ -267,6 +279,239 @@ export interface CountdownBlock {
   blockStyle?: BlockStyle;
 }
 
+/* ------------------------------------------------------------- blocos novos */
+/*
+ * Cores sempre da paleta da identidade ativa (seletores só de paleta). Os
+ * tons translúcidos (fundo da pílula, anel, trilha) derivam dessas cores na
+ * identidade GOVE; na BB viram contorno sólido ou somem (só cores da paleta).
+ */
+
+/** Selo (badge/eyebrow): texto curto em caixa alta, pílula ou só texto. */
+export interface BadgeBlock {
+  id: string;
+  type: "badge";
+  text: string;
+  variant: "pill" | "text";
+  /** Ponto pulsante (@keyframes; parado para quem pede menos movimento). */
+  dot?: boolean;
+  color: string;
+  /** Ponto, borda e fundo translúcido da pílula. */
+  accentColor: string;
+  align: Align;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+export type ListMarker = "checkCircle" | "check" | "dot" | "dash" | "number";
+export type ListDivider = "none" | "line" | "dashed";
+
+/** Lista com marcadores. */
+export interface ListBlock {
+  id: string;
+  type: "list";
+  /** Itens (aceitam **negrito**). */
+  items: string[];
+  marker: ListMarker;
+  /** Espaço entre itens (px). */
+  gap: number;
+  divider: ListDivider;
+  color: string;
+  accentColor: string;
+  dividerColor: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Lista de informações: rótulo à esquerda e valor à direita (event-list). */
+export interface InfoListBlock {
+  id: string;
+  type: "infolist";
+  rows: { label: string; value: string }[];
+  /** Cor dos valores. */
+  color: string;
+  labelColor: string;
+  dividerColor: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Etiquetas (pílulas com quebra automática). */
+export interface TagsBlock {
+  id: string;
+  type: "tags";
+  items: string[];
+  /** Espaço entre etiquetas (px). */
+  gap: number;
+  /** Efeito ao passar o mouse (ausente = ligado). */
+  hover?: boolean;
+  color: string;
+  accentColor: string;
+  align: Align;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Estatísticas: número + rótulo. */
+export interface StatsBlock {
+  id: string;
+  type: "stats";
+  items: { value: string; label: string }[];
+  /** Por linha no computador (no tablet e no celular, 2). */
+  perRow: 2 | 3 | 4;
+  align: Align;
+  /** Cor dos números. */
+  color: string;
+  labelColor: string;
+  /** Tamanho dos números (px). */
+  numberSize: number;
+  /** Tamanho dos rótulos (px). */
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+export interface TimelineItem {
+  time: string;
+  /** Responsável (opcional). */
+  who: string;
+  title: string;
+  text: string;
+  subitems: string[];
+}
+
+/** Cronograma (timeline). */
+export interface TimelineBlock {
+  id: string;
+  type: "timeline";
+  items: TimelineItem[];
+  /** Largura da coluna de horário (px; no celular, até 64). */
+  timeWidth: number;
+  /** Cor do horário e dos títulos. */
+  color: string;
+  textColor: string;
+  /** Linha e marcadores. */
+  accentColor: string;
+  /** Miolo dos marcadores (normalmente o fundo da seção). */
+  markerBg: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** FAQ / acordeão com <details>/<summary> (sem JS). */
+export interface FaqBlock {
+  id: string;
+  type: "faq";
+  items: { q: string; a: string }[];
+  /** Um aberto por vez (atributo `name` do <details>; onde não há suporte, livre). */
+  single: boolean;
+  firstOpen: boolean;
+  /** Cor das perguntas. */
+  color: string;
+  textColor: string;
+  /** Seta e fundo do hover. */
+  accentColor: string;
+  dividerColor: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Bloco de data: dia e mês em destaque, dia da semana e horário. */
+export interface DateBlock {
+  id: string;
+  type: "date";
+  day: string;
+  month: string;
+  weekday: string;
+  time: string;
+  /** Fundo e texto da caixa do dia. */
+  bgColor: string;
+  boxColor: string;
+  labelColor: string;
+  /** Cor do horário. */
+  color: string;
+  align: Align;
+  blockStyle?: BlockStyle;
+}
+
+/** Card de pessoa (palestrante). */
+export interface PersonBlock {
+  id: string;
+  type: "person";
+  name: string;
+  role: string;
+  org: string;
+  bio: string;
+  /** Foto (URL/data URL); vazia = iniciais. */
+  photo: string;
+  /** Iniciais (vazias = do nome). */
+  initials?: string;
+  /** Avatar e anel. */
+  accentColor: string;
+  /** Iniciais sobre o avatar. */
+  avatarColor: string;
+  /** Texto da pílula da função. */
+  roleColor: string;
+  /** Nome. */
+  color: string;
+  textColor: string;
+  align: Align;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Divisória (linha sólida/tracejada) ou só espaço. */
+export interface DividerBlock {
+  id: string;
+  type: "divider";
+  variant: "solid" | "dashed" | "space";
+  color: string;
+  thickness: number;
+  /** Altura do espaço (px; variante "space"). */
+  height: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Link para uma seção (destino como o do botão: id, "@form" ou "@end"). */
+export interface NavLink {
+  label: string;
+  target: string;
+}
+
+/** Cabeçalho com menu: vive na seção especial do topo (`role: "header"`). */
+export interface NavbarBlock {
+  id: string;
+  type: "navbar";
+  /** Logo oficial (GOVE de brand/logos; BB: a logomarca da página). */
+  logo: boolean;
+  /** Altura do logo GOVE (px). */
+  logoHeight: number;
+  links: NavLink[];
+  linkColor: string;
+  /** Botão de ação (rótulo vazio = sem botão). */
+  ctaLabel: string;
+  ctaTarget: string;
+  ctaVariant: "filled" | "outline";
+  ctaBgColor: string;
+  ctaColor: string;
+  /** Fixo no topo (a seção fica sticky; o fundo de vidro vem da seção). */
+  sticky: boolean;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/** Rodapé: logo, texto e links para as seções. */
+export interface FooterBlock {
+  id: string;
+  type: "footer";
+  logo: boolean;
+  logoHeight: number;
+  text: string;
+  links: NavLink[];
+  color: string;
+  linkColor: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
 export type Leaf =
   | TextBlock
   | ButtonBlock
@@ -274,7 +519,19 @@ export type Leaf =
   | CardBlock
   | RdFormBlock
   | VideoBlock
-  | CountdownBlock;
+  | CountdownBlock
+  | BadgeBlock
+  | ListBlock
+  | InfoListBlock
+  | TagsBlock
+  | StatsBlock
+  | TimelineBlock
+  | FaqBlock
+  | DateBlock
+  | PersonBlock
+  | DividerBlock
+  | NavbarBlock
+  | FooterBlock;
 
 export interface Column {
   id: string;
@@ -318,6 +575,8 @@ export interface SectionBlock {
   children: RowBlock[];
   /** Ocultar a seção em algum dispositivo. */
   hide?: DeviceHide;
+  /** Seção especial: "header" = cabeçalho com menu (só uma, sempre a primeira). */
+  role?: "header";
 }
 
 /** Identidade visual da página: GOVE (padrão) ou Banco do Brasil. */

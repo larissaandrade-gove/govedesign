@@ -1,4 +1,6 @@
-import { Fragment, useEffect, useState, type CSSProperties } from "react";
+import { Fragment, createElement, useEffect, useState, type CSSProperties } from "react";
+import { GOVE_LOGO_SOURCES } from "./goveLogoAssets";
+import { registerGoveLogos } from "@/lib/gove/goveLogo";
 import { END_ANCHOR, sectionAnchor } from "@/lib/gove/anchors";
 import { getIcon } from "./icons";
 import { buttonDecls, buttonReactStyle } from "@/lib/gove/buttonStyle";
@@ -15,6 +17,8 @@ import {
   textExtrasCss,
 } from "@/lib/gove/blockStyle";
 import { parseRich } from "@/lib/gove/richText";
+import { blockTree, headerShowsBBLogo, type VChild } from "@/lib/gove/blocks";
+import { isNewBlock } from "@/lib/gove/blockColors";
 import { imageFrameCss } from "@/lib/gove/imageFrame";
 import { ANIMATION_CSS, bgAnimClass, btnAnimClass } from "@/lib/gove/animations";
 import { cursorCss, followerCss, normalizeCursor } from "@/lib/gove/cursor";
@@ -49,6 +53,9 @@ import {
   type Sheet,
 } from "@/lib/gove/styleRules";
 
+// Logo oficial da GOVE no cabeçalho/rodapé (canvas e export, que roda no editor).
+registerGoveLogos(GOVE_LOGO_SOURCES);
+
 /** Identidade da página no canvas (fontes e, na BB, o fundo do contêiner). */
 interface Look {
   bb: boolean;
@@ -59,7 +66,39 @@ interface Look {
   sheet: Sheet;
   /** Editor: itens ocultos no modo aparecem esmaecidos com aviso; miniatura: somem. */
   showHidden: boolean;
+  page: PageContent;
+  /** Fundo da seção (versão do logo GOVE no cabeçalho e no rodapé). */
+  sectionBg?: string | undefined;
 }
+
+/** Atributo do VNode → prop React (aria-/data- ficam; o resto vira camelCase). */
+function reactAttr(key: string): string {
+  if (key === "class") return "className";
+  if (key.startsWith("aria-") || key.startsWith("data-") || key === "viewBox") return key;
+  return key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+/**
+ * Árvore dos blocos novos (a mesma do export) como elementos React. Links não
+ * navegam no canvas (sem href). `root`: props extras do elemento externo.
+ */
+function vnodeReact(node: VChild, key?: number, root?: Record<string, unknown>): React.ReactNode {
+  if (typeof node === "string") return node;
+  const props: Record<string, unknown> = key === undefined ? {} : { key };
+  for (const [k, v] of Object.entries(node.attrs ?? {})) {
+    if (v === undefined || v === false || k === "href") continue;
+    props[reactAttr(k)] = v;
+  }
+  const style = node.style ? (reactStyle(node.style) as CSSProperties) : undefined;
+  if (style) props.style = style;
+  if (root) {
+    const { style: extra, className: _cls, ...rest } = root as { style?: CSSProperties; className?: string };
+    Object.assign(props, rest);
+    props.style = { ...style, ...extra };
+  }
+  return createElement(node.tag, props, ...(node.children ?? []).map((c, i) => vnodeReact(c, i)));
+}
+
 
 /** CSS da caixa (o mesmo do export) como estilo React. */
 const boxStyle = (box: BoxProps, bb = false) => reactStyle(boxCss(box, bb)) as CSSProperties;
@@ -190,6 +229,11 @@ function LeafBody({ leaf, look, selectedId, onSelect, onMove }: LeafProps) {
     ...(reactStyle({ "text-align": align, margin: blockMargin(leaf), ...blockBoxCss(leaf, look.bb) }) as CSSProperties),
     ...edit,
   });
+
+  if (isNewBlock(leaf)) {
+    const tree = blockTree(leaf, { page: look.page, bb: look.bb, fonts, sheet: look.sheet, sectionBg: look.sectionBg });
+    return <>{vnodeReact(tree, undefined, { ...dnd, style: edit })}</>;
+  }
 
   if (leaf.type === "text") {
     const Tag = leaf.tag;
@@ -329,6 +373,13 @@ function LeafBody({ leaf, look, selectedId, onSelect, onMove }: LeafProps) {
           {leaf.snippet ? "Snippet colado e preservado no export." : "Cole o snippet no painel à direita."}
         </span>
       </div>
+      {leaf.type === "rdform" && leaf.fields ? (
+        // Prévia do estilo dos campos (as mesmas regras da folha valem para os campos do RD no export).
+        <div aria-hidden className="mt-3 grid gap-3">
+          <input readOnly tabIndex={-1} placeholder="Nome completo" />
+          <input readOnly tabIndex={-1} placeholder="E-mail" />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -393,7 +444,11 @@ function RowView({
   onSelect,
   onMove,
 }: { row: RowBlock; section: SectionBlock; look: Look; sheet: Sheet } & Omit<CanvasProps, "page" | "device" | "showHidden">) {
-  const look: Look = base.bb ? { ...base, container: textContext(rowSamples(section, row)) } : base;
+  const look: Look = {
+    ...base,
+    sectionBg: section.box.bgColor,
+    ...(base.bb ? { container: textContext(rowSamples(section, row)) } : {}),
+  };
   return (
     <div
       draggable
@@ -470,8 +525,8 @@ export function Canvas({ page, selectedId, onSelect, device, onMove, showHidden 
   const mobile = device !== "desktop";
   const sheet = pageSheet(page);
   const bb = isBB(page);
-  const look: Look = { bb, fonts: pageFonts(page.identity), device, sheet, showHidden };
-  const logo = bb && page.bbLogo?.src ? page.bbLogo : null;
+  const look: Look = { bb, fonts: pageFonts(page.identity), device, sheet, showHidden, page };
+  const logo = bb && page.bbLogo?.src && !headerShowsBBLogo(page) ? page.bbLogo : null;
   const logoBox = logo ? logoLayout(logo) : null;
   const cursor = normalizeCursor(page.cursor);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -531,6 +586,7 @@ export function Canvas({ page, selectedId, onSelect, device, onMove, showHidden 
         <section
           key={section.id}
           id={sectionAnchor(section)}
+          role={section.role === "header" ? "banner" : undefined}
           {...(hidden ? { "data-gove-hidden": hiddenLabel(section.hide) ?? "" } : {})}
           className={[bgAnimClass(section.box.animation), sheet.classOf(section.id)].filter(Boolean).join(" ") || undefined}
           onClick={() => onSelect(section.id)}

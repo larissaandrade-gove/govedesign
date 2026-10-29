@@ -23,11 +23,24 @@ import {
   VideoCamera,
   X,
   CloudArrowUp,
+  SealCheck,
+  ListChecks,
+  ListDashes,
+  Tag,
+  ChartBar,
+  Path,
+  Question,
+  CalendarBlank,
+  UserCircle,
+  Minus,
+  AppWindow,
+  Rows,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getPage, getTemplate, publishTemplate, savePage, saveTemplate } from "@/lib/gove/storage";
 import { hasUnpublishedChanges, type StoredTemplate } from "@/lib/gove/templates";
-import { TARGET_FORM, pageHasForm } from "@/lib/gove/anchors";
+import { TARGET_FORM, pageHasForm, sectionLabel } from "@/lib/gove/anchors";
+import { adaptColors } from "@/lib/gove/blockColors";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Canvas } from "@/components/gove/Canvas";
@@ -48,12 +61,25 @@ import {
   makeSection,
   makeText,
   makeVideo,
+  makeBadge,
+  makeList,
+  makeInfoList,
+  makeTags,
+  makeStats,
+  makeTimeline,
+  makeFaq,
+  makeDate,
+  makePerson,
+  makeDivider,
+  makeHeaderSection,
+  makeFooterSection,
 } from "@/lib/gove/factories";
 import {
   addLeaf,
   addRow,
   addSection,
   backgroundBehind,
+  columnBackground,
   findNode,
   firstColumnId,
   moveLeaf,
@@ -64,7 +90,7 @@ import {
   siblingInfo,
   updateNode,
 } from "@/lib/gove/tree";
-import type { Identity, Leaf, PageContent } from "@/lib/gove/types";
+import type { Identity, Leaf, NavLink, PageContent } from "@/lib/gove/types";
 import type { Device } from "@/lib/gove/styleRules";
 import {
   applyScheme,
@@ -216,12 +242,44 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
       // Botão novo numa página com formulário: por padrão leva ao formulário de inscrição.
       const linked: Leaf =
         raw.type === "button" && pageHasForm(current) ? { ...raw, linkMode: "section", target: TARGET_FORM } : raw;
-      const leaf = isBB(current) ? bbDefaults(linked) : linked;
       const columnId = firstColumnId(current, selectedId);
       if (!columnId) return current;
+      // Blocos novos (GOVE): cores-padrão que leem sobre o fundo da coluna onde entram.
+      const leaf = isBB(current) ? bbDefaults(linked) : adaptColors(linked, columnBackground(current, columnId));
       setSelectedId(leaf.id);
       return finalize(addLeaf(current, columnId, leaf));
     });
+  }
+
+  /** Links para as seções de conteúdo (sem o topo nem o cabeçalho), até 4. */
+  function sectionLinks(current: PageContent): NavLink[] {
+    const sections = current.sections.filter((s) => s.role !== "header");
+    return sections.slice(1, 5).map((section) => ({
+      label: sectionLabel(current, section).replace(/^\d+\.\s*/, ""),
+      target: section.id,
+    }));
+  }
+
+  /** Cabeçalho com menu: só um por página, sempre no topo. */
+  function insertHeader() {
+    if (!page) return;
+    const existing = page.sections.find((s) => s.role === "header");
+    if (existing) {
+      setSelectedId(existing.id);
+      toast.info("A página já tem um cabeçalho (só um por página, sempre no topo).");
+      return;
+    }
+    const section = makeHeaderSection(sectionLinks(page));
+    setSelectedId(section.children[0]?.columns[0]?.children[0]?.id ?? section.id);
+    setPage((current) => (current ? finalize(addSection(current, section)) : current));
+  }
+
+  /** Rodapé: nova seção no fim da página (fundo Noite). */
+  function insertFooter() {
+    if (!page) return;
+    const section = makeFooterSection(sectionLinks(page));
+    setSelectedId(section.children[0]?.columns[0]?.children[0]?.id ?? section.id);
+    setPage((current) => (current ? finalize(addSection(current, section)) : current));
   }
 
   function insertRow(cols: number) {
@@ -353,6 +411,18 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
     { label: "Vídeo (embed)", icon: VideoCamera, action: () => insertLeaf(makeVideo()) },
     { label: "Contagem regressiva", icon: Timer, action: () => insertLeaf(makeCountdown()) },
     { label: "Formulário RD Station", icon: FileCode, action: () => insertLeaf(makeRdForm()) },
+    { label: "Cabeçalho com menu", icon: AppWindow, action: insertHeader },
+    { label: "Selo", icon: SealCheck, action: () => insertLeaf(makeBadge()) },
+    { label: "Lista", icon: ListChecks, action: () => insertLeaf(makeList()) },
+    { label: "Lista de informações", icon: ListDashes, action: () => insertLeaf(makeInfoList()) },
+    { label: "Etiquetas", icon: Tag, action: () => insertLeaf(makeTags()) },
+    { label: "Estatísticas", icon: ChartBar, action: () => insertLeaf(makeStats()) },
+    { label: "Cronograma", icon: Path, action: () => insertLeaf(makeTimeline()) },
+    { label: "Perguntas frequentes", icon: Question, action: () => insertLeaf(makeFaq()) },
+    { label: "Bloco de data", icon: CalendarBlank, action: () => insertLeaf(makeDate()) },
+    { label: "Card de pessoa", icon: UserCircle, action: () => insertLeaf(makePerson()) },
+    { label: "Divisória / espaçador", icon: Minus, action: () => insertLeaf(makeDivider()) },
+    { label: "Rodapé", icon: Rows, action: insertFooter },
   ];
 
   const savedLabel = savedAt
