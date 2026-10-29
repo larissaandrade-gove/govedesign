@@ -1,7 +1,7 @@
 # Conector "Pexels Gove" (claude.ai)
 
 Os artefatos do Design System, o principal e o mobile, rodam dentro do claude.ai. Lá a página não alcança sites externos. Por isso, dois recursos passam por um **conector da organização**:
-- a busca do Pexels dos geradores de criativos, de follow-ups e do LP Builder;
+- a busca do Pexels dos geradores de criativos, de follow-ups e do Landing Pages;
 - a captura do site do domicílio eletrônico, usada no modelo Portal Cidadão do Print Studio.
 
 Esse conector roda no servidor do projeto (`backend/pexels-mcp.js`), e a chave do Pexels fica só nesse servidor.

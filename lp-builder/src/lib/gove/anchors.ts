@@ -8,6 +8,8 @@
  */
 import type { ButtonBlock, PageContent, SectionBlock } from "./types";
 import { plainText } from "./richText";
+import { flatLeaves } from "./leaves";
+import { googleCalendarUrl } from "./calendar";
 
 /** Destino "Formulário de inscrição": a primeira seção com formulário RD Station. */
 export const TARGET_FORM = "@form";
@@ -21,7 +23,7 @@ export const sectionAnchor = (section: Pick<SectionBlock, "id">) =>
 
 const hasForm = (section: SectionBlock) =>
   section.children.some((row) =>
-    row.columns.some((col) => col.children.some((leaf) => leaf.type === "rdform")),
+    row.columns.some((col) => flatLeaves(col.children).some((leaf) => leaf.type === "rdform")),
   );
 
 /** Primeira seção com formulário RD Station (ou null). */
@@ -40,7 +42,7 @@ export function sectionLabel(page: PageContent, section: SectionBlock): string {
   let heading = "";
   for (const row of section.children)
     for (const col of row.columns)
-      for (const leaf of col.children)
+      for (const leaf of flatLeaves(col.children))
         if (!heading && leaf.type === "text" && leaf.tag !== "p" && plainText(leaf.content).trim())
           heading = plainText(leaf.content).trim();
   if (heading) return `${n}. ${heading.length > 40 ? `${heading.slice(0, 39)}…` : heading}`;
@@ -62,8 +64,10 @@ export type ButtonLink = {
 /** Destino efetivo de um botão. Botões antigos (sem `linkMode`) são URL externa. */
 export function resolveButtonLink(
   page: PageContent,
-  leaf: Pick<ButtonBlock, "href" | "linkMode" | "target">,
+  leaf: Pick<ButtonBlock, "href" | "linkMode" | "target"> & { calendar?: ButtonBlock["calendar"] },
 ): ButtonLink {
+  if (leaf.linkMode === "calendar")
+    return { href: googleCalendarUrl(leaf.calendar), sectionId: null, missing: false, label: "Google Agenda" };
   if (leaf.linkMode !== "section")
     return { href: leaf.href || "#", sectionId: null, missing: false, label: leaf.href || "#" };
   const end: ButtonLink = {
@@ -103,7 +107,7 @@ export function brokenButtonLinks(page: PageContent): { leaf: ButtonBlock; link:
   for (const section of page.sections)
     for (const row of section.children)
       for (const col of row.columns)
-        for (const leaf of col.children)
+        for (const leaf of flatLeaves(col.children))
           if (leaf.type === "button") {
             const link = resolveButtonLink(page, leaf);
             if (link.missing) out.push({ leaf, link });

@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GOVE LP Builder" },
+      { title: "GOVE Landing Pages" },
       {
         name: "description",
         content: "Ferramenta interna para montar e exportar landing pages do time GOVE.",
       },
       { name: "author", content: "GOVE" },
-      { property: "og:title", content: "GOVE LP Builder" },
+      { property: "og:title", content: "GOVE Landing Pages" },
       {
         property: "og:description",
         content: "Ferramenta interna para montar e exportar landing pages do time GOVE.",

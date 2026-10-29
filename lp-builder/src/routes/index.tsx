@@ -32,13 +32,13 @@ import { useAuth } from "@/lib/gove/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Projetos — GOVE LP Builder" },
+      { title: "Projetos — GOVE Landing Pages" },
       {
         name: "description",
         content:
           "Monte landing pages GOVE no navegador e exporte o HTML/CSS. Tudo salvo localmente, sem servidor.",
       },
-      { property: "og:title", content: "Projetos — GOVE LP Builder" },
+      { property: "og:title", content: "Projetos — GOVE Landing Pages" },
       {
         property: "og:description",
         content:

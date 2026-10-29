@@ -36,11 +36,14 @@ import { parseRich, plainText } from "./richText";
 import { CURSOR_PRESETS } from "./cursor";
 import { colorOf, colorParts, isNewBlock, rdFieldParts, type ColorPart } from "./blockColors";
 import type { AuditIssue } from "./audit";
+import { flatLeaves, isContainer } from "./leaves";
 import type {
   BBLogo,
   BlockStyle,
   BoxProps,
   ButtonBlock,
+  Column,
+  ColumnStyle,
   CountdownBlock,
   Identity,
   Leaf,
@@ -215,6 +218,17 @@ export const sectionSamples = (section: SectionBlock) => boxSamples(section.box,
 export const rowSamples = (section: SectionBlock, row: RowBlock) =>
   boxSamples(row.box, sectionSamples(section));
 
+/** Fundo de uma coluna: a aparência própria dela sobre a linha (ou a linha). */
+export function columnSamples(section: SectionBlock, row: RowBlock, col: Column): string[] {
+  const under = rowSamples(section, row);
+  const s = col.style;
+  if (!s) return under;
+  const colors = (s.fill === "gradient" ? [s.gradientFrom, s.gradientTo] : [s.bgColor]).map(hex6).filter((c): c is string => !!c);
+  if (!colors.length) return under;
+  const op = s.fillOpacity ?? 100;
+  return uniq(op < 100 ? colors.flatMap((c) => under.map((u) => mix(c, u, Math.max(0, op) / 100))) : colors);
+}
+
 export interface BBContext {
   /** Cores contra as quais o texto precisa passar 4,5:1. */
   samples: string[];
@@ -306,10 +320,18 @@ export function needsProtection(leaf: Leaf, container: BBContext): boolean {
 export function containerContexts(page: PageContent): Map<string, BBContext> {
   const map = new Map<string, BBContext>();
   for (const section of page.sections)
-    for (const row of section.children) {
-      const ctx = textContext(rowSamples(section, row));
-      for (const col of row.columns) for (const leaf of col.children) map.set(leaf.id, ctx);
-    }
+    for (const row of section.children)
+      for (const col of row.columns) {
+        const ctx = textContext(columnSamples(section, row, col));
+        for (const leaf of col.children) {
+          map.set(leaf.id, ctx);
+          // Blocos dentro de uma caixa: o fundo dela.
+          if (isContainer(leaf)) {
+            const inner = leafTextContext(leaf, ctx);
+            for (const child of leaf.children) map.set(child.id, inner);
+          }
+        }
+      }
   return map;
 }
 
@@ -339,9 +361,14 @@ export function applyScheme(page: PageContent, id: string, scheme: BBScheme | nu
         return leaf;
     }
   };
+  // Caixas sem fundo próprio: os blocos de dentro também recebem o esquema.
+  const recolorList = (list: Leaf[]): Leaf[] =>
+    list.map((leaf) =>
+      isContainer(leaf) ? (hex6(leaf.blockStyle?.bgColor) ? leaf : { ...leaf, children: recolorList(leaf.children) }) : recolor(leaf),
+    );
   const recolorRow = (row: RowBlock): RowBlock => ({
     ...row,
-    columns: row.columns.map((c) => ({ ...c, children: c.children.map(recolor) })),
+    columns: row.columns.map((c) => (c.style && hex6(c.style.bgColor) ? c : { ...c, children: recolorList(c.children) })),
   });
   const next: PageContent = {
     ...page,
@@ -434,6 +461,71 @@ function harmonizeBlockStyle(bs: BlockStyle): BlockStyle {
   if (bs.bgColor) next.bgColor = snapPalette(bs.bgColor);
   if (bs.borderColor) next.borderColor = snapPalette(bs.borderColor);
   if (bs.hoverColor) next.hoverColor = snapPalette(bs.hoverColor);
+  if (bs.hoverBg) next.hoverBg = snapPalette(bs.hoverBg);
+  if (bs.hoverBorder) next.hoverBorder = snapPalette(bs.hoverBorder);
+  if (bs.hoverText) next.hoverText = snapPalette(bs.hoverText);
+  if (bs.hoverIcon) next.hoverIcon = snapPalette(bs.hoverIcon);
+  return next;
+}
+
+/** Fundo do bloco sem hover (o que fica atrás do texto dele), ou undefined se não for um sólido. */
+function restingBg(leaf: Leaf, container: BBContext): string | undefined {
+  if (leaf.type === "card") return hex6(leaf.bgColor) ?? undefined;
+  if (leaf.type === "button" && isFilled(leaf.variant)) return hex6(leaf.bgColor) ?? undefined;
+  const ctx = leafTextContext(leaf, container);
+  return solidBg(ctx);
+}
+
+/** Cor do texto do bloco (a que o hover precisa manter legível). */
+const baseTextColor = (leaf: Leaf): string | undefined =>
+  leaf.type === "card" || leaf.type === "text" || leaf.type === "button" ? leaf.color : undefined;
+
+/**
+ * Troca de cor no hover: texto com par aprovado sobre o fundo do hover; ícone
+ * e borda com >= 3:1. Card com fundo de hover que não lê com a cor do texto:
+ * o fundo do hover sai (a descrição não muda de cor).
+ */
+function harmonizeHover(leaf: Leaf, container: BBContext): Leaf {
+  const bs = leaf.blockStyle;
+  if (!bs || !(bs.hoverBg || bs.hoverText || bs.hoverIcon || bs.hoverBorder)) return leaf;
+  const next: BlockStyle = { ...bs };
+  const surface = hex6(next.hoverBg) ?? restingBg(leaf, container);
+  const base = hex6(baseTextColor(leaf));
+  if (leaf.type === "card" && next.hoverBg && base && !allowedText(textContext([next.hoverBg])).includes(base)) {
+    delete next.hoverBg;
+  }
+  const on = hex6(next.hoverBg) ?? restingBg(leaf, container);
+  if (on) {
+    if (next.hoverText) next.hoverText = deriveText(textContext([on]), next.hoverText);
+    else if (next.hoverBg && base && leaf.type !== "card" && !allowedText(textContext([on])).includes(base))
+      next.hoverText = deriveText(textContext([on]), base);
+    if (next.hoverIcon) next.hoverIcon = graphicOn(next.hoverIcon, on, []);
+  }
+  if (next.hoverBorder && surface) {
+    const outer = solidBg(container);
+    if (Math.max(contrast(next.hoverBorder, surface), outer ? contrast(next.hoverBorder, outer) : 0) < MIN_GRAPHIC)
+      next.hoverBorder = graphicColors(surface)[0] ?? P.azulEscuro;
+  }
+  return { ...leaf, blockStyle: next };
+}
+
+/** Aparência da coluna na identidade BB: fundo de esquema (sem degradê), borda >= 3:1. */
+function harmonizeColumnStyle(raw: ColumnStyle, under: string | undefined): ColumnStyle {
+  const next: ColumnStyle = { ...raw };
+  if (next.fill === "gradient") {
+    if (next.gradientFrom) next.bgColor = next.gradientFrom;
+    delete next.fill;
+    delete next.gradientFrom;
+    delete next.gradientTo;
+    delete next.gradientAngle;
+  }
+  const bg = hex6(next.bgColor);
+  if (bg && !BB_SCHEME_BGS.includes(bg)) next.bgColor = nearest(bg, BB_SCHEME_BGS);
+  if (next.borderColor) next.borderColor = snapPalette(next.borderColor);
+  if (next.borderWidth && next.borderColor) {
+    const inner = hex6(next.bgColor) ?? under ?? WHITE;
+    if (contrast(next.borderColor, inner) < MIN_GRAPHIC) next.borderColor = graphicColors(inner)[0] ?? P.azulEscuro;
+  }
   return next;
 }
 
@@ -449,6 +541,11 @@ function harmonizeHighlight(leaf: TextBlock, ctx: BBContext): TextBlock {
 }
 
 function harmonizeLeaf(raw: Leaf, container: BBContext): Leaf {
+  const next = harmonizeLeafColors(raw, container);
+  return harmonizeHover(next, container);
+}
+
+function harmonizeLeafColors(raw: Leaf, container: BBContext): Leaf {
   const leaf: Leaf = raw.blockStyle ? { ...raw, blockStyle: harmonizeBlockStyle(raw.blockStyle) } : raw;
   const bg = solidBg(container);
   const scheme = schemeByBg(bg);
@@ -513,6 +610,11 @@ function harmonizeLeaf(raw: Leaf, container: BBContext): Leaf {
     }
     case "rdform":
       return leaf.fields ? { ...leaf, fields: harmonizeParts(leaf.fields, rdFieldParts(leaf), container, "bgColor") } : leaf;
+    case "container": {
+      // Os blocos de dentro leem sobre o fundo da caixa.
+      const inner = leafTextContext(leaf, container);
+      return { ...leaf, children: leaf.children.map((child) => harmonizeLeaf(child, inner)) };
+    }
     default:
       return isNewBlock(leaf) ? harmonizeParts(leaf, colorParts(leaf), leafTextContext(leaf, container)) : leaf;
   }
@@ -578,11 +680,12 @@ export function bbHarmonize(page: PageContent): PageContent {
     const s: SectionBlock = { ...section, box: section === logoHeader ? harmonizeHeaderBox(box) : box };
     s.children = section.children.map((row) => {
       const r: RowBlock = { ...row, box: harmonizeBox(row.box, true) };
-      const ctx = textContext(rowSamples(s, r));
-      r.columns = row.columns.map((col) => ({
-        ...col,
-        children: col.children.map((leaf) => harmonizeLeaf(leaf, ctx)),
-      }));
+      const rowCtx = textContext(rowSamples(s, r));
+      r.columns = row.columns.map((raw) => {
+        const col: Column = raw.style ? { ...raw, style: harmonizeColumnStyle(raw.style, solidBg(rowCtx)) } : raw;
+        const ctx = textContext(columnSamples(s, r, col));
+        return { ...col, children: col.children.map((leaf) => harmonizeLeaf(leaf, ctx)) };
+      });
       return r;
     });
     return s;
@@ -642,6 +745,10 @@ function leafLabel(leaf: Leaf): string {
       return "Rodapé";
     case "rdform":
       return "Formulário RD Station";
+    case "carousel":
+      return "Carrossel";
+    case "container":
+      return "Caixa";
     default:
       return "Bloco";
   }
@@ -755,21 +862,52 @@ export function bbAudit(page: PageContent): AuditIssue[] {
     checkBox(section.box, `Seção ${si + 1}`, section.id, false);
     section.children.forEach((row, ri) => {
       checkBox(row.box, `Seção ${si + 1}, linha ${ri + 1}`, row.id, true);
-      const container = textContext(rowSamples(section, row));
-      const bg = solidBg(container);
-      for (const col of row.columns)
+      const rowCtx = textContext(rowSamples(section, row));
+      for (const col of row.columns) {
+        const cs = col.style;
+        if (cs) {
+          const where = `Seção ${si + 1}, linha ${ri + 1}, coluna ${row.columns.indexOf(col) + 1}`;
+          if (cs.fill === "gradient") add(`grad-${col.id}`, "Paleta BB", `${where}: degradê não faz parte da identidade BB.`, col.id);
+          const cbg = hex6(cs.bgColor);
+          if (cs.bgColor && (!cbg || !BB_SCHEME_BGS.includes(cbg)))
+            add(`bg-${col.id}`, "Paleta BB", `${where}: fundo ${cs.bgColor} fora dos esquemas BB.`, col.id);
+          if (cs.borderWidth && cs.borderColor && offPalette(cs.borderColor))
+            add(`bd-${col.id}`, "Paleta BB", `${where}: borda ${cs.borderColor} fora da paleta.`, col.id);
+        }
+        const colCtx = textContext(columnSamples(section, row, col));
+        // Blocos de dentro das caixas: contexto do fundo da caixa.
+        const contexts = new Map<string, BBContext>();
         for (const leaf of col.children) {
+          contexts.set(leaf.id, colCtx);
+          if (isContainer(leaf)) for (const child of leaf.children) contexts.set(child.id, leafTextContext(leaf, colCtx));
+        }
+        for (const leaf of flatLeaves(col.children)) {
+          const container = contexts.get(leaf.id) ?? rowCtx;
+          const bg = solidBg(container);
           const ctx = leafTextContext(leaf, container);
           const bs = leaf.blockStyle;
           if (bs) {
             const parts: [string, string | undefined][] = [
               ["fundo", bs.bgColor],
               ["borda", bs.borderWidth ? bs.borderColor : undefined],
-              ["destaque do hover", bs.hover && bs.hover !== "none" ? bs.hoverColor : undefined],
+              ["destaque do hover", (bs.hover && bs.hover !== "none") || bs.hoverBar ? bs.hoverColor : undefined],
+              ["fundo do hover", bs.hoverBg],
+              ["borda do hover", bs.hoverBorder],
+              ["texto do hover", bs.hoverText],
+              ["ícone do hover", bs.hoverIcon],
             ];
             for (const [part, color] of parts)
               if (color && offPalette(color))
                 add(`pal-${leaf.id}-bs-${part}`, "Paleta BB", `${leafLabel(leaf)}: ${part} ${color} fora da paleta.`, leaf.id);
+            // Texto legível com o mouse em cima (4,5:1).
+            const on = hex6(bs.hoverBg) ?? restingBg(leaf, container);
+            const hoverText = hex6(bs.hoverText) ?? (bs.hoverBg && leaf.type !== "card" ? hex6(baseTextColor(leaf)) : null);
+            if (on && hoverText && contrast(hoverText, on) < MIN_TEXT)
+              add(`ctr-${leaf.id}-hover`, "Contraste BB", `${leafLabel(leaf)} (hover): ${fmtRatio(contrast(hoverText, on))}:1 sobre ${bbName(on)} — mínimo 4,5:1.`, leaf.id);
+            if (leaf.type === "card" && bs.hoverBg && contrast(leaf.color, bs.hoverBg) < MIN_TEXT)
+              add(`ctr-${leaf.id}-hover-desc`, "Contraste BB", `${leafLabel(leaf)} (texto no hover): ${fmtRatio(contrast(leaf.color, bs.hoverBg))}:1 — mínimo 4,5:1.`, leaf.id);
+            if (on && bs.hoverIcon && contrast(bs.hoverIcon, on) < MIN_GRAPHIC)
+              add(`shp-${leaf.id}-hover-icon`, "Contraste BB", `${leafLabel(leaf)} (ícone no hover): ${fmtRatio(contrast(bs.hoverIcon, on))}:1 — formas pedem 3:1.`, leaf.id);
           }
           if ((leaf.type === "button" || leaf.type === "countdown") && leaf.variant === "ghost")
             add(
@@ -865,6 +1003,7 @@ export function bbAudit(page: PageContent): AuditIssue[] {
               break;
           }
         }
+      }
     });
   });
 

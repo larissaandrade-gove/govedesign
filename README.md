@@ -8,7 +8,7 @@ inicial com um botão para cada uma:
 | **Revisor de identidade visual** | raiz (`backend/`, `db/`, `frontend/`) | Audita peças prontas contra os tokens de marca | Node + Express + SQLite |
 | **Gerador de Criativos GOVE** | [`criativos/`](criativos/) | Gera criativos de mídia paga (estático, lote, vídeo) dentro do manual de marca | TanStack Start + React (Vite) |
 | **Gove Links** | [`links/`](links/) | Encurtador de links com rastreamento de cliques | TanStack Start + React + Supabase |
-| **LP Builder** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
+| **Landing Pages** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
 | **Design System** | [`design-system/`](design-system/) | Documentação e UI Kit (tokens, tipografia, componentes) | React + Vite + Tailwind + Framer Motion |
 | **Gove Print Studio** | [`print-studio/`](print-studio/) | PDFs de impressão do Kit de Boas-Vindas (CMYK, sangria, lote por município) | React + Fabric.js · Express + pdfkit + SQLite |
 
@@ -56,7 +56,7 @@ para o redirecionamento registrar cliques; `VITE_SHORT_DOMAIN` define um domíni
 curto próprio. As tabelas (`short_links`, `link_clicks`) vivem no projeto
 Supabase; o zip não trazia migrações delas.
 
-## LP Builder (`lp-builder/`)
+## Landing Pages (`lp-builder/`)
 
 Trazido do Lovable. Editor visual com biblioteca de blocos (seção, linhas,
 texto, CTA, imagem, card com ícone, vídeo, contagem regressiva, formulário RD

@@ -5,7 +5,9 @@ import type { PageContent } from "./types";
 import { resolveButtonLink } from "./anchors";
 import { highlightColors } from "./blockStyle";
 import { parseRich } from "./richText";
-import { colorOf, colorParts, isNewBlock, textSize } from "./blockColors";
+import { colorOf, colorParts, hoverPairs, isNewBlock, textSize } from "./blockColors";
+import { flatLeaves } from "./leaves";
+import { calendarIssues } from "./calendar";
 
 export type AuditSeverity = "error" | "warning";
 
@@ -28,12 +30,54 @@ export function auditPage(page: PageContent): AuditIssue[] {
   for (const section of page.sections) {
     for (const row of section.children) {
       for (const col of row.columns) {
-        for (const leaf of col.children) {
+        for (const leaf of flatLeaves(col.children)) {
           index += 1;
           const key = `${leaf.id}-${index}`;
           const bg = backgroundBehind(page, leaf.id);
 
           if (leaf.type === "rdform") hasRdForm = true;
+
+          // Troca de cor no hover: o texto continua legível com o mouse em cima.
+          for (const pair of hoverPairs(leaf, bg)) {
+            const result = checkContrast(pair.color, pair.on, pair.size, pair.bold);
+            if (result.ratio !== null && result.ratio < 4.5)
+              issues.push({
+                id: `contrast-hover-${key}${pair.part}`,
+                nodeId: leaf.id,
+                severity: "error",
+                rule: "Contraste",
+                message: `Contraste de ${result.ratio.toFixed(2)}:1${pair.part} — o mínimo exigido é 4.5:1.`,
+              });
+          }
+
+          if (leaf.type === "carousel") {
+            if (leaf.kind === "image")
+              leaf.items.forEach((item, i) => {
+                if (item.src && !item.alt.trim())
+                  issues.push({
+                    id: `alt-${key}-${i}`,
+                    nodeId: leaf.id,
+                    severity: "error",
+                    rule: "Texto alternativo",
+                    message: `Carrossel: imagem ${i + 1} sem texto alternativo (alt).`,
+                  });
+              });
+            if (!leaf.items.length)
+              issues.push({ id: `carousel-empty-${key}`, nodeId: leaf.id, severity: "warning", rule: "Conteúdo", message: "Carrossel sem itens." });
+          }
+
+          if (leaf.type === "container" && !leaf.children.length)
+            issues.push({ id: `box-empty-${key}`, nodeId: leaf.id, severity: "warning", rule: "Conteúdo", message: "Caixa vazia (sem blocos dentro)." });
+
+          if (leaf.type === "button" && leaf.linkMode === "calendar")
+            for (const problem of calendarIssues(leaf.calendar))
+              issues.push({
+                id: `calendar-${key}-${problem}`,
+                nodeId: leaf.id,
+                severity: "error",
+                rule: "Adicionar à agenda",
+                message: `Botão "${leaf.label}": ${problem}`,
+              });
 
           // Blocos novos: tamanho mínimo e contraste de cada cor de texto (sobre o fundo próprio da parte).
           if (isNewBlock(leaf)) {

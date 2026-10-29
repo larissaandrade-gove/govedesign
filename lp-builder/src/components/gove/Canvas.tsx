@@ -28,11 +28,12 @@ import type { CountdownBlock, TextBlock } from "@/lib/gove/types";
 import type { BoxProps, Leaf, PageContent, RowBlock, SectionBlock } from "@/lib/gove/types";
 import {
   BB_PROTECTION,
+  columnSamples,
   isBB,
+  leafTextContext,
   logoLayout,
   needsProtection,
   pageFonts,
-  rowSamples,
   textContext,
   type BBContext,
   type PageFonts,
@@ -125,7 +126,7 @@ interface CanvasProps {
   /** Computador, tablet (820px) ou celular (390px). */
   device: Device;
   onMove?:
-    | ((dragId: string, targetId: string, position: "before" | "after", kind: "leaf" | "row") => void)
+    | ((dragId: string, targetId: string, position: "before" | "after" | "inside", kind: "leaf" | "row") => void)
     | undefined;
   /** false (miniaturas): itens ocultos no modo somem em vez de aparecer esmaecidos. */
   showHidden?: boolean;
@@ -233,6 +234,40 @@ function LeafBody({ leaf, look, selectedId, onSelect, onMove }: LeafProps) {
   if (isNewBlock(leaf)) {
     const tree = blockTree(leaf, { page: look.page, bb: look.bb, fonts, sheet: look.sheet, sectionBg: look.sectionBg });
     return <>{vnodeReact(tree, undefined, { ...dnd, style: edit })}</>;
+  }
+
+  if (leaf.type === "container") {
+    // Caixa: solte no meio para pôr o bloco dentro; nas bordas, antes/depois da caixa.
+    const inner: Look = look.bb && look.container ? { ...look, container: leafTextContext(leaf, look.container) } : look;
+    return (
+      <div
+        {...dnd}
+        className={["gove-box", look.sheet.classOf(leaf.id)].filter(Boolean).join(" ")}
+        onDrop={(e) => {
+          const dragId = e.dataTransfer.getData("text/gove-leaf");
+          if (!dragId || dragId === leaf.id) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const y = (e.clientY - rect.top) / Math.max(1, rect.height);
+          onMove?.(dragId, leaf.id, y < 0.15 ? "before" : y > 0.85 ? "after" : "inside", "leaf");
+        }}
+        style={{
+          ...(reactStyle({ "text-align": leaf.align, margin: blockMargin(leaf), ...blockBoxCss(leaf, look.bb) }) as CSSProperties),
+          ...edit,
+        }}
+      >
+        {leaf.children.length ? (
+          leaf.children.map((child) => (
+            <LeafView key={child.id} leaf={child} look={inner} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
+          ))
+        ) : (
+          <div className="rounded-lg border border-dashed border-slate-400 p-6 text-center text-xs text-slate-500">
+            Caixa vazia — selecione a caixa e clique num bloco da biblioteca, ou arraste um bloco para cá
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (leaf.type === "text") {
@@ -370,7 +405,7 @@ function LeafBody({ leaf, look, selectedId, onSelect, onMove }: LeafProps) {
           [ Formulário RD Station será inserido aqui ]
         </span>
         <span className="text-xs text-slate-500">
-          {leaf.snippet ? "Snippet colado e preservado no export." : "Cole o snippet no painel à direita."}
+          {leaf.type === "rdform" && leaf.snippet ? "Snippet colado e preservado no export." : "Cole o snippet no painel à direita."}
         </span>
       </div>
       {leaf.type === "rdform" && leaf.fields ? (
@@ -444,11 +479,7 @@ function RowView({
   onSelect,
   onMove,
 }: { row: RowBlock; section: SectionBlock; look: Look; sheet: Sheet } & Omit<CanvasProps, "page" | "device" | "showHidden">) {
-  const look: Look = {
-    ...base,
-    sectionBg: section.box.bgColor,
-    ...(base.bb ? { container: textContext(rowSamples(section, row)) } : {}),
-  };
+  const look: Look = { ...base, sectionBg: section.box.bgColor };
   return (
     <div
       draggable
@@ -484,10 +515,12 @@ function RowView({
       }}
     >
       <DecorLayers box={row.box} />
-      {row.columns.map((col, index) => (
+      {row.columns.map((col, index) => {
+        const colLook: Look = look.bb ? { ...look, container: textContext(columnSamples(section, row, col)) } : look;
+        return (
         <div
           key={col.id}
-          className="gove-col"
+          className={["gove-col", sheet.classOf(col.id)].filter(Boolean).join(" ")}
           onClick={(e) => {
             e.stopPropagation();
             onSelect(col.id);
@@ -504,11 +537,11 @@ function RowView({
             e.stopPropagation();
             onMove?.(dragId, col.id, "after", "leaf");
           }}
-          style={reactStyle(columnCss(row, index)) as CSSProperties}
+          style={{ ...(reactStyle(columnCss(row, index, look.bb)) as CSSProperties), ...outline(selectedId === col.id) }}
         >
           {col.children.length ? (
             col.children.map((leaf) => (
-              <LeafView key={leaf.id} leaf={leaf} look={look} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
+              <LeafView key={leaf.id} leaf={leaf} look={colLook} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
             ))
           ) : (
             <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">
@@ -516,7 +549,8 @@ function RowView({
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

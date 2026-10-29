@@ -4,12 +4,12 @@ import { Editor } from "@/components/gove/Editor";
 export const Route = createFileRoute("/editor/$id")({
   head: () => ({
     meta: [
-      { title: "Editor — GOVE LP Builder" },
+      { title: "Editor — GOVE Landing Pages" },
       {
         name: "description",
         content: "Monte a landing page com seções, blocos e presets do design system GOVE.",
       },
-      { property: "og:title", content: "Editor — GOVE LP Builder" },
+      { property: "og:title", content: "Editor — GOVE Landing Pages" },
       {
         property: "og:description",
         content: "Monte a landing page com seções, blocos e presets do design system GOVE.",

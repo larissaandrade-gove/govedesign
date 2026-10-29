@@ -13,7 +13,7 @@ export function AppBrand() {
       >
         <Layout className="size-5" color="#FFFFFF" aria-hidden />
       </span>
-      <span className="font-display text-lg font-bold">LP Builder</span>
+      <span className="font-display text-lg font-bold">Landing Pages</span>
     </div>
   );
 }

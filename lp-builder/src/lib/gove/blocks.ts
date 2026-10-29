@@ -25,6 +25,7 @@ import type { Decls, Sheet } from "./styleRules";
 import type { NewBlock } from "./blockColors";
 import type {
   ButtonBlock,
+  CarouselBlock,
   FaqBlock,
   FooterBlock,
   Leaf,
@@ -34,6 +35,7 @@ import type {
   RdFormBlock,
   SectionBlock,
   TimelineBlock,
+  TimelineItem,
 } from "./types";
 
 /* --------------------------------------------------------------------- VNode */
@@ -301,9 +303,53 @@ function footerTree(leaf: FooterBlock, ctx: BlockCtx): VNode {
 
 /* ----------------------------------------------------------- cronograma */
 
-function timelineTree(leaf: TimelineBlock, ctx: BlockCtx): VNode {
+/** Marcador circular do cronograma (na linha). */
+const timelineDot = (leaf: TimelineBlock, bb: boolean, pos: Decls, cls?: string): VNode =>
+  h("span", { ...(cls ? { class: cls } : {}), "aria-hidden": "true" }, {
+    position: "absolute",
+    ...pos,
+    width: "16px",
+    height: "16px",
+    "border-radius": "50%",
+    background: leaf.markerBg,
+    border: `3px solid ${leaf.accentColor}`,
+    "box-shadow": tint(leaf.accentColor, 0.12, bb) ? `0 0 0 4px ${tint(leaf.accentColor, 0.12, bb)}` : undefined,
+  });
+
+/** Título, responsável, texto e subitens de um item do cronograma. */
+function timelineBody(leaf: TimelineBlock, item: TimelineItem, ctx: BlockCtx): (VNode | null)[] {
   const { bb, fonts } = ctx;
   const bold = String(fonts.bodyWeight(true));
+  return [
+    item.title.trim()
+      ? h("h3", null, { margin: "0 0 6px", "font-family": fonts.heading, "font-size": `${leaf.size + 2}px`, "font-weight": String(fonts.headingWeight(true)), color: leaf.color, "line-height": "1.3" }, item.title)
+      : null,
+    item.who.trim()
+      ? h("span", null, { display: "inline-block", "text-transform": "uppercase", "letter-spacing": "0.1em", "font-weight": bold, "margin-bottom": "8px" }, item.who)
+      : null,
+    item.text.trim() ? h("p", null, { margin: "0" }, ...rich(item.text, fonts.bodyWeight(true))) : null,
+    item.subitems.length
+      ? h(
+          "ul",
+          null,
+          { margin: "10px 0 0", padding: "0", "list-style": "none", display: "grid", gap: "7px" },
+          ...item.subitems.map((sub) =>
+            h(
+              "li",
+              null,
+              { position: "relative", "padding-left": "20px" },
+              h("span", { "aria-hidden": "true" }, { position: "absolute", left: "0", top: "calc(0.8em - 3.5px)", width: "7px", height: "7px", "border-radius": "50%", background: leaf.accentColor, opacity: bb ? undefined : "0.65" }),
+              ...rich(sub, fonts.bodyWeight(true)),
+            ),
+          ),
+        )
+      : null,
+  ];
+}
+
+function timelineTree(leaf: TimelineBlock, ctx: BlockCtx): VNode {
+  if (leaf.layout === "horizontal") return timelineHorizontalTree(leaf, ctx);
+  const { bb, fonts } = ctx;
   const line = bb || !isHex(leaf.accentColor) ? leaf.accentColor : `linear-gradient(180deg, ${leaf.accentColor}, ${rgba(leaf.accentColor, 0.1)})`;
   const last = leaf.items.length - 1;
   return h(
@@ -331,42 +377,133 @@ function timelineTree(leaf: TimelineBlock, ctx: BlockCtx): VNode {
           "div",
           null,
           { position: "relative", "padding-left": "var(--tl-pad)" },
-          h("span", { "aria-hidden": "true" }, {
-            position: "absolute",
-            left: "-7px",
-            top: "6px",
-            width: "16px",
-            height: "16px",
-            "border-radius": "50%",
-            background: leaf.markerBg,
-            border: `3px solid ${leaf.accentColor}`,
-            "box-shadow": tint(leaf.accentColor, 0.12, bb) ? `0 0 0 4px ${tint(leaf.accentColor, 0.12, bb)}` : undefined,
-          }),
-          item.title.trim()
-            ? h("h3", null, { margin: "0 0 6px", "font-family": fonts.heading, "font-size": `${leaf.size + 2}px`, "font-weight": String(fonts.headingWeight(true)), color: leaf.color, "line-height": "1.3" }, item.title)
-            : null,
-          item.who.trim()
-            ? h("span", null, { display: "inline-block", "text-transform": "uppercase", "letter-spacing": "0.1em", "font-weight": bold, "margin-bottom": "8px" }, item.who)
-            : null,
-          item.text.trim() ? h("p", null, { margin: "0" }, ...rich(item.text, fonts.bodyWeight(true))) : null,
-          item.subitems.length
-            ? h(
-                "ul",
-                null,
-                { margin: "10px 0 0", padding: "0", "list-style": "none", display: "grid", gap: "7px" },
-                ...item.subitems.map((sub) =>
-                  h(
-                    "li",
-                    null,
-                    { position: "relative", "padding-left": "20px" },
-                    h("span", { "aria-hidden": "true" }, { position: "absolute", left: "0", top: "calc(0.8em - 3.5px)", width: "7px", height: "7px", "border-radius": "50%", background: leaf.accentColor, opacity: bb ? undefined : "0.65" }),
-                    ...rich(sub, fonts.bodyWeight(true)),
-                  ),
-                ),
-              )
-            : null,
+          timelineDot(leaf, bb, { left: "-7px", top: "6px" }),
+          ...timelineBody(leaf, item, ctx),
         ),
       ),
+    ),
+  );
+}
+
+/**
+ * Linha do tempo horizontal: passos lado a lado com a linha passando pelos
+ * marcadores (computador); no tablet e no celular, empilha na vertical
+ * (regras em `newBlockRules`).
+ */
+function timelineHorizontalTree(leaf: TimelineBlock, ctx: BlockCtx): VNode {
+  const { bb, fonts } = ctx;
+  const line = bb || !isHex(leaf.accentColor) ? leaf.accentColor : `linear-gradient(90deg, ${leaf.accentColor}, ${rgba(leaf.accentColor, 0.15)})`;
+  return h(
+    "div",
+    rootAttrs(ctx, leaf, ["gove-timeline", "gove-tl-h"]),
+    rootStyle(leaf, bb, {
+      position: "relative",
+      display: "grid",
+      "grid-template-columns": `repeat(${Math.max(1, leaf.items.length)}, minmax(0, 1fr))`,
+      gap: "28px 24px",
+      "font-family": fonts.body,
+      "font-size": `${leaf.size}px`,
+      "line-height": "1.6",
+      color: leaf.textColor,
+    }),
+    leaf.items.length
+      ? h("span", { class: "gove-tl-line", "aria-hidden": "true" }, { position: "absolute", left: "8px", right: "8px", top: "7px", height: "2px", background: line })
+      : null,
+    ...leaf.items.map((item) =>
+      h(
+        "div",
+        { class: "gove-tl-item" },
+        { position: "relative", "padding-top": "34px", "min-width": "0" },
+        timelineDot(leaf, bb, { left: "0", top: "0" }, "gove-tl-dot"),
+        item.time.trim()
+          ? h("div", null, { "font-family": fonts.heading, "font-weight": String(fonts.headingWeight(true)), color: leaf.color, "letter-spacing": "-0.01em", "overflow-wrap": "anywhere", "margin-bottom": "6px" }, item.time)
+          : null,
+        ...timelineBody(leaf, item, ctx),
+      ),
+    ),
+  );
+}
+
+/* -------------------------------------------------------------- carrossel */
+
+/** Segundos de uma volta completa da faixa animada. */
+export const carouselDuration = (leaf: Pick<CarouselBlock, "items" | "speed">) =>
+  Math.max(4, Math.round(Math.max(1, leaf.items.length) * Math.max(1, leaf.speed)));
+
+/** Largura máxima dos itens no celular (px). */
+export const CAROUSEL_MOBILE_WIDTH = 280;
+
+const FADE_MASK = "linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent)";
+
+/**
+ * Carrossel horizontal só com CSS. Faixa animada: os itens aparecem duas
+ * vezes (a cópia é decorativa, `aria-hidden`) e a faixa anda -50% em loop
+ * (cada item tem a margem do espaço, então a metade fecha exatamente). Quem
+ * pede menos movimento vê uma linha parada com rolagem lateral. Rolagem com
+ * encaixe: `scroll-snap` no eixo x. A caixa externa corta o excesso: a página
+ * nunca ganha rolagem lateral.
+ */
+function carouselTree(leaf: CarouselBlock, ctx: BlockCtx): VNode {
+  const { bb, fonts } = ctx;
+  const marquee = leaf.mode === "marquee";
+  const text = leaf.kind === "text";
+  const item = (it: CarouselBlock["items"][number], dup: boolean): VNode =>
+    h(
+      "div",
+      { class: dup ? "gove-car-item gove-car-dup" : "gove-car-item", ...(dup ? { "aria-hidden": "true" } : {}) },
+      {
+        flex: "none",
+        width: `${leaf.itemWidth}px`,
+        "margin-right": `${leaf.gap}px`,
+        "scroll-snap-align": marquee ? undefined : "start",
+        "aspect-ratio": leaf.aspect,
+        "border-radius": leaf.radius ? `${leaf.radius}px` : undefined,
+        overflow: text ? undefined : "hidden",
+        ...(text
+          ? {
+              display: "flex",
+              "flex-direction": "column",
+              "justify-content": "center",
+              gap: "8px",
+              padding: "24px",
+              background: leaf.bgColor,
+              color: leaf.textColor,
+            }
+          : {}),
+      },
+      ...(text
+        ? [
+            it.title.trim()
+              ? h("h3", null, { margin: "0", "font-family": fonts.heading, "font-size": `${leaf.size + 4}px`, "font-weight": String(fonts.headingWeight(true)), color: leaf.color, "line-height": "1.3" }, it.title)
+              : null,
+            it.text.trim() ? h("p", null, { margin: "0", "font-size": `${leaf.size}px`, "line-height": "1.5" }, ...rich(it.text, fonts.bodyWeight(true))) : null,
+          ]
+        : [
+            it.src
+              ? h("img", { src: it.src, alt: dup ? "" : it.alt, loading: "lazy" }, { display: "block", width: "100%", height: "100%", "object-fit": "cover", "max-width": "none" })
+              : null,
+          ]),
+    );
+  return h(
+    "div",
+    rootAttrs(ctx, leaf, ["gove-carousel"], { role: "region", "aria-label": "Carrossel" }),
+    rootStyle(leaf, bb, {
+      position: "relative",
+      "overflow-x": "auto",
+      "overflow-y": "hidden",
+      "scroll-snap-type": marquee ? undefined : "x mandatory",
+      "scrollbar-width": "thin",
+      "padding-bottom": marquee ? undefined : "8px",
+      "-webkit-mask-image": leaf.fade ? FADE_MASK : undefined,
+      "mask-image": leaf.fade ? FADE_MASK : undefined,
+      "font-family": fonts.body,
+    }),
+    h(
+      "div",
+      { class: "gove-car-track" },
+      { display: "flex", width: "max-content" },
+      ...leaf.items.map((it) => item(it, false)),
+      ...(marquee ? leaf.items.map((it) => item(it, true)) : []),
     ),
   );
 }
@@ -619,6 +756,8 @@ export function blockTree(leaf: NewBlock, ctx: BlockCtx): VNode {
       );
     case "timeline":
       return timelineTree(leaf, ctx);
+    case "carousel":
+      return carouselTree(leaf, ctx);
     case "faq":
       return faqTree(leaf, ctx);
     case "date":
@@ -756,9 +895,45 @@ export function newBlockRules(sheet: Sheet, leaf: Leaf, bb: boolean) {
       if (leaf.perRow > 2)
         sheet.add(sheet.node(leaf.id), { "grid-template-columns": "repeat(2, minmax(0, 1fr)) !important", gap: "28px 24px !important" }, "tablet");
       return;
-    case "timeline":
+    case "timeline": {
+      const sel = sheet.node(leaf.id);
+      if (leaf.layout === "horizontal") {
+        // Tablet e celular: empilha na vertical, com a linha à esquerda.
+        const vertical = bb || !isHex(leaf.accentColor) ? leaf.accentColor : `linear-gradient(180deg, ${leaf.accentColor}, ${rgba(leaf.accentColor, 0.1)})`;
+        sheet.add(sel, { "grid-template-columns": "minmax(0, 1fr) !important" }, "tablet");
+        sheet.add(`${sel}>.gove-tl-line`, { left: "7px !important", right: "auto !important", top: "8px !important", bottom: "8px !important", width: "2px !important", height: "auto !important", background: `${vertical} !important` }, "tablet");
+        sheet.add(`${sel}>.gove-tl-item`, { "padding-top": "0 !important", "padding-left": "38px !important" }, "tablet");
+        sheet.add(`${sel}>.gove-tl-item>.gove-tl-dot`, { top: "4px !important" }, "tablet");
+        return;
+      }
       // Versão compacta no celular: coluna de horário de até 64px e recuo menor.
-      sheet.add(sheet.node(leaf.id), { "--tl-w": `${Math.min(leaf.timeWidth, 64)}px !important`, "--tl-pad": "26px !important" }, "mobile");
+      sheet.add(sel, { "--tl-w": `${Math.min(leaf.timeWidth, 64)}px !important`, "--tl-pad": "26px !important" }, "mobile");
+      return;
+    }
+    case "carousel": {
+      const sel = sheet.node(leaf.id);
+      if (leaf.itemWidth > CAROUSEL_MOBILE_WIDTH)
+        sheet.add(`${sel} .gove-car-item`, { width: `${CAROUSEL_MOBILE_WIDTH}px !important` }, "mobile");
+      if (leaf.mode !== "marquee") return;
+      // Sem movimento: só a primeira volta, parada, com rolagem lateral.
+      sheet.add(`${sel} .gove-car-dup`, { display: "none !important" });
+      sheet.keyframes("gove-marquee", "from{transform:translateX(0);}to{transform:translateX(-50%);}");
+      sheet.add(`${sel}`, { "overflow-x": "hidden !important" }, "motion");
+      sheet.add(`${sel} .gove-car-dup`, { display: `${leaf.kind === "text" ? "flex" : "block"} !important` }, "motion");
+      sheet.add(
+        `${sel} .gove-car-track`,
+        { animation: `gove-marquee ${carouselDuration(leaf)}s linear infinite${leaf.direction === "right" ? " reverse" : ""}` },
+        "motion",
+      );
+      if (leaf.pauseOnHover) {
+        sheet.add(`${sel}:hover .gove-car-track`, { "animation-play-state": "paused" }, "motion");
+        sheet.add(`${sel}:focus-within .gove-car-track`, { "animation-play-state": "paused" }, "motion");
+      }
+      return;
+    }
+    case "container":
+      // Caixa: o último bloco de dentro não soma o espaço de 16px ao preenchimento.
+      sheet.shared("box-last", ".gove-box>:last-child", { "margin-bottom": "0 !important" });
       return;
     case "faq": {
       const sel = sheet.node(leaf.id);

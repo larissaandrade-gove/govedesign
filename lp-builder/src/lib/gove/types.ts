@@ -94,7 +94,9 @@ export interface DeviceHide {
 }
 
 /** Efeito ao passar o mouse. */
-export type HoverEffect = "none" | "lift2" | "lift4" | "liftShadow" | "topBar" | "borderHighlight";
+export type HoverEffect = "none" | "lift2" | "lift4" | "liftShadow" | "topBar" | "leftBar" | "borderHighlight";
+/** Barra de realce junto com outro efeito (ex.: levantar + barra lateral). */
+export type HoverBar = "top" | "left";
 /** Duração da transição (s). */
 export type TransitionSpeed = 0.18 | 0.2 | 0.3;
 
@@ -131,6 +133,17 @@ export interface BlockStyle {
   hover?: HoverEffect;
   /** Cor da barra superior / da borda no hover (paleta). */
   hoverColor?: string;
+  /** Barra de realce somada ao efeito (os efeitos "topBar"/"leftBar" já têm a deles). */
+  hoverBar?: HoverBar;
+  /* Troca de cor ao passar o mouse (paleta; com transição). */
+  /** Fundo no hover. */
+  hoverBg?: string;
+  /** Borda no hover. */
+  hoverBorder?: string;
+  /** Título/texto no hover. */
+  hoverText?: string;
+  /** Ícone no hover (card com ícone). */
+  hoverIcon?: string;
   /** Ausente = 0.2. */
   transition?: TransitionSpeed;
   /** Afunda 1px ao clicar. */
@@ -166,13 +179,33 @@ export interface TextBlock extends TextStyle {
   highlightTo?: string;
 }
 
+/** Evento do Google Agenda ("Adicionar à agenda"). */
+export interface CalendarEvent {
+  title: string;
+  /** AAAA-MM-DD. */
+  date: string;
+  /** HH:MM. */
+  start: string;
+  /** Duração (min); ausente = usa `end`. */
+  duration?: number;
+  /** HH:MM (modo "horário de término"). */
+  end?: string;
+  details: string;
+  /** Local ou link da transmissão. */
+  location: string;
+  /** Fuso (IANA); ausente = America/Sao_Paulo. */
+  tz?: string;
+}
+
 export interface ButtonBlock extends TextStyle {
   id: string;
   type: "button";
   label: string;
   href: string;
-  /** Ausente = "url" (link externo em `href`). */
-  linkMode?: "url" | "section";
+  /** Ausente = "url" (link externo em `href`). "calendar" = Google Agenda (nova aba). */
+  linkMode?: "url" | "section" | "calendar";
+  /** Modo "calendar": o evento. */
+  calendar?: CalendarEvent;
   /** Modo "section": id da seção, "@form" (formulário de inscrição) ou "@end" (final da página). */
   target?: string;
   variant: "filled" | "elevated" | "outline" | "glass" | "text" | "ghost";
@@ -383,6 +416,8 @@ export interface TimelineBlock {
   id: string;
   type: "timeline";
   items: TimelineItem[];
+  /** Ausente = "vertical". Horizontal: passos lado a lado no computador, empilhados no tablet e no celular. */
+  layout?: "vertical" | "horizontal";
   /** Largura da coluna de horário (px; no celular, até 64). */
   timeWidth: number;
   /** Cor do horário e dos títulos. */
@@ -512,6 +547,57 @@ export interface FooterBlock {
   blockStyle?: BlockStyle;
 }
 
+export interface CarouselItem {
+  /** Itens de texto. */
+  title: string;
+  text: string;
+  /** Itens de imagem (URL/data URL). */
+  src: string;
+  /** Texto alternativo (obrigatório nas imagens). */
+  alt: string;
+}
+
+/** Carrossel horizontal (só CSS): faixa animada (marquee) ou rolagem com encaixe. */
+export interface CarouselBlock {
+  id: string;
+  type: "carousel";
+  kind: "text" | "image";
+  items: CarouselItem[];
+  /** Proporção dos itens. */
+  aspect: "16 / 9" | "1 / 1";
+  /** "marquee": rola sozinho (CSS @keyframes); "swipe": arrastar/rolar com encaixe. */
+  mode: "marquee" | "swipe";
+  /** Segundos por item na volta completa (menor = mais rápido). */
+  speed: number;
+  direction: "left" | "right";
+  pauseOnHover: boolean;
+  gap: number;
+  /** Largura de cada item (px). */
+  itemWidth: number;
+  radius: number;
+  /** Bordas esmaecidas. */
+  fade: boolean;
+  /** Itens de texto: fundo, título e texto. */
+  bgColor: string;
+  color: string;
+  textColor: string;
+  size: number;
+  blockStyle?: BlockStyle;
+}
+
+/**
+ * Caixa: contêiner com outros blocos dentro (um nível; sem cabeçalho, rodapé
+ * ou outra caixa). Aparência e hover em `blockStyle`.
+ */
+export interface ContainerBlock {
+  id: string;
+  type: "container";
+  children: Leaf[];
+  /** Alinhamento do conteúdo (texto e largura máxima dos filhos). */
+  align: Align;
+  blockStyle?: BlockStyle;
+}
+
 export type Leaf =
   | TextBlock
   | ButtonBlock
@@ -531,11 +617,34 @@ export type Leaf =
   | PersonBlock
   | DividerBlock
   | NavbarBlock
-  | FooterBlock;
+  | FooterBlock
+  | CarouselBlock
+  | ContainerBlock;
+
+/** Aparência própria de uma coluna (linhas com 2 ou mais colunas). Cores da paleta. */
+export interface ColumnStyle {
+  /** Ausente = "solid". */
+  fill?: "solid" | "gradient";
+  bgColor?: string;
+  /** 0-100 (ausente = 100). */
+  fillOpacity?: number;
+  gradientFrom?: string;
+  gradientTo?: string;
+  gradientAngle?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  radius?: number;
+  paddingY?: number;
+  paddingX?: number;
+  shadow?: Shadow;
+  /** Alinhamento vertical do conteúdo (a coluna estica até a altura da linha). */
+  valign?: "start" | "center" | "end";
+}
 
 export interface Column {
   id: string;
   children: Leaf[];
+  style?: ColumnStyle;
 }
 
 /** Linha no tablet e no celular: empilha tudo, 2 colunas no tablet (empilha no celular) ou mantém. */

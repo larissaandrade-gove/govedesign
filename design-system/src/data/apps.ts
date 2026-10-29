@@ -87,7 +87,7 @@ export const APPS: GoveApp[] = [
   {
     id: 'lp',
     tag: 'Web',
-    name: 'LP Builder',
+    name: 'Landing Pages',
     route: '/lp',
     icon: Layout,
     summary: 'Monta landing pages visualmente com blocos prontos e exporta o HTML para a plataforma final.',

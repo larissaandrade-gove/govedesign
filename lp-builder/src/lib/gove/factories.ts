@@ -4,7 +4,9 @@ import type {
   BoxProps,
   ButtonBlock,
   CardBlock,
+  CarouselBlock,
   Column,
+  ContainerBlock,
   CountdownBlock,
   DateBlock,
   DividerBlock,
@@ -28,6 +30,7 @@ import type {
   VideoBlock,
 } from "./types";
 import { LOREM_300 } from "./lorem";
+import { defaultEvent } from "./calendar";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -153,6 +156,10 @@ export const makeCountdown = (over: Partial<CountdownBlock> = {}): CountdownBloc
   animation: "none",
   ...over,
 });
+
+/** "Adicionar à agenda": botão com link do Google Agenda (ícone de calendário, nova aba). */
+export const makeCalendarButton = (over: Partial<ButtonBlock> = {}): ButtonBlock =>
+  makeButton({ label: "Adicionar à agenda", icon: "Calendar", linkMode: "calendar", calendar: defaultEvent(), btnSize: "md", ...over });
 
 /* ------------------------------------------------------------- blocos novos */
 /* Cores-padrão para fundo claro (as do fundo escuro vêm no cabeçalho e no rodapé). */
@@ -356,6 +363,55 @@ export const makeFooter = (over: Partial<FooterBlock> = {}): FooterBlock => ({
 });
 
 /** Card do formulário: fundo, raio, preenchimento e sombra (na aparência do bloco). */
+export const makeCarousel = (over: Partial<CarouselBlock> = {}): CarouselBlock => ({
+  id: uid(),
+  type: "carousel",
+  kind: "text",
+  items: [
+    { title: "Planejamento", text: "Metas claras para cada secretaria.", src: "", alt: "" },
+    { title: "Transparência", text: "Dados abertos e fáceis de entender.", src: "", alt: "" },
+    { title: "Eficiência", text: "Processos digitais, menos papel.", src: "", alt: "" },
+    { title: "Atendimento", text: "O cidadão no centro de cada serviço.", src: "", alt: "" },
+  ],
+  aspect: "16 / 9",
+  mode: "marquee",
+  speed: 6,
+  direction: "left",
+  pauseOnHover: true,
+  gap: 24,
+  itemWidth: 320,
+  radius: 16,
+  fade: true,
+  bgColor: "#F4F4F4",
+  color: "#20133D",
+  textColor: "#2F3539",
+  size: 16,
+  ...over,
+});
+
+/** Caixa com título, texto e botão dentro (fundo branco, raio 24, sombra média). */
+export const makeContainer = (over: Partial<ContainerBlock> = {}): ContainerBlock => ({
+  id: uid(),
+  type: "container",
+  align: "left",
+  children: [
+    makeText({ tag: "h3", content: "Título da caixa", weight: "bold", size: 25, color: "#20133D" }),
+    makeText({ content: "Junte aqui texto, imagem, vídeo e botão num mesmo cartão." }),
+    makeButton(),
+  ],
+  blockStyle: {
+    bgColor: "#FFFFFF",
+    radius: 24,
+    paddingY: 32,
+    paddingX: 32,
+    borderWidth: 1,
+    borderColor: "#F4F4F4",
+    shadow: "md",
+    hover: "liftShadow",
+  },
+  ...over,
+});
+
 export const FORM_CARD_STYLE: BlockStyle = { bgColor: "#FFFFFF", radius: 24, paddingY: 32, paddingX: 32, shadow: "lg" };
 
 /** Campos do RD dentro do card (preenchimento 13×15, borda de 1,5px, anel de foco). */

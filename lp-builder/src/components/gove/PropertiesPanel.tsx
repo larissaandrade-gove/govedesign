@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Warning, ArrowDown, ArrowUp, Trash, ArrowLineDown, CaretDown, Plus } from "@phosphor-icons/react";
+import { Warning, ArrowDown, ArrowUp, Trash, ArrowLineDown, CaretDown, Plus, Copy } from "@phosphor-icons/react";
 import {
   END_ANCHOR,
   TARGET_END,
@@ -16,6 +16,7 @@ import { BUTTON_VARIANTS } from "@/lib/gove/buttonStyle";
 import { BG_ANIMATIONS, BUTTON_ANIMATIONS } from "@/lib/gove/animations";
 import { ASPECTS } from "@/lib/gove/video";
 import { COUNTDOWN_MODES } from "@/lib/gove/countdown";
+import { CALENDAR_DURATIONS, CALENDAR_TIMEZONES, DEFAULT_TZ, calendarIssues, defaultEvent, googleCalendarUrl } from "@/lib/gove/calendar";
 import { gradientCss, normalizeBox } from "@/lib/gove/background";
 import { CURSOR_PRESETS, normalizeCursor } from "@/lib/gove/cursor";
 import {
@@ -28,6 +29,12 @@ import {
   TYPE_SCALE,
   type Align,
   type AnyNode,
+  type CalendarEvent,
+  type CarouselBlock,
+  type Column,
+  type ColumnStyle,
+  type ContainerBlock,
+  type HoverBar,
   type NavLink,
   type RdFieldStyle,
   type RdFormBlock,
@@ -77,7 +84,10 @@ import {
   BUTTON_SIZES,
   DEFAULT_LINE_HEIGHT,
   DEFAULT_TRANSITION,
+  HOVER_BARS,
   HOVER_EFFECTS,
+  hasBorder,
+  hoverBarOf,
   LETTER_SPACINGS,
   LINE_HEIGHTS,
   TRANSITION_SPEEDS,
@@ -115,6 +125,13 @@ interface Props {
   pageSettings?: React.ReactNode;
   /** Página inteira (destinos dos botões "Ir para seção"). */
   page?: PageContent | undefined;
+  /** Coluna selecionada (o `node` fica null): aparência própria da coluna. */
+  column?: { row: RowBlock; col: Column; index: number } | null | undefined;
+  onColumnChange?: ((patch: ColumnPatch) => void) | undefined;
+  /** Seleciona outro elemento (colunas da linha, blocos da caixa). */
+  onSelect?: ((id: string) => void) | undefined;
+  /** Duplica o elemento selecionado (ausente = não se duplica). */
+  onDuplicate?: (() => void) | undefined;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -1114,10 +1131,39 @@ function BlockAppearanceFields({ leaf, onChange }: { leaf: Leaf; onChange: (patc
   );
 }
 
-/** Efeitos: hover, velocidade da transição e clique. */
+/** Cor opcional da paleta (caixa de seleção + amostras). */
+function OptionalSwatch({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  fallback: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked ? fallback : undefined)} />
+        {label}
+      </label>
+      {value ? <SwatchField label={label} value={value} onChange={onChange} /> : null}
+    </div>
+  );
+}
+
+/** Efeitos: hover (movimento, barra de realce, troca de cor), velocidade da transição e clique. */
 function BlockEffectsFields({ leaf, onChange }: { leaf: Leaf; onChange: (patch: Record<string, unknown>) => void }) {
+  const bb = useBBMode();
   const [bs, set] = useBlockStyle(leaf, onChange);
   const hover = bs.hover ?? "none";
+  const ownBar = hover === "topBar" || hover === "leftBar";
+  const bar = hoverBarOf(bs);
+  const colors = !!(bs.hoverBg || bs.hoverBorder || bs.hoverText || bs.hoverIcon);
+  const light = bb ? BB_PALETTE.branco : "#F4F4F4";
+  const dark = bb ? BB_PALETTE.azulEscuro : "#3D0099";
   return (
     <>
       <Field label="Ao passar o mouse">
@@ -1129,14 +1175,52 @@ function BlockEffectsFields({ leaf, onChange }: { leaf: Leaf; onChange: (patch: 
           ))}
         </select>
       </Field>
-      {hover === "topBar" || hover === "borderHighlight" ? (
+      {!ownBar ? (
+        <Field label="Barra de realce junto">
+          <select
+            className={SELECT}
+            value={bs.hoverBar ?? ""}
+            onChange={(e) => set({ hoverBar: (e.target.value || undefined) as HoverBar | undefined })}
+          >
+            <option value="">Nenhuma</option>
+            {HOVER_BARS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">Some ao efeito escolhido (ex.: levantar 2px + realce lateral).</p>
+        </Field>
+      ) : null}
+      {bar || hover === "borderHighlight" ? (
         <SwatchField
-          label={hover === "topBar" ? "Cor da barra" : "Cor do destaque"}
+          label={bar === "left" ? "Cor do realce lateral" : bar === "top" ? "Cor da barra" : "Cor do destaque"}
           value={hoverColor(leaf)}
           onChange={(v) => set({ hoverColor: v })}
         />
       ) : null}
-      {hover !== "none" || bs.press ? (
+      <div className="space-y-1 rounded-lg border border-border p-3">
+        <p className="text-xs font-bold">Trocar a cor ao passar o mouse</p>
+        <OptionalSwatch label="Fundo" value={bs.hoverBg} fallback={leaf.type === "card" ? light : dark} onChange={(v) => set({ hoverBg: v })} />
+        {hasBorder(leaf) ? (
+          <OptionalSwatch label="Borda" value={bs.hoverBorder} fallback={dark} onChange={(v) => set({ hoverBorder: v })} />
+        ) : null}
+        <OptionalSwatch
+          label={leaf.type === "card" ? "Título" : "Texto"}
+          value={bs.hoverText}
+          fallback={dark}
+          onChange={(v) => set({ hoverText: v })}
+        />
+        {leaf.type === "card" ? (
+          <OptionalSwatch label="Ícone" value={bs.hoverIcon} fallback={dark} onChange={(v) => set({ hoverIcon: v })} />
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          {leaf.type === "card" || leaf.type === "text" || leaf.type === "button"
+            ? "O contraste do texto também é conferido com o mouse em cima."
+            : "Nos blocos com cores próprias, a troca vale para o fundo e a borda."}
+        </p>
+      </div>
+      {hover !== "none" || bar || colors || bs.press ? (
         <ChoiceField
           label="Velocidade da transição"
           value={bs.transition ?? DEFAULT_TRANSITION}
@@ -1152,6 +1236,231 @@ function BlockEffectsFields({ leaf, onChange }: { leaf: Leaf; onChange: (patch: 
         Quem pede menos movimento no sistema vê só a troca de sombra e de cor, sem deslocamento.
       </p>
     </>
+  );
+}
+
+/* ---------------------------------------------------------------- coluna */
+
+/** Patch da coluna (`style: undefined` remove a aparência própria). */
+type ColumnPatch = { style?: ColumnStyle | undefined };
+
+const COLUMN_DEFAULT: ColumnStyle = { bgColor: "#F4F4F4", radius: 16, paddingY: 24, paddingX: 24 };
+
+/** Aparência própria de uma coluna: fundo, borda, raio, preenchimento, sombra e alinhamento vertical. */
+function ColumnFields({ col, onChange }: { col: Column; onChange: (patch: ColumnPatch) => void }) {
+  const bb = useBBMode();
+  const cs = col.style ?? {};
+  const set = (patch: Patch<ColumnStyle>) => {
+    const next = withPatch(cs, patch);
+    onChange({ style: Object.keys(next).length ? next : undefined });
+  };
+  const gradient = cs.fill === "gradient";
+  const hasBg = !!cs.bgColor || gradient;
+  return (
+    <>
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={hasBg}
+          onChange={(e) =>
+            set(
+              e.target.checked
+                ? { ...COLUMN_DEFAULT, bgColor: bb ? BB_PALETTE.branco : COLUMN_DEFAULT.bgColor, ...withPatch(cs, {}) }
+                : { bgColor: undefined, fill: undefined, fillOpacity: undefined, gradientFrom: undefined, gradientTo: undefined, gradientAngle: undefined },
+            )
+          }
+        />
+        Fundo próprio
+      </label>
+      {hasBg ? (
+        <>
+          {!bb ? (
+            <ChoiceField
+              label="Preenchimento"
+              value={gradient ? "gradient" : "solid"}
+              columns={2}
+              options={[
+                ["solid", "Cor"],
+                ["gradient", "Degradê"],
+              ]}
+              onChange={(v) =>
+                set(
+                  v === "gradient"
+                    ? { fill: "gradient", gradientFrom: cs.gradientFrom ?? "#3D0099", gradientTo: cs.gradientTo ?? "#A278DA", gradientAngle: cs.gradientAngle ?? 135 }
+                    : { fill: undefined, gradientFrom: undefined, gradientTo: undefined, gradientAngle: undefined, bgColor: cs.bgColor ?? "#F4F4F4" },
+                )
+              }
+            />
+          ) : null}
+          {gradient ? (
+            <>
+              <SwatchField label="Degradê — cor inicial" value={cs.gradientFrom ?? "#3D0099"} onChange={(v) => set({ gradientFrom: v })} />
+              <SwatchField label="Degradê — cor final" value={cs.gradientTo ?? "#A278DA"} onChange={(v) => set({ gradientTo: v })} />
+              <StepSelect label="Ângulo" value={cs.gradientAngle ?? 135} steps={[90, 135, 180, 225]} suffix="°" onChange={(v) => set({ gradientAngle: v })} />
+            </>
+          ) : (
+            <SwatchField label="Cor do fundo" value={cs.bgColor ?? "#F4F4F4"} onChange={(v) => set({ bgColor: v })} />
+          )}
+          <RangeField
+            label="Opacidade do fundo"
+            value={cs.fillOpacity ?? 100}
+            min={0}
+            max={100}
+            step={5}
+            suffix="%"
+            onChange={(v) => set({ fillOpacity: v >= 100 ? undefined : v })}
+          />
+        </>
+      ) : null}
+      <div className="grid grid-cols-2 gap-3">
+        <StepSelect label="Preenchimento vertical" value={cs.paddingY ?? 0} steps={SPACING_STEPS} onChange={(v) => set({ paddingY: v || undefined })} />
+        <StepSelect label="Preenchimento lateral" value={cs.paddingX ?? 0} steps={SPACING_STEPS} onChange={(v) => set({ paddingX: v || undefined })} />
+      </div>
+      <p className="text-xs text-muted-foreground">No celular, o preenchimento fica com até 24px (vertical) e 20px (lateral).</p>
+      <RadiusField value={cs.radius ?? 0} onChange={(v) => set({ radius: v || undefined })} />
+      <StepSelect
+        label="Espessura da borda"
+        value={cs.borderWidth ?? 0}
+        steps={[0, 1, 2, 3, 4]}
+        onChange={(v) => set({ borderWidth: v || undefined, borderColor: v ? (cs.borderColor ?? (bb ? BB_PALETTE.azulEscuro : "#F4F4F4")) : undefined })}
+      />
+      {cs.borderWidth ? <SwatchField label="Cor da borda" value={cs.borderColor ?? "#F4F4F4"} onChange={(v) => set({ borderColor: v })} /> : null}
+      <Field label="Sombra">
+        <select className={SELECT} value={cs.shadow ?? "none"} onChange={(e) => set({ shadow: e.target.value === "none" ? undefined : (e.target.value as Shadow) })}>
+          <option value="none">Nenhuma</option>
+          <option value="sm">Leve</option>
+          <option value="md">Média</option>
+          <option value="lg">Grande</option>
+        </select>
+      </Field>
+      <ChoiceField
+        label="Alinhamento vertical do conteúdo"
+        value={cs.valign ?? "start"}
+        options={[
+          ["start", "Topo"],
+          ["center", "Centro"],
+          ["end", "Base"],
+        ]}
+        onChange={(v) => set({ valign: v === "start" ? undefined : v })}
+      />
+      <p className="text-xs text-muted-foreground">Centro e base esticam a coluna até a altura da linha.</p>
+    </>
+  );
+}
+
+/** Painel da coluna selecionada. */
+function ColumnPanel({
+  column,
+  onChange,
+  onSelect,
+}: {
+  column: { row: RowBlock; col: Column; index: number };
+  onChange: (patch: ColumnPatch) => void;
+  onSelect?: ((id: string) => void) | undefined;
+}) {
+  const { row, col, index } = column;
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[20px] font-bold">
+          Coluna {index + 1} de {row.columns.length}
+        </h2>
+        {onSelect ? (
+          <Button variant="outline" size="touch" onClick={() => onSelect(row.id)}>
+            Linha
+          </Button>
+        ) : null}
+      </div>
+      {row.columns.length < 2 ? (
+        <p className="text-sm text-muted-foreground">
+          Fundo por coluna vale para linhas com 2 ou mais colunas. Use o fundo da linha ou da seção.
+        </p>
+      ) : (
+        <PanelGroup title="Aparência da coluna" defaultOpen>
+          <ColumnFields col={col} onChange={onChange} />
+        </PanelGroup>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- adicionar à agenda */
+
+/** Dados do evento do Google Agenda (com validação). */
+function CalendarFields({ node, onChange }: { node: ButtonBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const ev = node.calendar ?? defaultEvent();
+  const set = (patch: Patch<CalendarEvent>) => onChange({ calendar: withPatch(ev, patch) });
+  const byEnd = ev.duration === undefined;
+  const problems = calendarIssues(ev);
+  const url = googleCalendarUrl(ev);
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <Field label="Título do evento">
+        <Input value={ev.title} onChange={(e) => set({ title: e.target.value })} />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Data">
+          <Input type="date" value={ev.date} onChange={(e) => set({ date: e.target.value })} />
+        </Field>
+        <Field label="Início">
+          <Input type="time" value={ev.start} onChange={(e) => set({ start: e.target.value })} />
+        </Field>
+      </div>
+      <ChoiceField
+        label="Fim do evento"
+        value={byEnd ? "end" : "duration"}
+        columns={2}
+        options={[
+          ["duration", "Duração"],
+          ["end", "Horário de término"],
+        ]}
+        onChange={(v) => set(v === "end" ? { duration: undefined, end: ev.end ?? "20:00" } : { duration: 60, end: undefined })}
+      />
+      {byEnd ? (
+        <Field label="Término">
+          <Input type="time" value={ev.end ?? ""} onChange={(e) => set({ end: e.target.value })} />
+        </Field>
+      ) : (
+        <Field label="Duração">
+          <select className={SELECT} value={String(ev.duration)} onChange={(e) => set({ duration: Number(e.target.value) })}>
+            {[...new Set([...CALENDAR_DURATIONS, ev.duration ?? 60])].sort((a, b) => a - b).map((m) => (
+              <option key={m} value={m}>
+                {m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, "0") : ""}`}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
+      <Field label="Fuso horário">
+        <select className={SELECT} value={ev.tz ?? DEFAULT_TZ} onChange={(e) => set({ tz: e.target.value })}>
+          {CALENDAR_TIMEZONES.map((tz) => (
+            <option key={tz.value} value={tz.value}>
+              {tz.label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Local ou link da transmissão">
+        <Input value={ev.location} onChange={(e) => set({ location: e.target.value })} placeholder="Ex.: Auditório da Prefeitura ou https://…" />
+      </Field>
+      <Field label="Descrição">
+        <Textarea rows={3} value={ev.details} onChange={(e) => set({ details: e.target.value })} />
+      </Field>
+      {problems.length ? (
+        <div role="alert" className="space-y-1">
+          {problems.map((p) => (
+            <p key={p} className="flex items-start gap-2 text-xs font-semibold text-destructive">
+              <Warning className="mt-0.5 size-4 shrink-0" aria-hidden /> {p[0]!.toUpperCase() + p.slice(1)}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <a href={url} target="_blank" rel="noopener" className="block break-all text-xs text-muted-foreground underline">
+          Testar o link no Google Agenda
+        </a>
+      )}
+      <p className="text-xs text-muted-foreground">O link abre o Google Agenda numa nova aba, com o evento preenchido.</p>
+    </div>
   );
 }
 
@@ -1400,7 +1709,7 @@ function RecordsField<T extends object>({
   make: () => T;
   onChange: (items: T[]) => void;
   itemLabel: string;
-  extra?: (item: T, set: (patch: Partial<T>) => void) => React.ReactNode;
+  extra?: ((item: T, set: (patch: Partial<T>) => void) => React.ReactNode) | undefined;
 }) {
   const set = (i: number, patch: Partial<T>) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
   const move = (i: number, dir: -1 | 1) => {
@@ -1704,6 +2013,19 @@ function NewBlockFields({
       );
       style = (
         <>
+          <ChoiceField
+            label="Direção"
+            value={node.layout ?? "vertical"}
+            columns={2}
+            options={[
+              ["vertical", "Vertical"],
+              ["horizontal", "Horizontal"],
+            ]}
+            onChange={(v) => onChange({ layout: v === "vertical" ? undefined : v })}
+          />
+          {node.layout === "horizontal" ? (
+            <p className="text-xs text-muted-foreground">Passos lado a lado no computador; no tablet e no celular, empilhados na vertical.</p>
+          ) : null}
           <StepSelect label="Largura da coluna de horário" value={node.timeWidth} steps={[64, 76, 86, 100, 120, 140]} onChange={(timeWidth) => onChange({ timeWidth })} />
           <p className="text-xs text-muted-foreground">No celular, a coluna fica com até 64px e o texto mais perto da linha.</p>
           <SwatchField label="Cor dos horários e títulos" value={node.color} onChange={(v) => onChange({ color: v })} />
@@ -1886,6 +2208,10 @@ function NewBlockFields({
         </>
       );
       break;
+    case "carousel":
+      content = <CarouselContent node={node} onChange={onChange} />;
+      style = <CarouselStyle node={node} onChange={onChange} />;
+      break;
     case "footer":
       content = (
         <>
@@ -1917,6 +2243,156 @@ function NewBlockFields({
       </PanelGroup>
       <PanelGroup title="Estilo do bloco">{style}</PanelGroup>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------- carrossel */
+
+const CAROUSEL_SPEEDS: readonly (readonly [number, string])[] = [
+  [9, "Lenta"],
+  [6, "Média"],
+  [3, "Rápida"],
+];
+
+function CarouselContent({ node, onChange }: { node: CarouselBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const image = node.kind === "image";
+  return (
+    <>
+      <ChoiceField
+        label="Itens"
+        value={node.kind}
+        columns={2}
+        options={[
+          ["text", "Cards de texto"],
+          ["image", "Imagens"],
+        ]}
+        onChange={(kind) => onChange({ kind })}
+      />
+      <RecordsField
+        label={image ? "Imagens" : "Cards"}
+        itemLabel={image ? "Imagem" : "Card"}
+        items={node.items}
+        fields={image ? [{ key: "src", label: "URL da imagem" }, { key: "alt", label: "Texto alternativo (obrigatório)" }] : [{ key: "title", label: "Título" }, { key: "text", label: "Texto", multiline: true }]}
+        make={() => ({ title: "Título", text: "Texto curto.", src: "", alt: "" })}
+        onChange={(items) => onChange({ items })}
+        extra={
+          image
+            ? (item, set) => (
+                <>
+                  <ImageUpload onLoad={(src) => set({ src })} />
+                  {item.src && !item.alt.trim() ? (
+                    <p role="alert" className="flex items-center gap-2 text-xs font-semibold text-destructive">
+                      <Warning className="size-4" aria-hidden /> Informe o alt text antes de exportar.
+                    </p>
+                  ) : null}
+                </>
+              )
+            : undefined
+        }
+      />
+    </>
+  );
+}
+
+function CarouselStyle({ node, onChange }: { node: CarouselBlock; onChange: (patch: Record<string, unknown>) => void }) {
+  const marquee = node.mode === "marquee";
+  return (
+    <>
+      <ChoiceField
+        label="Movimento"
+        value={node.mode}
+        columns={2}
+        options={[
+          ["marquee", "Rolar sozinho"],
+          ["swipe", "Arrastar (manual)"],
+        ]}
+        onChange={(mode) => onChange({ mode })}
+      />
+      {marquee ? (
+        <>
+          <ChoiceField label="Velocidade" value={node.speed} options={CAROUSEL_SPEEDS} onChange={(speed) => onChange({ speed })} />
+          <ChoiceField
+            label="Direção"
+            value={node.direction}
+            columns={2}
+            options={[
+              ["left", "Para a esquerda"],
+              ["right", "Para a direita"],
+            ]}
+            onChange={(direction) => onChange({ direction })}
+          />
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input type="checkbox" checked={node.pauseOnHover} onChange={(e) => onChange({ pauseOnHover: e.target.checked })} />
+            Pausar ao passar o mouse
+          </label>
+          <p className="text-xs text-muted-foreground">Quem pede menos movimento no sistema vê os itens parados, com rolagem lateral.</p>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">Os itens encaixam ao rolar para o lado (toque, trackpad ou barra de rolagem).</p>
+      )}
+      <ChoiceField
+        label="Proporção dos itens"
+        value={node.aspect}
+        columns={2}
+        options={[
+          ["16 / 9", "Horizontal 16:9"],
+          ["1 / 1", "Quadrado 1:1"],
+        ]}
+        onChange={(aspect) => onChange({ aspect })}
+      />
+      <StepSelect label="Largura de cada item" value={node.itemWidth} steps={[200, 240, 280, 320, 360, 420, 480]} onChange={(itemWidth) => onChange({ itemWidth })} />
+      <p className="text-xs text-muted-foreground">No celular, até 280px.</p>
+      <StepSelect label="Espaço entre itens" value={node.gap} steps={[8, 12, 16, 24, 32, 40]} onChange={(gap) => onChange({ gap })} />
+      <RadiusField value={node.radius} onChange={(radius) => onChange({ radius })} />
+      <label className="flex min-h-11 items-center gap-2 text-sm">
+        <input type="checkbox" checked={node.fade} onChange={(e) => onChange({ fade: e.target.checked })} />
+        Esmaecer as bordas
+      </label>
+      {node.kind === "text" ? (
+        <>
+          <SwatchField label="Fundo dos cards" value={node.bgColor} onChange={(v) => onChange({ bgColor: v })} />
+          <SwatchField label="Cor dos títulos" value={node.color} onChange={(v) => onChange({ color: v })} />
+          <SwatchField label="Cor dos textos" value={node.textColor} onChange={(v) => onChange({ textColor: v })} />
+          <SizeField value={node.size} onChange={(size) => onChange({ size })} />
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ caixa */
+
+/** Caixa: alinhamento e a lista dos blocos de dentro (clique para editar). */
+function ContainerFields({
+  node,
+  onChange,
+  onSelect,
+}: {
+  node: ContainerBlock;
+  onChange: (patch: Record<string, unknown>) => void;
+  onSelect?: ((id: string) => void) | undefined;
+}) {
+  return (
+    <PanelGroup title="Conteúdo da caixa" defaultOpen>
+      {node.children.length ? (
+        <Field label="Blocos dentro da caixa">
+          <div className="grid gap-2">
+            {node.children.map((child, i) => (
+              <Button key={child.id} variant="outline" size="touch" className="justify-start" onClick={() => onSelect?.(child.id)} disabled={!onSelect}>
+                {i + 1}. {labelFor(child.type)}
+              </Button>
+            ))}
+          </div>
+        </Field>
+      ) : (
+        <p className="text-sm text-muted-foreground">A caixa está vazia.</p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Com a caixa (ou um bloco dela) selecionada, os blocos da biblioteca entram dentro dela. Também dá para arrastar um bloco até o meio da caixa. Cabeçalho, rodapé e outra caixa não entram.
+      </p>
+      <AlignField value={node.align} onChange={(align) => onChange({ align })} />
+      <p className="text-xs text-muted-foreground">Fundo, borda, raio, preenchimento, sombra, vidro e hover ficam em Aparência e Efeitos.</p>
+    </PanelGroup>
   );
 }
 
@@ -2154,10 +2630,11 @@ function ButtonLinkField({
   page: PageContent | undefined;
   onChange: (patch: Record<string, unknown>) => void;
 }) {
-  const mode = node.linkMode === "section" ? "section" : "url";
+  const mode = node.linkMode === "section" ? "section" : node.linkMode === "calendar" ? "calendar" : "url";
   const options: [typeof mode, string][] = [
     ["url", "URL externa"],
     ["section", "Ir para seção da página"],
+    ["calendar", "Adicionar à agenda"],
   ];
   const link = page ? resolveButtonLink(page, node) : null;
   const target = node.target || TARGET_FORM;
@@ -2170,7 +2647,7 @@ function ButtonLinkField({
   };
   return (
     <Field label="Ação do botão">
-      <div role="radiogroup" aria-label="Ação do botão" className="grid grid-cols-2 gap-2">
+      <div role="radiogroup" aria-label="Ação do botão" className="grid grid-cols-3 gap-2">
         {options.map(([id, label]) => (
           <button
             key={id}
@@ -2181,10 +2658,12 @@ function ButtonLinkField({
               onChange(
                 id === "section"
                   ? { linkMode: "section", target: node.target || TARGET_FORM }
-                  : { linkMode: "url" },
+                  : id === "calendar"
+                    ? { linkMode: "calendar", calendar: node.calendar ?? defaultEvent(), icon: node.icon ?? "Calendar" }
+                    : { linkMode: "url" },
               )
             }
-            className="min-h-11 rounded-xl border-2 px-2 text-sm font-bold leading-tight transition-colors"
+            className="min-h-11 rounded-xl border-2 px-2 text-xs font-bold leading-tight transition-colors"
             style={{
               borderColor: mode === id ? "var(--gove-primary)" : "var(--color-border)",
               backgroundColor: mode === id ? "var(--color-secondary)" : undefined,
@@ -2194,7 +2673,9 @@ function ButtonLinkField({
           </button>
         ))}
       </div>
-      {mode === "url" ? (
+      {mode === "calendar" ? (
+        <CalendarFields node={node} onChange={onChange} />
+      ) : mode === "url" ? (
         <Input
           aria-label="Link do botão"
           value={node.href}
@@ -2258,8 +2739,13 @@ export function PropertiesPanel({
   onApplyScheme,
   pageSettings,
   page,
+  column,
+  onColumnChange,
+  onSelect,
+  onDuplicate,
 }: Props) {
   const bb = useBBMode();
+  if (!node && column && onColumnChange) return <ColumnPanel column={column} onChange={onColumnChange} onSelect={onSelect} />;
   if (!node) {
     return (
       <div>
@@ -2301,6 +2787,11 @@ export function PropertiesPanel({
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[20px] font-bold">{labelFor(node.type)}</h2>
         <div className="flex shrink-0">
+          {onDuplicate ? (
+            <Button variant="ghost" size="iconTouch" aria-label="Duplicar" title="Duplicar" onClick={onDuplicate}>
+              <Copy aria-hidden />
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="iconTouch"
@@ -2337,6 +2828,19 @@ export function PropertiesPanel({
       {node.type === "section" || node.type === "row" ? (
         <PanelGroup title="Layout" defaultOpen={node.type === "row"}>
           {node.type === "row" ? <RowLayoutFields row={node} onChange={onChange} onColumns={onColumns} /> : null}
+          {node.type === "row" && node.columns.length > 1 && onSelect ? (
+            <Field label="Aparência de cada coluna">
+              <div className="grid grid-cols-2 gap-2">
+                {node.columns.map((col, i) => (
+                  <Button key={col.id} variant="outline" size="touch" onClick={() => onSelect(col.id)}>
+                    Coluna {i + 1}
+                    {col.style ? " •" : ""}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Fundo, borda, raio, preenchimento e alinhamento vertical por coluna. Também dá para clicar no espaço da coluna no canvas.</p>
+            </Field>
+          ) : null}
           <BoxLayoutFields
             box={node.box}
             section={node.type === "section"}
@@ -2846,6 +3350,8 @@ export function PropertiesPanel({
 
       {leafNode && isNewBlock(leafNode) ? <NewBlockFields node={leafNode} page={page} onChange={onChange} /> : null}
 
+      {node.type === "container" ? <ContainerFields node={node} onChange={onChange} onSelect={onSelect} /> : null}
+
       {node.type === "rdform" ? (
         <PanelGroup title="Card do formulário">
           <RdCardFields node={node} onChange={onChange} />
@@ -2908,7 +3414,9 @@ function labelFor(type: string) {
     infolist: "Lista de informações",
     tags: "Etiquetas",
     stats: "Estatísticas",
-    timeline: "Cronograma",
+    timeline: "Linha do tempo (cronograma)",
+    carousel: "Carrossel",
+    container: "Caixa",
     faq: "Perguntas frequentes (FAQ)",
     date: "Bloco de data",
     person: "Card de pessoa",

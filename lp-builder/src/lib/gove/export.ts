@@ -17,16 +17,18 @@ import {
 import { parseRich } from "./richText";
 import { blockTree, headerShowsBBLogo, vnodeHtml } from "./blocks";
 import { isNewBlock } from "./blockColors";
+import { flatLeaves } from "./leaves";
 import { cursorCss, followerCss, followerScript } from "./cursor";
 import {
   BB_PALETTE,
   BB_PROTECTION,
   allowedText,
+  columnSamples,
   isBB,
+  leafTextContext,
   logoLayout,
   needsProtection,
   pageFonts,
-  rowSamples,
   textContext,
   type BBContext,
   type PageFonts,
@@ -148,7 +150,9 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
       const cls = [btnAnimClass(leaf.animation), visited].filter(Boolean).join(" ");
       const label = esc(leaf.label);
       const inner = !icon ? label : leaf.iconPos === "right" ? `<span>${label}</span>${icon}` : `${icon}<span>${label}</span>`;
-      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><a href="${esc(resolveButtonLink(ctx.page, leaf).href)}"${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${inner}</a></div>`;
+      // Adicionar à agenda: abre o Google Agenda numa nova aba.
+      const blank = leaf.linkMode === "calendar" ? ' target="_blank" rel="noopener"' : "";
+      return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><a href="${esc(resolveButtonLink(ctx.page, leaf).href)}"${blank}${cls ? ` class="${cls}"` : ""} style="${styleString(base)}">${inner}</a></div>`;
     }
     case "image": {
       if (!leaf.src) return "";
@@ -217,6 +221,12 @@ function leafInner(leaf: Leaf, ctx: RenderCtx): string {
       });
       return `<div${classAttr(ctx, leaf.id)} style="${wrapperStyle(leaf, leaf.align, ctx.bb)}"><div class="gove-countdown" data-target="${esc(leaf.target)}" data-mode="${leaf.mode}" data-expired="${esc(leaf.expiredText)}" data-unit-style="${esc(boxStyleStr)}" data-unit-class="${esc(btnAnimClass(leaf.animation))}" data-num-size="${leaf.size}" data-label-color="${esc(leaf.accentColor)}" data-color="${esc(leaf.color)}"${ctx.bb ? ` data-num-font="${esc(fonts.heading)}"` : ""} style="display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;font-family:${ctx.bb ? fonts.body : "Montserrat,Arial,sans-serif"};"></div></div>`;
     }
+    case "container": {
+      // Caixa: os blocos de dentro leem sobre o fundo dela (BB: contexto do contêiner).
+      const inner: RenderCtx = ctx.bb && ctx.container ? { ...ctx, container: leafTextContext(leaf, ctx.container) } : ctx;
+      const style = styleString({ "text-align": leaf.align, margin: blockMargin(leaf), ...blockBoxCss(leaf, ctx.bb) });
+      return `<div${classAttr(ctx, leaf.id, "gove-box")} style="${style}">${leaf.children.map((child) => leafHtml(child, inner)).join("")}</div>`;
+    }
     default:
       return "";
   }
@@ -234,12 +244,12 @@ export function iconSvg(name: string, color: string, size = "28") {
 }
 
 function rowHtml(row: RowBlock, section: SectionBlock, base: RenderCtx): string {
-  const ctx: RenderCtx = { ...base, section, ...(base.bb ? { container: textContext(rowSamples(section, row)) } : {}) };
   const cols = row.columns
-    .map(
-      (col, i) =>
-        `<div class="gove-col" style="${styleString(columnCss(row, i))};">${col.children.map((leaf) => leafHtml(leaf, ctx)).join("")}</div>`,
-    )
+    .map((col, i) => {
+      const ctx: RenderCtx = { ...base, section, ...(base.bb ? { container: textContext(columnSamples(section, row, col)) } : {}) };
+      const own = base.sheet.classOf(col.id);
+      return `<div class="gove-col${own ? ` ${own}` : ""}" style="${styleString(columnCss(row, i, base.bb))};">${col.children.map((leaf) => leafHtml(leaf, ctx)).join("")}</div>`;
+    })
     .join("");
   const style = styleString(rowCss(row, base.bb));
   const credit = row.box.fill === "image" && row.box.bgImage && row.box.bgCredit ? row.box.bgCredit : null;
@@ -302,7 +312,7 @@ function logoHtml(page: PageContent): string {
 
 function hasCountdown(page: PageContent) {
   return page.sections.some((s) =>
-    s.children.some((r) => r.columns.some((c) => c.children.some((l) => l.type === "countdown"))),
+    s.children.some((r) => r.columns.some((c) => flatLeaves(c.children).some((l) => l.type === "countdown"))),
   );
 }
 
@@ -386,7 +396,10 @@ export function collectMissingAlt(page: PageContent): number {
   for (const section of page.sections)
     for (const row of section.children)
       for (const col of row.columns)
-        for (const leaf of col.children)
+        for (const leaf of flatLeaves(col.children)) {
           if (leaf.type === "image" && leaf.src && !leaf.alt.trim()) count += 1;
+          if (leaf.type === "carousel" && leaf.kind === "image")
+            count += leaf.items.filter((item) => item.src && !item.alt.trim()).length;
+        }
   return count;
 }

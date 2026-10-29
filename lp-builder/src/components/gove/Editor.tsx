@@ -35,6 +35,9 @@ import {
   Minus,
   AppWindow,
   Rows,
+  BoundingBox,
+  Slideshow,
+  CalendarPlus,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getPage, getTemplate, publishTemplate, savePage, saveTemplate } from "@/lib/gove/storage";
@@ -73,21 +76,28 @@ import {
   makeDivider,
   makeHeaderSection,
   makeFooterSection,
+  makeCalendarButton,
+  makeCarousel,
+  makeContainer,
 } from "@/lib/gove/factories";
+import { flatLeaves } from "@/lib/gove/leaves";
 import {
   addLeaf,
   addRow,
   addSection,
   backgroundBehind,
   columnBackground,
+  duplicateNode,
+  findColumn,
   findNode,
-  firstColumnId,
+  insertTargetId,
   moveLeaf,
   moveRow,
   moveSibling,
   removeNode,
   setColumnCount,
   siblingInfo,
+  updateColumn,
   updateNode,
 } from "@/lib/gove/tree";
 import type { Identity, Leaf, NavLink, PageContent } from "@/lib/gove/types";
@@ -231,6 +241,11 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
     () => (page && selectedId ? findNode(page, selectedId) : null),
     [page, selectedId],
   );
+  // Coluna selecionada (clique no espaço da coluna): fundo, borda e alinhamento próprios.
+  const selectedColumn = useMemo(
+    () => (page && selectedId && !selectedNode ? findColumn(page, selectedId) : null),
+    [page, selectedId, selectedNode],
+  );
   const background = useMemo(
     () => (page && selectedId ? backgroundBehind(page, selectedId) : "#FFFFFF"),
     [page, selectedId],
@@ -241,10 +256,13 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
       if (!current) return current;
       // Botão novo numa página com formulário: por padrão leva ao formulário de inscrição.
       const linked: Leaf =
-        raw.type === "button" && pageHasForm(current) ? { ...raw, linkMode: "section", target: TARGET_FORM } : raw;
-      const columnId = firstColumnId(current, selectedId);
+        raw.type === "button" && raw.linkMode !== "calendar" && pageHasForm(current)
+          ? { ...raw, linkMode: "section", target: TARGET_FORM }
+          : raw;
+      // Na caixa selecionada (ou na caixa do bloco selecionado), se couber; senão na coluna.
+      const columnId = insertTargetId(current, selectedId, linked);
       if (!columnId) return current;
-      // Blocos novos (GOVE): cores-padrão que leem sobre o fundo da coluna onde entram.
+      // Blocos novos (GOVE): cores-padrão que leem sobre o fundo da coluna (ou da caixa) onde entram.
       const leaf = isBB(current) ? bbDefaults(linked) : adaptColors(linked, columnBackground(current, columnId));
       setSelectedId(leaf.id);
       return finalize(addLeaf(current, columnId, leaf));
@@ -292,7 +310,7 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
             (row) =>
               row.id === selectedId ||
               row.columns.some(
-                (col) => col.id === selectedId || col.children.some((l) => l.id === selectedId),
+                (col) => col.id === selectedId || flatLeaves(col.children).some((l) => l.id === selectedId),
               ),
           ),
         )?.id ?? current.sections[current.sections.length - 1]?.id;
@@ -417,11 +435,14 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
     { label: "Lista de informações", icon: ListDashes, action: () => insertLeaf(makeInfoList()) },
     { label: "Etiquetas", icon: Tag, action: () => insertLeaf(makeTags()) },
     { label: "Estatísticas", icon: ChartBar, action: () => insertLeaf(makeStats()) },
-    { label: "Cronograma", icon: Path, action: () => insertLeaf(makeTimeline()) },
+    { label: "Linha do tempo (cronograma)", icon: Path, action: () => insertLeaf(makeTimeline()) },
     { label: "Perguntas frequentes", icon: Question, action: () => insertLeaf(makeFaq()) },
     { label: "Bloco de data", icon: CalendarBlank, action: () => insertLeaf(makeDate()) },
     { label: "Card de pessoa", icon: UserCircle, action: () => insertLeaf(makePerson()) },
     { label: "Divisória / espaçador", icon: Minus, action: () => insertLeaf(makeDivider()) },
+    { label: "Caixa", icon: BoundingBox, action: () => insertLeaf(makeContainer()) },
+    { label: "Carrossel", icon: Slideshow, action: () => insertLeaf(makeCarousel()) },
+    { label: "Adicionar à agenda", icon: CalendarPlus, action: () => insertLeaf(makeCalendarButton()) },
     { label: "Rodapé", icon: Rows, action: insertFooter },
   ];
 
@@ -602,7 +623,7 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
                 current
                   ? finalize(
                       kind === "row"
-                        ? moveRow(current, dragId, targetId, position)
+                        ? moveRow(current, dragId, targetId, position === "inside" ? "after" : position)
                         : moveLeaf(current, dragId, targetId, position),
                     )
                   : current,
@@ -639,6 +660,25 @@ export function Editor({ kind, id }: { kind: EditorKind; id: string }) {
           <BBMode.Provider value={bb}>
           <PropertiesPanel
             node={selectedNode}
+            column={selectedColumn}
+            onColumnChange={(patch) =>
+              setPage((current) => (current && selectedId ? finalize(updateColumn(current, selectedId, patch)) : current))
+            }
+            onSelect={setSelectedId}
+            onDuplicate={
+              selectedNode
+                ? () =>
+                    setPage((current) => {
+                      if (!current || !selectedId) return current;
+                      const { page: next, id: copy } = duplicateNode(current, selectedId);
+                      if (copy) {
+                        setSelectedId(copy);
+                        toast.success("Cópia criada logo abaixo.");
+                      }
+                      return finalize(next);
+                    })
+                : undefined
+            }
             background={background}
             pageSettings={pageSettings}
             page={page}

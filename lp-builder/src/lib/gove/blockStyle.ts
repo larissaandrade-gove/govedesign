@@ -22,6 +22,7 @@ import type {
   BorderSides,
   ButtonBlock,
   DeviceHide,
+  HoverBar,
   HoverEffect,
   Leaf,
   SectionBlock,
@@ -37,8 +38,14 @@ export const HOVER_EFFECTS: { value: HoverEffect; label: string }[] = [
   { value: "lift2", label: "Levantar 2px" },
   { value: "lift4", label: "Levantar 4px" },
   { value: "liftShadow", label: "Levantar com sombra" },
-  { value: "topBar", label: "Barra superior" },
+  { value: "topBar", label: "Levantar + barra superior" },
+  { value: "leftBar", label: "Levantar + realce lateral esquerdo" },
   { value: "borderHighlight", label: "Destacar a borda" },
+];
+/** Barra de realce somada a outro efeito. */
+export const HOVER_BARS: { value: HoverBar; label: string }[] = [
+  { value: "top", label: "Barra superior" },
+  { value: "left", label: "Realce lateral esquerdo" },
 ];
 export const TRANSITION_SPEEDS: readonly TransitionSpeed[] = [0.18, 0.2, 0.3];
 export const DEFAULT_TRANSITION: TransitionSpeed = 0.2;
@@ -252,7 +259,7 @@ export function sectionRules(sheet: Sheet, section: SectionBlock) {
 export const hoverTarget = (leaf: Leaf, sel: string) => (leaf.type === "button" ? `${sel}>*` : sel);
 
 /** O bloco tem borda própria (o destaque troca a cor dela)? */
-function hasBorder(leaf: Leaf): boolean {
+export function hasBorder(leaf: Leaf): boolean {
   const bs = blockStyleOf(leaf);
   if (leaf.type === "card") return leaf.borderWidth > 0 && bs.borderSides !== "none";
   if (leaf.type === "button") return leaf.variant === "outline" || leaf.variant === "glass" || leaf.variant === "ghost";
@@ -265,6 +272,16 @@ function liftShadow(leaf: Leaf, bb: boolean): string {
     return `0 14px 32px ${rgba(leaf.bgColor, 0.4)}`;
   return shadowCss("lg", bb)!;
 }
+
+/** Barra de realce efetiva: a do efeito (barra superior/lateral) ou a somada. */
+export function hoverBarOf(bs: BlockStyle): HoverBar | null {
+  if (bs.hover === "topBar") return "top";
+  if (bs.hover === "leftBar") return "left";
+  return bs.hoverBar ?? null;
+}
+
+/** O bloco troca alguma cor no hover? */
+export const hasHoverColors = (bs: BlockStyle) => !!(bs.hoverBg || bs.hoverBorder || bs.hoverText || bs.hoverIcon);
 
 /** Cor do destaque (barra/borda): a escolhida, ou a do botão / Amarelo. */
 export function hoverColor(leaf: Leaf): string {
@@ -282,10 +299,12 @@ export function hoverColor(leaf: Leaf): string {
 export function leafRules(sheet: Sheet, leaf: Leaf, bb = false) {
   const bs = blockStyleOf(leaf);
   const hover = bs.hover ?? "none";
+  const bar = hoverBarOf(bs);
+  const colors = hasHoverColors(bs);
   const ghost = leaf.type === "button" && leaf.variant === "ghost";
   const fullMobile = leaf.type === "button" && leaf.fullWidth === "mobile";
   const hide = bs.hide && Object.values(bs.hide).some(Boolean);
-  if (hover === "none" && !bs.press && !ghost && !fullMobile && !hide) return;
+  if (hover === "none" && !bar && !colors && !bs.press && !ghost && !fullMobile && !hide) return;
 
   const sel = sheet.node(leaf.id);
   const target = hoverTarget(leaf, sel);
@@ -300,8 +319,8 @@ export function leafRules(sheet: Sheet, leaf: Leaf, bb = false) {
     });
   }
 
-  const lift: Partial<Record<HoverEffect, number>> = { lift2: -2, lift4: -4, liftShadow: -2, topBar: -4 };
-  if (hover === "liftShadow" || hover === "topBar")
+  const lift: Partial<Record<HoverEffect, number>> = { lift2: -2, lift4: -4, liftShadow: -2, topBar: -4, leftBar: -4 };
+  if (hover === "liftShadow" || hover === "topBar" || hover === "leftBar")
     sheet.add(`${target}:hover`, { "box-shadow": `${liftShadow(leaf, bb)} !important` });
   if (hover === "borderHighlight") {
     const color = hoverColor(leaf);
@@ -310,32 +329,37 @@ export function leafRules(sheet: Sheet, leaf: Leaf, bb = false) {
       hasBorder(leaf) ? { "border-color": `${color} !important` } : { "box-shadow": `0 0 0 2px ${color} !important` },
     );
   }
-  if (hover === "topBar") {
+  if (bar) {
+    // Barra de realce: em cima (cresce da esquerda) ou à esquerda (cresce de cima).
+    const top = bar === "top";
     sheet.add(target, { position: "relative", overflow: "hidden" });
     sheet.add(`${target}::before`, {
       content: '""',
       position: "absolute",
       top: "0",
       left: "0",
-      right: "0",
-      height: "3px",
+      right: top ? "0" : undefined,
+      bottom: top ? undefined : "0",
+      height: top ? "3px" : undefined,
+      width: top ? undefined : "4px",
       background: hoverColor(leaf),
-      transform: "scaleX(0)",
-      "transform-origin": "left",
+      transform: top ? "scaleX(0)" : "scaleY(0)",
+      "transform-origin": top ? "left" : "top",
       "pointer-events": "none",
     });
-    sheet.add(`${target}:hover::before`, { transform: "scaleX(1)" });
+    sheet.add(`${target}:hover::before`, { transform: top ? "scaleX(1)" : "scaleY(1)" });
   }
+  if (colors) hoverColorRules(sheet, leaf, target, bs);
 
-  if (hover !== "none" || bs.press || ghost) {
+  if (hover !== "none" || bar || colors || bs.press || ghost) {
     const t = `${num(speed)}s ease`;
     sheet.add(
       target,
-      { transition: `transform ${t}, box-shadow ${t}, border-color ${t}, background-color ${t}` },
+      { transition: `transform ${t}, box-shadow ${t}, border-color ${t}, background-color ${t}${colors ? `, color ${t}` : ""}` },
       "motion",
     );
   }
-  if (hover === "topBar") sheet.add(`${target}::before`, { transition: `transform ${num(Math.max(speed, 0.3))}s ease` }, "motion");
+  if (bar) sheet.add(`${target}::before`, { transition: `transform ${num(Math.max(speed, 0.3))}s ease` }, "motion");
   const dy = lift[hover];
   if (dy) sheet.add(`${target}:hover`, { transform: `translateY(${dy}px)` }, "motion");
   // Clique depois do hover: na mesma especificidade, vence.
@@ -345,4 +369,30 @@ export function leafRules(sheet: Sheet, leaf: Leaf, bb = false) {
     sheet.add(`${sel}>*`, { display: "flex !important", width: "100%", "justify-content": "center" }, "mobile");
 
   if (hide) hideRules(sheet, sel, bs.hide);
+}
+
+/**
+ * Troca de cor no hover (paleta): fundo, borda, título/texto e ícone. O foco
+ * por teclado (:focus-within) recebe as mesmas cores. !important: as cores
+ * do bloco estão inline.
+ */
+function hoverColorRules(sheet: Sheet, leaf: Leaf, target: string, bs: BlockStyle) {
+  const t = `${num(bs.transition ?? DEFAULT_TRANSITION)}s ease`;
+  const on = [`${target}:hover`, `${target}:focus-within`];
+  for (const s of on)
+    sheet.add(s, {
+      "background-color": bs.hoverBg ? `${bs.hoverBg} !important` : undefined,
+      "border-color": bs.hoverBorder ? `${bs.hoverBorder} !important` : undefined,
+      color: bs.hoverText && leaf.type !== "card" ? `${bs.hoverText} !important` : undefined,
+    });
+  if (leaf.type === "card") {
+    if (bs.hoverText) {
+      for (const s of on) sheet.add(`${s} h3`, { color: `${bs.hoverText} !important` });
+      sheet.add(`${target} h3`, { transition: `color ${t}` }, "motion");
+    }
+    if (bs.hoverIcon) {
+      for (const s of on) sheet.add(`${s} svg`, { fill: `${bs.hoverIcon} !important`, color: `${bs.hoverIcon} !important` });
+      sheet.add(`${target} svg`, { transition: `fill ${t}, color ${t}` }, "motion");
+    }
+  }
 }

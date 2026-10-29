@@ -45,7 +45,7 @@ export function AppBrand() {
         className="block shrink-0"
         style={{ height, width: "auto" }}
       />
-      <span className="text-lg font-semibold text-muted-foreground">LP Builder</span>
+      <span className="text-lg font-semibold text-muted-foreground">Landing Pages</span>
     </div>
   );
 }

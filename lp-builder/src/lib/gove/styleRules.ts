@@ -20,8 +20,11 @@
 import { backgroundCss, normalizeBox, rgba } from "./background";
 import { leafRules, sectionRules, shadowCss } from "./blockStyle";
 import { headerHeight, headerRules, newBlockRules } from "./blocks";
+import { flatLeaves } from "./leaves";
 import type {
   BoxProps,
+  Column,
+  ColumnStyle,
   ContentWidth,
   Glow,
   GlowPosition,
@@ -279,9 +282,51 @@ export function rowCss(row: RowBlock, bb = false): Decls {
   };
 }
 
-/** CSS inline de uma coluna (`flex:<fr> 1 0`). */
-export function columnCss(row: RowBlock, index: number): Decls {
-  return { flex: `${num(rowRatios(row)[index] ?? 1)} 1 0`, "min-width": "0" };
+/** CSS inline de uma coluna (`flex:<fr> 1 0`) + a aparência própria dela, se houver. */
+export function columnCss(row: RowBlock, index: number, bb = false): Decls {
+  const base: Decls = { flex: `${num(rowRatios(row)[index] ?? 1)} 1 0`, "min-width": "0" };
+  const style = row.columns[index]?.style;
+  return style ? { ...base, ...columnStyleCss(style, bb) } : base;
+}
+
+const solidAt = (hex: string | undefined, op: number) =>
+  hex && /^#[0-9a-f]{3,8}$/i.test(hex) && op < 100 ? rgba(hex, Math.max(0, op) / 100) : hex;
+
+/** Aparência da coluna: fundo (sólido/translúcido/degradê), borda, raio, preenchimento, sombra e alinhamento vertical. */
+export function columnStyleCss(s: ColumnStyle, bb = false): Decls {
+  const op = s.fillOpacity ?? 100;
+  // Degradê não existe na identidade BB: fica a primeira cor.
+  const gradient = s.fill === "gradient" && !bb && s.gradientFrom && s.gradientTo;
+  const valign = s.valign && s.valign !== "start" ? s.valign : null;
+  return {
+    "background-color": gradient ? undefined : solidAt(s.fill === "gradient" ? s.gradientFrom : s.bgColor, op),
+    "background-image": gradient
+      ? `linear-gradient(${s.gradientAngle ?? 135}deg, ${solidAt(s.gradientFrom, op)}, ${solidAt(s.gradientTo, op)})`
+      : undefined,
+    border: s.borderWidth ? `${s.borderWidth}px solid ${s.borderColor ?? "#F4F4F4"}` : undefined,
+    "border-radius": s.radius ? `${s.radius}px` : undefined,
+    padding: s.paddingY || s.paddingX ? `${s.paddingY ?? 0}px ${s.paddingX ?? 0}px` : undefined,
+    "box-shadow": shadowCss(s.shadow, bb),
+    "align-self": valign ? "stretch" : undefined,
+    display: valign ? "grid" : undefined,
+    "align-content": valign === "center" ? "center" : valign === "end" ? "end" : undefined,
+  };
+}
+
+/** No celular, a coluna com preenchimento grande fica com até 24px (vertical) e 20px (lateral). */
+export const COLUMN_MOBILE_PADDING = { y: 24, x: 20 } as const;
+
+function columnRules(sheet: Sheet, col: Column) {
+  const s = col.style;
+  if (!s) return;
+  const y = s.paddingY ?? 0;
+  const x = s.paddingX ?? 0;
+  if (y > COLUMN_MOBILE_PADDING.y || x > COLUMN_MOBILE_PADDING.x)
+    sheet.add(
+      sheet.node(col.id),
+      { padding: `${Math.min(y, COLUMN_MOBILE_PADDING.y)}px ${Math.min(x, COLUMN_MOBILE_PADDING.x)}px !important` },
+      "mobile",
+    );
 }
 
 /* ------------------------------------------------------------------- a folha */
@@ -505,11 +550,13 @@ export function pageSheet(page: PageContent): Sheet {
       if (hasDecor(row.box))
         sheet.shared("decor", ".gove-decor~*", { position: "relative", "z-index": "1" });
       rowRules(sheet, row);
-      for (const col of row.columns)
-        for (const leaf of col.children) {
+      for (const col of row.columns) {
+        columnRules(sheet, col);
+        for (const leaf of flatLeaves(col.children)) {
           leafRules(sheet, leaf, bb);
           newBlockRules(sheet, leaf, bb);
         }
+      }
     }
   }
   return sheet;

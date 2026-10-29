@@ -320,7 +320,7 @@ function CreateTemplateDialog({
 
   const sources: [Source, string, string][] = [
     ["blank", "Em branco", "Uma seção vazia para montar do zero."],
-    ["layout", "Layout base", "Um dos layouts de hero do LP Builder."],
+    ["layout", "Layout base", "Um dos layouts de hero do Landing Pages."],
     ["page", "Landing page existente", "Copia uma landing page já criada."],
   ];
   const selectedPage = pages.find((p) => p.id === pageId) ?? pages[0];

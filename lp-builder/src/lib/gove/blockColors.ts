@@ -39,6 +39,7 @@ export const NEW_BLOCK_TYPES = [
   "divider",
   "navbar",
   "footer",
+  "carousel",
 ] as const;
 export type NewBlockType = (typeof NEW_BLOCK_TYPES)[number];
 export type NewBlock = Extract<Leaf, { type: NewBlockType }>;
@@ -124,6 +125,14 @@ export function colorParts(leaf: Leaf): ColorPart[] {
       return leaf.variant === "space" ? [] : [{ key: "color", role: "deco", part: "" }];
     case "navbar":
       return navbarParts(leaf);
+    case "carousel":
+      return leaf.kind === "text"
+        ? [
+            { key: "bgColor", role: "surface", part: " (fundo dos itens)" },
+            { key: "color", role: "text", part: " (títulos)", on: "bgColor", bold: true },
+            { key: "textColor", role: "text", part: " (textos)", on: "bgColor" },
+          ]
+        : [];
     case "footer":
       return [
         { key: "color", role: "text", part: "" },
@@ -151,6 +160,7 @@ export const colorOf = (leaf: Leaf, key: string): string =>
 /** Tamanho do texto do bloco (px) para a auditoria; null = sem texto próprio. */
 export function textSize(leaf: Leaf): number | null {
   if (leaf.type === "divider") return null;
+  if (leaf.type === "carousel" && leaf.kind === "image") return null;
   if (leaf.type === "date") return 16;
   return "size" in leaf ? leaf.size : null;
 }
@@ -181,4 +191,37 @@ export function adaptColors<T extends Leaf>(leaf: T, background: string): T {
     if (part.key === "markerBg" && /^#[0-9a-f]{6}$/i.test(bg)) next[part.key] = bg;
   }
   return next as unknown as T;
+}
+
+/**
+ * Cores do estado de hover (troca de cor): pares texto/fundo que precisam
+ * de 4,5:1 com o mouse em cima. `bg`: fundo do bloco sem hover.
+ */
+export function hoverPairs(leaf: Leaf, bg: string): { part: string; color: string; on: string; size: number; bold: boolean }[] {
+  const bs = leaf.blockStyle;
+  if (!bs || !(bs.hoverBg || bs.hoverText)) return [];
+  const on = bs.hoverBg ?? bg;
+  const out: { part: string; color: string; on: string; size: number; bold: boolean }[] = [];
+  switch (leaf.type) {
+    case "card":
+      out.push({ part: " (título no hover)", color: bs.hoverText ?? leaf.color, on, size: leaf.size + 4, bold: true });
+      if (bs.hoverBg) out.push({ part: " (texto no hover)", color: leaf.color, on, size: leaf.size, bold: false });
+      break;
+    case "text":
+      out.push({ part: " (hover)", color: bs.hoverText ?? leaf.color, on, size: leaf.size, bold: leaf.weight === "bold" });
+      break;
+    case "button": {
+      // Botão preenchido: o fundo do hover substitui o do botão.
+      const filled = leaf.variant === "filled" || leaf.variant === "elevated";
+      out.push({ part: " (hover)", color: bs.hoverText ?? leaf.color, on: bs.hoverBg ?? (filled ? leaf.bgColor : bg), size: leaf.size, bold: leaf.weight === "bold" });
+      break;
+    }
+    default:
+      // Blocos novos: as cores de texto sobre o fundo do hover (as que não têm fundo próprio).
+      if (bs.hoverBg && isNewBlock(leaf))
+        for (const p of colorParts(leaf))
+          if (p.role === "text" && !p.on)
+            out.push({ part: `${p.part} (hover)`, color: colorOf(leaf, p.key), on, size: textSize(leaf) ?? 16, bold: !!p.bold });
+  }
+  return out;
 }
