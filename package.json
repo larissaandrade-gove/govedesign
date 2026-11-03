@@ -8,6 +8,7 @@
     "dev": "node --env-file-if-exists=.env --watch backend/server.js",
     "db:init": "node db/init.js",
     "test": "node --test test/*.test.js",
+    "skill": "node design-system/scripts/build-skill.mjs",
     "revisor:artifact:install": "npm --prefix frontend/revisor-artifact install",
     "revisor:artifact": "npm --prefix frontend/revisor-artifact run build",
     "criativos:install": "npm --prefix criativos install",
