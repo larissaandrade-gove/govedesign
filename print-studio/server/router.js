@@ -104,7 +104,7 @@ export function createPrintStudioRouter({ db = openPrintDb(), capture = captureS
 
   router.get('/', (_req, res) => {
     if (!existsSync(BUNDLE)) {
-      return res.status(503).type('text').send('Interface do Print Studio não compilada. Rode: npm run print:build');
+      return res.status(503).type('text').send('Interface do Kit de Boas-Vindas não compilada. Rode: npm run print:build');
     }
     res.sendFile(BUNDLE);
   });

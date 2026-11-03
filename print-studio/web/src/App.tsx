@@ -80,7 +80,7 @@ export default function App() {
             onClick={() => setTab('municipios')}
             className="flex min-h-11 shrink-0 items-center rounded-md px-1 font-display text-base font-bold text-foreground sm:text-lg"
           >
-            Print Studio
+            Kit de Boas-Vindas
           </button>
         )}
         {/* Controle segmentado: ícone + rótulo a partir de 900px; só ícone abaixo (rótulo fica acessível). */}

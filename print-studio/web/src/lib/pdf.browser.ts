@@ -55,7 +55,7 @@ export async function renderPiece(layoutId: string, input: any, files: PieceFile
     pdfVersion: '1.4',
     // No navegador não há Helvetica (padrão do pdfkit): começa já na Montserrat.
     font: fontBytes('regular'),
-    info: { Title: `${L.layout.name} — ${input.municipio?.nome_municipio ?? ''}`, Creator: 'Gove Print Studio' },
+    info: { Title: `${L.layout.name} — ${input.municipio?.nome_municipio ?? ''}`, Creator: 'Gove Kit de Boas-Vindas' },
   });
   for (const w of WEIGHTS) doc.registerFont(w, fontBytes(w));
   const chunks: Uint8Array[] = [];
@@ -128,7 +128,7 @@ function fileChecks(bytes: Uint8Array, L: any, images: { total: number; masks: n
   if (rgbObjects > images.total) {
     add('error', 'cmyk', 'Há elementos vetoriais ou textos em RGB no arquivo.');
   } else if (images.total > 0) {
-    add('warn', 'cmyk', `Vetores e textos em CMYK${marca}; ${images.total} imagem(ns) (logos enviados/mockup) saem em RGB nesta versão do navegador — converta-as para CMYK (ou gere pelo Print Studio do servidor) antes de enviar à gráfica.`);
+    add('warn', 'cmyk', `Vetores e textos em CMYK${marca}; ${images.total} imagem(ns) (logos enviados/mockup) saem em RGB nesta versão do navegador — converta-as para CMYK (ou gere pelo Kit de Boas-Vindas do servidor) antes de enviar à gráfica.`);
   } else {
     add('ok', 'cmyk', `Cores em CMYK ok — preenchimentos e textos em CMYK${marca}.`);
   }

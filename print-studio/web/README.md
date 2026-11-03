@@ -1,4 +1,4 @@
-# Interface do Gove Print Studio
+# Interface do Kit de Boas-Vindas (Gove)
 
 React + TypeScript + Tailwind + shadcn/ui (scaffold do web-artifacts-builder),
 empacotada pelo Parcel num único `bundle.html`, servido pelo Express em

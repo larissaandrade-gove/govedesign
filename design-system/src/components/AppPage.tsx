@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { ArrowCounterClockwise, ArrowLeft, ArrowSquareOut, ArrowsOut, CaretLeft, CaretRight, Check, Clock, Copy, Info, SpinnerGap, TerminalWindow } from '@phosphor-icons/react';
 import { APPS } from '../data/apps';
+import { teamApps } from '../data/teams';
+import { useTeam } from '../lib/team';
 import { appHref } from '../lib/router';
 import { fadeUp, stagger } from '../lib/motion';
 import { EmbeddedApp, hasEmbedded } from './EmbeddedApp';
@@ -25,13 +27,16 @@ function IconButton({ label, onClick, href, children, pressed }: { label: string
 }
 
 export function AppPage({ appId }: { appId: string }) {
-  const index = APPS.findIndex((a) => a.id === appId);
-  const app = APPS[index];
-  // Anterior/próximo pulam os apps "Em breve"
-  const statuses = useStatuses(APPS);
+  const team = useTeam();
+  const app = APPS.find((a) => a.id === appId)!;
+  // Anterior/próximo andam pelos apps da equipe (ou por todos, se o app não é dela) e pulam os "Em breve"
+  const mine = teamApps(team);
+  const list = mine.some((a) => a.id === appId) ? mine : APPS;
+  const index = list.findIndex((a) => a.id === appId);
+  const statuses = useStatuses(list);
   const step = (dir: 1 | -1) => {
-    for (let i = 1; i <= APPS.length; i++) {
-      const a = APPS[(index + dir * i + APPS.length * 2) % APPS.length];
+    for (let i = 1; i <= list.length; i++) {
+      const a = list[(index + dir * i + list.length * 2) % list.length];
       if (isOpen(statuses[a.id] ?? 'ok')) return a;
     }
     return app;
@@ -103,7 +108,7 @@ export function AppPage({ appId }: { appId: string }) {
           <motion.header variants={fadeUp} className="hidden items-center gap-space-1 lg:flex">
             {/* No celular, voltar e o nome do app ficam na top app bar (Sidebar) */}
             <span className="hidden lg:contents">
-              <IconButton label="Voltar para Aplicações" href="#aplicacoes">
+              <IconButton label={team ? `Voltar para ${team.label}` : 'Voltar ao início'} href="#inicio">
                 <ArrowLeft className="size-6" aria-hidden />
               </IconButton>
               <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-highlight" aria-hidden>
@@ -113,8 +118,8 @@ export function AppPage({ appId }: { appId: string }) {
             <h1 id="app-title" className="mr-auto min-w-0 truncate font-display text-h3">
               {app.name}
             </h1>
-            {/* No celular, a troca de app fica na aba Apps: sobra espaço para o nome */}
-            <span className="hidden sm:contents">
+            {/* Telas estreitas: a troca de app fica no studio da equipe; sobra espaço para o nome */}
+            <span className={list.length > 1 ? 'hidden sm:contents' : 'hidden'}>
               <IconButton label={`Anterior: ${prev.name}`} href={appHref(prev.id)}>
                 <CaretLeft className="size-5" aria-hidden />
               </IconButton>
@@ -122,7 +127,7 @@ export function AppPage({ appId }: { appId: string }) {
                 <CaretRight className="size-5" aria-hidden />
               </IconButton>
             </span>
-            <span className="mx-1 hidden h-6 w-px bg-secondary sm:block" aria-hidden />
+            {list.length > 1 && <span className="mx-1 hidden h-6 w-px bg-secondary sm:block" aria-hidden />}
             <IconButton label="Sobre o app" onClick={() => setInfo((v) => !v)} pressed={info}>
               <Info className="size-5" aria-hidden />
             </IconButton>

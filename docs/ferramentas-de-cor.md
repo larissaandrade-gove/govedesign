@@ -65,7 +65,7 @@ toTailwind({ name: 'Roxo', colors: brandHarmony('#3D0099', 'analoga') });
 
 - Sem contraste **APCA** (fora do escopo desta entrega; a biblioteca de
   referência não tem licença aberta).
-- CMYK aqui é só referência (sem perfil ICC). Para impressos, o Print Studio
+- CMYK aqui é só referência (sem perfil ICC). Para impressos, o Kit de Boas-Vindas
   converte com o perfil da gráfica.
 - O mesh é aproximado (manchas radiais desfocadas), não um mesh de malha real.
 - A simulação de daltonismo é de dicromacia completa; casos parciais variam.

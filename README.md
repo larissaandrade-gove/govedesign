@@ -10,7 +10,7 @@ inicial com um botão para cada uma:
 | **Gove Links** | [`links/`](links/) | Encurtador de links com rastreamento de cliques | TanStack Start + React + Supabase |
 | **Landing Pages** | [`lp-builder/`](lp-builder/) | Editor visual de landing pages com exportação de HTML | TanStack Start + React (Vite) |
 | **Design System** | [`design-system/`](design-system/) | Documentação e UI Kit (tokens, tipografia, componentes) | React + Vite + Tailwind + Framer Motion |
-| **Gove Print Studio** | [`print-studio/`](print-studio/) | PDFs de impressão do Kit de Boas-Vindas (CMYK, sangria, lote por município) | React + Fabric.js · Express + pdfkit + SQLite |
+| **Kit de Boas-Vindas** (antigo Print Studio) | [`print-studio/`](print-studio/) | PDFs de impressão do Kit de Boas-Vindas (CMYK, sangria, lote por município) | React + Fabric.js · Express + pdfkit + SQLite |
 
 Cada app tem o próprio `package.json`, dependências e servidor; um não altera o
 outro. Os scripts da raiz só encurtam os comandos:
@@ -24,14 +24,14 @@ npm run lp:install        && npm run lp:dev          # http://localhost:5175
 # build de produção de cada um: criativos:build, links:build, lp:build
 ```
 
-O Print Studio roda dentro do mesmo servidor do revisor, em `/print-studio/`
+O Kit de Boas-Vindas roda dentro do mesmo servidor do revisor, em `/print-studio/`
 (`npm run print:install && npm run print:build` só é necessário ao alterar a interface).
 
 O Design System também é servido pelo mesmo servidor, em `/design-system/`
 (build de arquivo único em `design-system/dist/`; `npm run ds:install && npm run ds:build`
 após alterar o código, `npm run ds:dev` para desenvolver).
 
-Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/`, "Print Studio" abre `/print-studio/` e "Design System" abre `/design-system/`; os
+Na tela inicial (`/`), "Revisor de identidade visual" abre `/revisor/`, "Kit de Boas-Vindas" abre `/print-studio/` e "Design System" abre `/design-system/`; os
 outros botões passam por `/criativos`, `/links` e `/lp`, que redirecionam para
 o endereço de cada app definido em `CRIATIVOS_URL`, `LINKS_URL` e `LP_URL`
 (padrão: as portas locais acima). Ao publicar, aponte essas variáveis para as
@@ -80,7 +80,7 @@ Dark Mode nativo, neon roxo e amarelo, cidade noturna ao fundo.
 - Seções: hero com parallax, aplicações (cada app tem página própria em
   `#app-<id>`, navegável pela barra lateral e por botões: telas, recursos,
   stack e como rodar; servido pelo projeto, "Abrir aplicação" leva ao app e
-  Revisor/Print Studio abrem ao vivo dentro da página), cores (cards com brilho da própria cor, cópia do
+  Revisor/Kit de Boas-Vindas abrem ao vivo dentro da página), cores (cards com brilho da própria cor, cópia do
   HEX e contraste sobre o fundo, mais a paleta institucional do manual de
   marca), tipografia (Montserrat × Inter, nota do fallback impresso Helvetica),
   espaçamento, raio e sombras e componentes ao vivo (botões, cards, inputs).
@@ -91,7 +91,7 @@ Dark Mode nativo, neon roxo e amarelo, cidade noturna ao fundo.
 - As paisagens noturnas são desenhadas em canvas (`CityBackdrop.tsx`), sem
   imagens externas, com overlay escuro para não atrapalhar a leitura.
 
-## Gove Print Studio (`print-studio/`)
+## Kit de Boas-Vindas (`print-studio/`)
 
 Gera os PDFs prontos para gráfica dos 4 materiais do Kit de Boas-Vindas —
 Flyer A4, Flyer 10x15cm, Adesivo 5x10cm e Display Acrílico A6 — personalizados
@@ -153,8 +153,8 @@ Módulo que audita peças de marketing e apresentações da Gove Digital contra 
 tokens de marca (paleta, gradientes, Montserrat, ícones, logomarca, margens e QR
 code) e gera um relatório JSON + HTML, com preview anotado, empacotado em ZIP.
 
-Stack: Node.js + Express + SQLite (better-sqlite3), no mesmo padrão do Gove
-Print Studio (`/frontend`, `/backend`, `/db`), com `fabric`, `sharp`, `qrcode`,
+Stack: Node.js + Express + SQLite (better-sqlite3), no mesmo padrão do
+Kit de Boas-Vindas (`/frontend`, `/backend`, `/db`), com `fabric`, `sharp`, `qrcode`,
 `@fontsource/montserrat`, `lucide`, `@phosphor-icons/core` e `archiver`.
 
 ```bash
@@ -273,7 +273,7 @@ Cores ou tamanhos fora do padrão são corrigidos e listados no cabeçalho
 
 ## Login do ambiente
 
-Todo o ambiente servido por `npm start` (tela inicial, Design System, Revisor, Print Studio) exige login com e-mail `@gove.digital`.
+Todo o ambiente servido por `npm start` (tela inicial, Design System, Revisor, Kit de Boas-Vindas) exige login com e-mail `@gove.digital`.
 
 - Primeiro acesso: e-mail → código de 6 dígitos enviado ao e-mail → a pessoa cria a senha (mínimo 10 caracteres).
 - Acessos seguintes: e-mail + senha. "Esqueci a senha" envia um novo código.

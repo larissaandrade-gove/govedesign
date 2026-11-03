@@ -1,4 +1,4 @@
-import { type Icon as IconType, Layout, LinkSimple, Printer, Sparkle } from '@phosphor-icons/react';
+import { CalendarCheck, Cards, type Icon as IconType, Layout, LinkSimple, Printer, RocketLaunch, Sparkle } from '@phosphor-icons/react';
 import criativos1 from '../assets/apps/criativos-1.webp';
 import criativos2 from '../assets/apps/criativos-2.webp';
 import links1 from '../assets/apps/links-1.webp';
@@ -34,7 +34,7 @@ export type GoveApp = {
   desktopOnly?: boolean;
   /** Categoria para os filtros da lista de aplicações. */
   tag: AppTag;
-  /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash. */
+  /** App embutido que abre esta página (padrão: o próprio id) e rota inicial no hash (com "#", ex.: "#eventos"). */
   embed?: { file: string; hash?: string };
   /** Depende de publicação web: fica "Em breve" até o endereço público responder (lib/appStatus). */
   publish?: { url: string };
@@ -42,7 +42,19 @@ export type GoveApp = {
 
 declare const __GOVE_LINKS_URL__: string;
 
-/** Apps disponíveis no tamanho de tela atual (o Print Studio fica só no computador). */
+const CRIATIVOS_NOTE = 'Roda aqui no navegador. Busca no Pexels pelo conector Pexels Gove; sem ele, envie imagens do dispositivo.';
+/** Partes do Gerador de criativos com página própria: mesmo app embutido, aberto na tela certa. */
+const CRIATIVOS_BASE: Pick<GoveApp, 'tag' | 'route' | 'stack' | 'folder' | 'run' | 'sameServer' | 'embeddedNote'> = {
+  tag: 'Mídia',
+  route: '/criativos',
+  stack: ['TanStack Start', 'React', 'Canvas'],
+  folder: 'criativos/',
+  run: 'npm run criativos:install && npm run criativos:dev',
+  sameServer: false,
+  embeddedNote: CRIATIVOS_NOTE,
+};
+
+/** Apps disponíveis no tamanho de tela atual (o Kit de Boas-Vindas fica só no computador). */
 export const appsFor = (mobile: boolean) => (mobile ? APPS.filter((a) => !a.desktopOnly) : APPS);
 
 /** Aplicações do repositório govedesign que aplicam este design system. */
@@ -60,10 +72,11 @@ export const APPS: GoveApp[] = [
     folder: 'criativos/',
     run: 'npm run criativos:install && npm run criativos:dev',
     sameServer: false,
-    embeddedNote: 'Roda aqui no navegador. Busca no Pexels pelo conector Pexels Gove; sem ele, envie imagens do dispositivo.',
+    embeddedNote: CRIATIVOS_NOTE,
+    embed: { file: 'criativos', hash: '#midia-paga' },
     shots: [
-      { src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' },
       { src: criativos2, caption: 'Gerador em lote: 8 variações por rodada.' },
+      { src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' },
     ],
   },
   {
@@ -107,10 +120,10 @@ export const APPS: GoveApp[] = [
     id: 'print-studio',
     desktopOnly: true,
     tag: 'Impresso',
-    name: 'Print Studio',
+    name: 'Kit de Boas-Vindas',
     route: '/print-studio/',
     icon: Printer,
-    summary: 'Gera os PDFs de gráfica do Kit de Boas-Vindas por município, em lote, prontos para impressão.',
+    summary: 'Gera os PDFs de gráfica do Kit de Boas-Vindas (flyers, adesivo e display) por município, em lote, prontos para impressão.',
     tagline: 'PDFs de gráfica por município.',
     features: ['4 layouts', 'CMYK e sangria de 5 mm', 'QR code do WhatsApp', 'Exportação em .zip'],
     stack: ['React', 'Fabric.js', 'pdfkit', 'SQLite'],
@@ -122,5 +135,38 @@ export const APPS: GoveApp[] = [
       { src: print1, caption: 'Editor com preview fiel ao PDF, sangria e área de segurança.' },
       { src: print2, caption: 'Verificação antes do download: sangria, fontes, CMYK e QR code.' },
     ],
+  },
+  {
+    ...CRIATIVOS_BASE,
+    id: 'studio-cards',
+    name: 'Studio de cards',
+    icon: Cards,
+    summary: 'Monta cards um a um, ao vivo, com fundos, diagramação e checagem do manual de marca.',
+    tagline: 'Cards ao vivo, com a marca checada.',
+    features: ['Diagramação ao vivo', 'Fundos da marca', 'Checagem do manual', 'GOVE ou Banco do Brasil'],
+    embed: { file: 'criativos', hash: '#studio' },
+    shots: [{ src: criativos1, caption: 'Studio ao vivo: diagramação, fundos e checagem do manual de marca.' }],
+  },
+  {
+    ...CRIATIVOS_BASE,
+    id: 'atualizacoes',
+    name: 'Cards de atualização',
+    icon: RocketLaunch,
+    summary: 'Cards de novidades do software: título curto, até 5 novidades com ícones, versão e data.',
+    tagline: 'Novidades do produto em cards.',
+    features: ['Até 5 novidades', 'Versão e data', 'Formatos 4:3 e 1:1'],
+    embed: { file: 'criativos', hash: '#atualizacoes' },
+    shots: [{ src: criativos1, caption: 'Cards prontos com a identidade GOVE.' }],
+  },
+  {
+    ...CRIATIVOS_BASE,
+    id: 'eventos',
+    name: 'Confirmação de evento',
+    icon: CalendarCheck,
+    summary: 'Card de presença confirmada: foto da pessoa em moldura circular, nome, evento, data e logo.',
+    tagline: 'Presença confirmada em um card.',
+    features: ['Foto em moldura circular', 'Nome e evento', 'Formatos 4:3 e 1:1'],
+    embed: { file: 'criativos', hash: '#eventos' },
+    shots: [{ src: criativos1, caption: 'Cards prontos com a identidade GOVE.' }],
   },
 ];

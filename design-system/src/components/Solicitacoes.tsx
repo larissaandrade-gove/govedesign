@@ -18,6 +18,7 @@ import { downloadText } from '../lib/download';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { SectionHeader } from './SectionHeader';
+import { takePendingRequest } from '../lib/useMobile';
 
 const ICONS: Record<string, typeof Gift> = { redesign: PenNib, video: FilmSlate, impressos: Printer, brindes: Gift };
 const MANUAL_KEY = 'gove:solicitante';
@@ -149,7 +150,7 @@ type View = 'frentes' | 'form' | 'feito' | 'pedidos';
 const iconBtn = 'flex size-11 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-secondary/50 hover:text-text-primary';
 
 /** Solicitações para a área de design: na página, só o título e o botão; o pedido abre em pop-up. */
-export function Solicitacoes() {
+export function Solicitacoes({ level = 2 }: { level?: 1 | 2 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [me, setMe] = useState<Me>(null);
@@ -202,6 +203,10 @@ export function Solicitacoes() {
     window.addEventListener('gove:nova-solicitacao', on);
     return () => window.removeEventListener('gove:nova-solicitacao', on);
   });
+  // O FAB de outra página trouxe até aqui: abre o pop-up ao chegar
+  useEffect(() => {
+    if (takePendingRequest()) open('frentes');
+  }, []);
 
   const pick = (t: TicketType) => {
     let manual = { requesterName: me?.name ?? '', requesterEmail: me?.email ?? '' };
@@ -266,7 +271,9 @@ export function Solicitacoes() {
   return (
     <section id="solicitacoes" className="gutter scroll-mt-[72px] py-space-8">
       <div className="flex flex-col gap-space-2 sm:flex-row sm:items-start sm:justify-between">
-        <SectionHeader id="solicitacoes" title="Solicitações" />
+        <SectionHeader id="solicitacoes" title="Solicitações" level={level}>
+          Peça ao time de design o que os apps não resolvem.
+        </SectionHeader>
         {/* No celular a ação é o FAB "Nova solicitação" (Sidebar) */}
         <Button type="button" variant="action" onClick={() => open('frentes')} className="self-start max-lg:!hidden sm:mb-space-4">
           <Plus className="size-5" aria-hidden />

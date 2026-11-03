@@ -43,7 +43,7 @@ export async function renderPiece(layoutId, ctx) {
     size: [mmToPt(L.page.w), mmToPt(L.page.h)],
     margin: 0,
     pdfVersion: '1.4',
-    info: { Title: `${L.layout.name} — ${ctx.input.municipio?.nome_municipio ?? ''}`, Creator: 'Gove Print Studio' },
+    info: { Title: `${L.layout.name} — ${ctx.input.municipio?.nome_municipio ?? ''}`, Creator: 'Gove Kit de Boas-Vindas' },
   });
   for (const w of Object.keys(FONT_FILES)) doc.registerFont(w, fontPath(w));
   const chunks = [];

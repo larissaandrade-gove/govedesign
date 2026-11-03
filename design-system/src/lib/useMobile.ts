@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { View } from './router';
 
 const QUERY = '(max-width: 1023px)';
 
@@ -14,20 +15,26 @@ export function useMobile() {
   return mobile;
 }
 
-/** Grupo (tela do celular) de cada seção da documentação. */
-export const MOBILE_GROUP: Record<string, 'inicio' | 'aplicacoes' | 'cores' | 'guias'> = {
-  inicio: 'inicio',
-  solicitacoes: 'inicio',
-  aplicacoes: 'aplicacoes',
-  cores: 'cores',
-  logomarca: 'cores',
-  tipografia: 'guias',
-  componentes: 'guias',
-  diretrizes: 'guias',
-};
-export const groupOf = (section: string) => MOBILE_GROUP[section] ?? 'inicio';
+/** Destino da navegação principal (navigation bar / rail) de cada página. */
+export type Group = 'inicio' | 'instrucoes' | 'solicitacoes' | 'equipes';
+export const groupOf = (view: View): Group =>
+  view.kind === 'instrucoes' ? 'instrucoes' : view.kind === 'solicitacoes' ? 'solicitacoes' : view.kind === 'equipes' ? 'equipes' : 'inicio';
 
-/** Abre o pop-up de nova solicitação de qualquer ponto da página. */
-export const openNewRequest = () => window.dispatchEvent(new CustomEvent('gove:nova-solicitacao'));
+let pendingRequest = false;
+/** Abre o pop-up de nova solicitação de qualquer ponto: fora da página de Solicitações, vai até ela e abre. */
+export const openNewRequest = () => {
+  if (document.getElementById('solicitacoes')) {
+    window.dispatchEvent(new CustomEvent('gove:nova-solicitacao'));
+    return;
+  }
+  pendingRequest = true;
+  window.location.hash = 'solicitacoes';
+};
+/** Solicitações, ao montar: havia um pedido de abrir o pop-up? */
+export const takePendingRequest = () => {
+  const p = pendingRequest;
+  pendingRequest = false;
+  return p;
+};
 /** Abre a busca do celular. */
 export const openSearch = () => window.dispatchEvent(new CustomEvent('gove:buscar'));

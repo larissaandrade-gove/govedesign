@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MagnifyingGlass, Plus, X } from '@phosphor-icons/react';
-import { appsFor } from '../data/apps';
+import { ArrowsLeftRight, Books, MagnifyingGlass, Plus, Ticket, X } from '@phosphor-icons/react';
+import { INSTRUCOES, teamApps, type Team } from '../data/teams';
 import { appHref } from '../lib/router';
 import { openNewRequest } from '../lib/useMobile';
-import { SECTIONS } from './Sidebar';
 import { isOpen, useStatuses } from '../lib/appStatus';
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-/** Busca do celular (botão central da barra de abas): apps, seções e nova solicitação. */
-export function MobileSearch() {
+/** Busca do celular (lupa da top app bar): apps da equipe, Instruções, Solicitações e troca de equipe. */
+export function MobileSearch({ team }: { team: Team | null }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState('');
@@ -24,18 +23,22 @@ export function MobileSearch() {
     return () => window.removeEventListener('gove:buscar', open);
   }, []);
 
-  const status = useStatuses(appsFor(true));
+  const apps = useMemo(() => teamApps(team).filter((a) => !a.desktopOnly), [team]);
+  const status = useStatuses(apps);
   const items = useMemo(() => {
     const all = [
-      ...appsFor(true).map((a) => {
+      ...apps.map((a) => {
         const soon = !isOpen(status[a.id] ?? 'ok');
         return { key: a.id, label: a.name, hint: soon ? `Em breve · ${a.tagline}` : a.tagline, href: soon ? undefined : appHref(a.id), icon: a.icon };
       }),
-      ...SECTIONS.filter((s) => s.id !== 'inicio').map((s) => ({ key: s.id, label: s.label, hint: '', href: `#${s.id}`, icon: s.icon })),
+      { key: 'instrucoes', label: 'Instruções', hint: 'Tudo do design system', href: '#instrucoes', icon: Books },
+      ...INSTRUCOES.map((s) => ({ key: s.id, label: s.label, hint: s.summary, href: `#${s.id}`, icon: s.icon })),
+      { key: 'solicitacoes', label: 'Solicitações', hint: 'Pedidos ao time de design', href: '#solicitacoes', icon: Ticket },
+      { key: 'equipes', label: team ? 'Trocar equipe' : 'Escolher equipe', hint: team?.label ?? '', href: '#equipes', icon: ArrowsLeftRight },
     ];
     const t = norm(q.trim());
     return t ? all.filter((i) => norm(`${i.label} ${i.hint}`).includes(t)) : all;
-  }, [q, status]);
+  }, [q, status, apps, team]);
 
   const close = () => dialog.current?.close();
 
@@ -51,7 +54,7 @@ export function MobileSearch() {
           <label className="flex min-h-12 flex-1 items-center gap-space-1 rounded-full bg-secondary/60 px-space-2">
             <MagnifyingGlass className="size-5 shrink-0 text-highlight" aria-hidden />
             <span className="sr-only">Buscar</span>
-            <input ref={input} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Apps, cores, guias…" className="w-full bg-transparent text-body text-text-primary placeholder:text-text-muted focus:outline-none" />
+            <input ref={input} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Apps, cores, prompts…" className="w-full bg-transparent text-body text-text-primary placeholder:text-text-muted focus:outline-none" />
           </label>
           <button type="button" onClick={close} aria-label="Fechar" className="flex size-11 items-center justify-center rounded-md text-text-secondary">
             <X className="size-5" aria-hidden />

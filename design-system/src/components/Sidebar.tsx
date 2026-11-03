@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  AppWindow, ArrowLeft, BookOpenText, House, List, MagnifyingGlass, Palette, Plus, SealCheck, SquaresFour, TextAa, Ticket, type Icon as IconType,
-} from '@phosphor-icons/react';
-import { groupOf, openNewRequest, openSearch } from '../lib/useMobile';
+import { ArrowLeft, ArrowsLeftRight, Books, House, List, MagnifyingGlass, Plus, Ticket, UsersThree, type Icon as IconType } from '@phosphor-icons/react';
+import { groupOf, openNewRequest, openSearch, type Group } from '../lib/useMobile';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
+import { INSTRUCOES, teamApps, type Team } from '../data/teams';
 import { appHref, type View } from '../lib/router';
 import { ThemeToggle } from './ThemeToggle';
 import { GoveLogo } from './GoveLogo';
@@ -14,69 +13,24 @@ import { SoonBadge } from './SoonBadge';
 import { isOpen, useStatuses } from '../lib/appStatus';
 
 /**
- * Navegação no padrão Material Design 3:
- * - computador: navigation drawer (aberta) que recolhe para navigation rail, com o FAB "Nova solicitação";
- * - celular: top app bar (título, voltar e busca), navigation bar com 4 destinos e FAB no Início.
+ * Navegação no padrão Material Design 3, organizada pela equipe escolhida:
+ * - computador: navigation drawer (aberta) com a equipe, os apps dela e Instruções, que recolhe para navigation rail, com o FAB "Nova solicitação";
+ * - celular: top app bar (logo ou título do app, voltar e busca), navigation bar com 4 destinos e FAB no Início e em Solicitações.
  * Item ativo: indicador em pílula (secondary) e ícone no peso fill — o regular é o padrão.
  */
-export const SECTIONS: { id: string; label: string; icon: IconType }[] = [
-  { id: 'inicio', label: 'Início', icon: House },
-  { id: 'aplicacoes', label: 'Aplicações', icon: AppWindow },
-  { id: 'solicitacoes', label: 'Solicitações', icon: Ticket },
-  { id: 'cores', label: 'Cores', icon: Palette },
-  { id: 'logomarca', label: 'Logomarca', icon: SealCheck },
-  { id: 'tipografia', label: 'Tipografia', icon: TextAa },
-  { id: 'componentes', label: 'Componentes', icon: SquaresFour },
-  { id: 'diretrizes', label: 'Diretrizes', icon: BookOpenText },
-];
-const PRIMARY = SECTIONS.slice(0, 3);
-const BRAND = SECTIONS.slice(3);
-
-/** Destinos da navigation rail (computador recolhido) e da navigation bar (celular, sem Solicitações). */
-const DESTINATIONS = [
+/** Destinos da navigation rail (computador recolhido) e da navigation bar (celular). */
+const DESTINATIONS: { id: Group; label: string; icon: IconType; href: string }[] = [
   { id: 'inicio', label: 'Início', icon: House, href: '#inicio' },
-  { id: 'aplicacoes', label: 'Apps', icon: AppWindow, href: '#aplicacoes' },
-  { id: 'solicitacoes', label: 'Pedidos', icon: Ticket, href: '#solicitacoes', railOnly: true },
-  { id: 'cores', label: 'Cores', icon: Palette, href: '#cores' },
-  { id: 'guias', label: 'Guias', icon: BookOpenText, href: '#tipografia' },
+  { id: 'instrucoes', label: 'Instruções', icon: Books, href: '#instrucoes' },
+  { id: 'solicitacoes', label: 'Pedidos', icon: Ticket, href: '#solicitacoes' },
+  { id: 'equipes', label: 'Equipe', icon: UsersThree, href: '#equipes' },
 ];
-
-/** Título da top app bar em cada destino do celular. */
-const TITLES: Record<string, string> = { aplicacoes: 'Aplicações', cores: 'Cores', guias: 'Guias' };
 
 const RAIL_KEY = 'gove-rail';
 
-/** Seção visível no momento (scrollspy com Intersection Observer). */
-function useActiveSection(view: View) {
-  const [active, setActive] = useState('inicio');
-  useEffect(() => {
-    if (view.kind === 'app') return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: '-35% 0px -55% 0px' },
-    );
-    // No fim da página a última seção (curta) não chega à faixa do observer
-    const onScroll = () => {
-      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) setActive(SECTIONS[SECTIONS.length - 1].id);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    SECTIONS.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) io.observe(el);
-    });
-    return () => {
-      io.disconnect();
-      window.removeEventListener('scroll', onScroll);
-    };
-  }, [view.kind]);
-  return view.kind === 'app' ? `app-${view.appId}` : active;
-}
-
-/** Destino da rail para a seção ativa (no computador, Solicitações tem destino próprio). */
-const railGroup = (active: string) => (active.startsWith('app-') ? 'aplicacoes' : active === 'solicitacoes' ? 'solicitacoes' : groupOf(active));
+/** Item ativo da drawer para a página atual. */
+const activeOf = (view: View) =>
+  view.kind === 'app' ? `app-${view.appId}` : view.kind === 'instrucoes' ? (view.section ?? 'instrucoes') : view.kind === 'studio' ? 'inicio' : view.kind;
 
 /** Drawer aberta ou rail; lembrada neste navegador. */
 export function useRail(): [boolean, () => void] {
@@ -184,14 +138,16 @@ function Fab({ extended }: { extended: boolean }) {
 
 const iconButton = 'flex size-12 shrink-0 items-center justify-center rounded-full text-text-primary no-underline transition-colors hover:bg-secondary/50';
 
-export function Sidebar({ view }: { view: View }) {
-  const status = useStatuses(APPS);
-  const active = useActiveSection(view);
+export function Sidebar({ view, team }: { view: View; team: Team | null }) {
+  const apps = teamApps(team);
+  const status = useStatuses(apps);
+  const active = activeOf(view);
   const [open, toggle] = useRail();
   const appView = view.kind === 'app';
-  const group = appView ? 'aplicacoes' : groupOf(view.section);
+  const group = groupOf(view);
   const app = appView ? APPS.find((a) => a.id === view.appId) : null;
-  const title = app ? app.name : TITLES[group];
+  const TeamIcon = team?.icon ?? UsersThree;
+  const back = team ? `Voltar para ${team.label}` : 'Voltar ao início';
 
   return (
     <>
@@ -211,6 +167,28 @@ export function Sidebar({ view }: { view: View }) {
             <List className="size-6" aria-hidden />
           </button>
         </div>
+
+        {/* Equipe atual e a troca, sempre à vista */}
+        {open ? (
+          <div className="mx-space-2 flex shrink-0 items-center gap-space-1 rounded-lg border border-secondary bg-surface p-1 pl-space-1">
+            <TeamIcon className="size-5 shrink-0 text-highlight" aria-hidden />
+            <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="text-[11px] font-semibold text-text-secondary">Equipe</span>
+              <span className="truncate text-caption font-semibold text-text-primary" title={team?.label}>
+                {team?.label ?? 'Nenhuma escolhida'}
+              </span>
+            </span>
+            <a
+              href="#equipes"
+              aria-label={team ? 'Trocar equipe' : 'Escolher equipe'}
+              title={team ? 'Trocar equipe' : 'Escolher equipe'}
+              className="flex size-11 shrink-0 items-center justify-center rounded-md text-text-primary no-underline transition-colors hover:bg-secondary/60"
+            >
+              <ArrowsLeftRight className="size-5" aria-hidden />
+            </a>
+          </div>
+        ) : null}
+
         <div className={`flex shrink-0 ${open ? 'px-space-2' : 'justify-center'}`}>
           <Fab extended={open} />
         </div>
@@ -218,27 +196,38 @@ export function Sidebar({ view }: { view: View }) {
         {open ? (
           <nav aria-label="Seções do design system" className="min-h-0 flex-1 overflow-y-auto px-space-1">
             <ul className="flex flex-col">
-              {PRIMARY.map(({ id, label, icon }) => (
-                <li key={id}>
-                  <DrawerItem href={`#${id}`} label={label} icon={icon} on={active === id} />
-                </li>
-              ))}
+              <li>
+                <DrawerItem href="#inicio" label={team ? 'Início' : 'Escolher equipe'} icon={House} on={active === 'inicio'} />
+              </li>
+              <li>
+                <DrawerItem href="#solicitacoes" label="Solicitações" icon={Ticket} on={active === 'solicitacoes'} />
+              </li>
             </ul>
+            {apps.length > 0 && (
+              <>
+                <hr className="mx-space-2 my-space-1 border-secondary" />
+                <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-apps">
+                  Apps
+                </p>
+                <ul className="flex flex-col" aria-labelledby="nav-apps">
+                  {apps.map((a) => (
+                    <li key={a.id}>
+                      <DrawerItem href={appHref(a.id)} label={a.name} icon={a.icon} on={active === `app-${a.id}`} small soon={!isOpen(status[a.id] ?? 'ok')} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <hr className="mx-space-2 my-space-1 border-secondary" />
-            <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-apps">Apps</p>
-            <ul className="flex flex-col" aria-labelledby="nav-apps">
-              {APPS.map((a) => (
-                <li key={a.id}>
-                  <DrawerItem href={appHref(a.id)} label={a.name} icon={a.icon} on={active === `app-${a.id}`} small soon={!isOpen(status[a.id] ?? 'ok')} />
-                </li>
-              ))}
-            </ul>
-            <hr className="mx-space-2 my-space-1 border-secondary" />
-            <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-marca">Marca</p>
-            <ul className="flex flex-col" aria-labelledby="nav-marca">
-              {BRAND.map(({ id, label, icon }) => (
+            <p className="px-space-2 pb-1 pt-space-1 text-caption font-semibold text-text-secondary" id="nav-instrucoes">
+              <a href="#instrucoes" aria-current={active === 'instrucoes' ? 'page' : undefined} className="text-inherit no-underline hover:text-text-primary aria-[current=page]:text-text-primary">
+                Instruções
+              </a>
+            </p>
+            <ul className="flex flex-col" aria-labelledby="nav-instrucoes">
+              {INSTRUCOES.map(({ id, label, icon }) => (
                 <li key={id}>
-                  <DrawerItem href={`#${id}`} label={label} icon={icon} on={active === id} />
+                  <DrawerItem href={`#${id}`} label={label} icon={icon} on={active === id} small />
                 </li>
               ))}
             </ul>
@@ -246,7 +235,13 @@ export function Sidebar({ view }: { view: View }) {
         ) : (
           <nav aria-label="Destinos" className="flex min-h-0 flex-1 flex-col gap-space-1 overflow-y-auto pt-space-1">
             {DESTINATIONS.map((d) => (
-              <Destination key={d.id} href={d.href} label={d.label} icon={d.icon} on={railGroup(active) === d.id} />
+              <Destination
+                key={d.id}
+                href={d.href}
+                label={d.id === 'equipes' && !team ? 'Equipe' : d.label}
+                icon={d.id === 'equipes' ? TeamIcon : d.icon}
+                on={!appView && group === d.id}
+              />
             ))}
           </nav>
         )}
@@ -262,26 +257,25 @@ export function Sidebar({ view }: { view: View }) {
         className="fixed inset-x-0 top-0 z-30 flex h-16 items-center gap-1 border-b border-secondary/70 bg-background/95 px-1 backdrop-blur-md lg:hidden"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'max(4px, env(safe-area-inset-left, 0px))', paddingRight: 'max(4px, env(safe-area-inset-right, 0px))' }}
       >
-        {appView ? (
-          <a href="#aplicacoes" aria-label="Voltar para Aplicações" title="Voltar" className={iconButton}>
-            <ArrowLeft className="size-6" aria-hidden />
-          </a>
-        ) : null}
-        {title ? (
-          <h1 className={`min-w-0 flex-1 truncate font-display text-[22px] font-semibold leading-7 text-text-primary ${appView ? '' : 'pl-space-1'}`}>{title}</h1>
+        {app ? (
+          <>
+            <a href="#inicio" aria-label={back} title="Voltar" className={iconButton}>
+              <ArrowLeft className="size-6" aria-hidden />
+            </a>
+            <h1 className="min-w-0 flex-1 truncate font-display text-[22px] font-semibold leading-7 text-text-primary">{app.name}</h1>
+            {/* Ações da página do app (Sobre, Recarregar), trazidas por AppPage */}
+            <div id="appbar-actions" className="contents" />
+          </>
         ) : (
-          <a href="#inicio" className="flex min-h-12 flex-1 items-center pl-space-1 no-underline" aria-label="Gove Design System — início">
-            <GoveLogo kind="logotipo" height={24} />
-          </a>
+          <>
+            <a href="#inicio" className="flex min-h-12 flex-1 items-center pl-space-1 no-underline" aria-label="Gove Design System — início">
+              <GoveLogo kind="logotipo" height={24} />
+            </a>
+            <button type="button" onClick={openSearch} aria-label="Buscar" title="Buscar" className={iconButton}>
+              <MagnifyingGlass className="size-6" aria-hidden />
+            </button>
+          </>
         )}
-        {/* No Início a busca é a search bar do topo da tela */}
-        {!appView && group !== 'inicio' && (
-          <button type="button" onClick={openSearch} aria-label="Buscar" title="Buscar" className={iconButton}>
-            <MagnifyingGlass className="size-6" aria-hidden />
-          </button>
-        )}
-        {/* Ações da página do app (Sobre, Recarregar), trazidas por AppPage */}
-        {appView && <div id="appbar-actions" className="contents" />}
         <ThemeToggle compact />
         {!appView && <LogoutButton compact />}
       </header>
@@ -293,13 +287,13 @@ export function Sidebar({ view }: { view: View }) {
           className="fixed inset-x-0 bottom-0 z-30 grid h-20 grid-cols-4 items-center border-t border-secondary/70 bg-background/95 backdrop-blur-md lg:hidden"
           style={{ height: 'calc(80px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          {DESTINATIONS.filter((d) => !d.railOnly).map((d) => (
-            <Destination key={d.id} href={d.href} label={d.label} icon={d.icon} on={group === d.id} wide />
+          {DESTINATIONS.map((d) => (
+            <Destination key={d.id} href={d.href} label={d.label} icon={d.id === 'equipes' ? TeamIcon : d.icon} on={group === d.id} wide />
           ))}
         </nav>
       )}
-      {/* FAB do Início no celular: 16px acima da navigation bar */}
-      {!appView && group === 'inicio' && (
+      {/* FAB do Início e de Solicitações no celular: 16px acima da navigation bar */}
+      {!appView && (group === 'inicio' || group === 'solicitacoes') && (
         <div className="fixed right-space-2 z-30 lg:hidden" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
           <Fab extended />
         </div>
