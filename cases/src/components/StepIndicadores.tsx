@@ -4,7 +4,7 @@ import { saveFile } from '@gove/runtime';
 import type { CaseData } from '@/data/case.ts';
 import { INDICATORS, formatValue, isNum, mainValue, unitAffix, type IndicatorDef, type IndicatorId, type IndicatorValue } from '@/data/indicators.ts';
 import { csvTemplate, parseCsv, type CsvResult } from '@/lib/csv.ts';
-import { GrafanaNote } from './GrafanaNote.tsx';
+import { GrafanaFetchPanel } from './Grafana.tsx';
 import { Button, NumberInput, Note, Toggle } from './ui.tsx';
 
 type Props = { c: CaseData; update: (patch: Partial<CaseData>) => void };
@@ -37,7 +37,7 @@ export function StepIndicadores({ c, update }: Props) {
       </div>
 
       {source === 'csv' && <CsvImport c={c} update={update} onDone={() => setSource('manual')} />}
-      {source === 'grafana' && <GrafanaNote />}
+      {source === 'grafana' && <GrafanaFetchPanel c={c} update={update} />}
 
       <p className="text-[14px] text-text-secondary">Marque o que entra no case. Indicadores vazios ou desmarcados não aparecem na página nem nos slides.</p>
       <ul className="space-y-space-2">

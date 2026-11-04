@@ -1,0 +1,63 @@
+{
+  "_comment": [
+    "Mapa painel do Grafana -> indicador do Gerador de cases (cases/src/data/indicators.ts).",
+    "titles: expressões regulares testadas contra o título do painel em minúsculas e sem acento; vale a primeira que bater, na ordem dos indicadores.",
+    "reduce: como virar um número só: 'panel' (usa o cálculo do próprio painel, ex.: lastNotNull, sum, mean; sem cálculo, 'last'), 'last', 'sum', 'mean', 'max', 'min' ou 'names' (lista de nomes, para funcionalidades).",
+    "comparison: true também calcula 'before' (período anterior de mesmo tamanho) e 'after' (o período pedido).",
+    "overrides: por uid do dashboard, { id do painel: id do indicador } (ou null para ignorar o painel). Chaves que começam com '_' são ignoradas."
+  ],
+  "timezone_offset": "-03:00",
+  "ignore_panel_types": ["row", "text", "news", "dashlist", "alertlist", "annolist", "welcome"],
+  "indicators": {
+    "atendimentos": {
+      "unit": "numero",
+      "reduce": "panel",
+      "comparison": true,
+      "titles": ["^(total de |n(umero|o\\.?|º) de |qtd\\.? de |quantidade de )?atendimentos\\b"]
+    },
+    "ganho_financeiro": {
+      "unit": "brl",
+      "reduce": "panel",
+      "titles": ["ganho financeiro", "^economia (gerada|total|financeira)"]
+    },
+    "arrecadacao_pos_disparo": {
+      "unit": "brl",
+      "reduce": "panel",
+      "comparison": true,
+      "titles": ["arrecadacao (apos|pos)[- ]?(o )?disparos?"]
+    },
+    "aumento_arrecadacao_pct": {
+      "unit": "pct",
+      "reduce": "panel",
+      "titles": ["aumento (de|da|na) arrecadacao.*(%|percentual|pct)", "(%|percentual).*aumento (de|da|na) arrecadacao"]
+    },
+    "aumento_arrecadacao_valor": {
+      "unit": "brl",
+      "reduce": "panel",
+      "titles": ["aumento (de|da|na) arrecadacao.*(r\\$|valor|reais)", "^aumento (de|da|na) arrecadacao"]
+    },
+    "taxa_abertura": {
+      "unit": "pct",
+      "reduce": "panel",
+      "titles": ["taxa de abertura", "^abertura (das |de )?mensagens"]
+    },
+    "avaliacao_media": {
+      "unit": "nota",
+      "reduce": "panel",
+      "titles": ["avaliacao media", "^nota media", "^media (das |de )?avaliac"]
+    },
+    "avaliacao_positiva": {
+      "unit": "pct",
+      "reduce": "panel",
+      "titles": ["avaliac(ao|oes) positivas?", "indice de (avaliacao )?positiv"]
+    },
+    "funcionalidades": {
+      "unit": "lista",
+      "reduce": "names",
+      "titles": ["^funcionalidades", "casos de uso"]
+    }
+  },
+  "overrides": {
+    "_exemplo-uid-do-dashboard": { "12": "atendimentos", "15": null }
+  }
+}

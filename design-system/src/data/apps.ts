@@ -147,15 +147,15 @@ export const APPS: GoveApp[] = [
     summary:
       'Monta o case de um município com os indicadores do período e exporta a one page A4 em PDF e a apresentação 1920×1080 em PowerPoint editável, com a marca aplicada.',
     tagline: 'Cases de municípios em PDF e .pptx.',
-    features: ['One page A4 em PDF', 'Apresentação .pptx editável', 'Indicadores à mão ou por CSV', 'Texto com Claude, só com os números do case', 'Histórico por município'],
+    features: ['One page A4 em PDF', 'Apresentação .pptx editável', 'Indicadores do Grafana, à mão ou por CSV', 'Texto com Claude, só com os números do case', 'Histórico por município'],
     stack: ['React', 'pdfkit', 'pptxgenjs'],
     folder: 'cases/',
     run: 'npm run cases:install && npm run cases:dev',
     sameServer: false,
     embeddedNote:
-      'Roda aqui no navegador. Cases salvos no Design System; o texto com Claude aparece só dentro do claude.ai. Importação do Grafana: liberada depois da configuração do conector.',
+      'Roda aqui no navegador. Cases salvos no Design System; o texto com Claude e a busca no Grafana (conector Gove Grafana, com o seu login do Grafana) aparecem só dentro do claude.ai.',
     shots: [
-      { src: cases1, caption: 'Indicadores à mão, por CSV ou (em breve) do Grafana, com a one page ao vivo.' },
+      { src: cases1, caption: 'Indicadores do Grafana, à mão ou por CSV, com a one page ao vivo.' },
       { src: cases2, caption: 'Apresentação 1920×1080: slides sem dados ficam ocultos.' },
     ],
   },

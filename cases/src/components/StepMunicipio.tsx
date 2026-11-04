@@ -3,7 +3,7 @@ import { Copy, FolderOpen, Plus, Trash } from '@phosphor-icons/react';
 import { UFS, type CaseData } from '@/data/case.ts';
 import { formatPeriodo } from '@/data/indicators.ts';
 import { byMunicipio } from '@/lib/store.ts';
-import { GrafanaNote } from './GrafanaNote.tsx';
+import { GrafanaPicker } from './Grafana.tsx';
 import { Button, Field } from './ui.tsx';
 
 type Props = {
@@ -37,7 +37,7 @@ export function StepMunicipio({ c, update, saved, onOpen, onNew, onDuplicate, on
         </Field>
       </div>
 
-      <GrafanaNote />
+      <GrafanaPicker c={c} update={update} />
 
       <section aria-labelledby="salvos" className="space-y-space-2">
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -14,17 +14,22 @@ import { createAuth } from './auth/index.js';
 import { networkGate, parseNetworks } from './auth/network.js';
 import { createPexelsRouter } from './pexels.js';
 import { createPexelsMcpRouter } from './pexels-mcp.js';
+import { createGrafanaConnector } from './grafana-mcp.js';
 import { createTicketsRouter } from './tickets.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CATEGORIES = new Set(['color', 'gradient', 'font', 'icon', 'logo', 'margin', 'setting']);
 
-export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, pexelsMcpOptions = {}, ticketsOptions = {}, allowedNetworks, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
+export function createApp({ db = openDatabase(), authOptions = {}, pexelsOptions = {}, pexelsMcpOptions = {}, grafanaOptions = {}, ticketsOptions = {}, allowedNetworks, storageDir: storageDirIn = process.env.GOVE_STORAGE_DIR || join(ROOT, 'storage', 'audits') } = {}) {
   const storageDir = resolve(storageDirIn);
   const app = express();
   if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY);
 
-  // Conector "Pexels Gove" do claude.ai: única rota fora da VPN, protegida pelo token no endereço
+  // Rotas fora da VPN (o claude.ai precisa alcançá-las); todo o resto fica só pela VPN.
+  // Conector "Gove Grafana": /mcp/grafana, /oauth/* e /.well-known/* (OAuth com o login do Grafana).
+  // Vem antes de /mcp/:token para que "grafana" não seja lido como token do Pexels.
+  app.use(createGrafanaConnector({ db, ...grafanaOptions }));
+  // Conector "Pexels Gove" do claude.ai: protegido pelo token no endereço
   app.use('/mcp/:token', createPexelsMcpRouter(pexelsMcpOptions));
 
   // Só pela VPN Gove (ALLOWED_NETWORKS = faixas da VPN); depois, login @gove.digital

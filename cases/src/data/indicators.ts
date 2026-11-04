@@ -1,10 +1,10 @@
-// Indicadores de um case de município: unidade, formatação pt-BR e o espaço
-// reservado para o mapa do painel do Grafana (Etapa 0 do plano, ainda pendente:
-// o conector "Grafana Cloud" não foi diagnosticado, então `source` fica vazio).
+// Indicadores de um case de município: unidade e formatação pt-BR. Os ids e as unidades
+// são o contrato com o conector "Gove Grafana": o mapa painel → indicador fica no
+// servidor, em backend/grafana/indicators.json (por isso `source` fica vazio aqui).
 
 export type Unit = 'numero' | 'brl' | 'pct' | 'nota' | 'lista';
 
-/** Painel/consulta do Grafana que alimenta o indicador (preenchido após a configuração do conector). */
+/** Painel/consulta do Grafana que alimenta o indicador (reservado; o mapa vigente fica em backend/grafana/indicators.json). */
 export type GrafanaPanelRef = { dashboardUid?: string; panelTitle?: string; panelId?: number; query?: string };
 
 export type IndicatorId =

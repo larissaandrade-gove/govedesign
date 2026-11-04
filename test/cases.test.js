@@ -17,7 +17,7 @@ const { A4, ONEPAGE_COLORS, buildOnePage, MIN_PT } = await import('../cases/src/
 const { SLIDE, SLIDE_COLORS, buildSlides } = await import('../cases/src/lib/slides.ts');
 const { makeMeasure, renderPdf } = await import('../cases/src/lib/pdf.ts');
 const { renderPptx } = await import('../cases/src/lib/pptx.ts');
-const { grafana, grafanaMessage, GRAFANA_PENDING } = await import('../cases/src/lib/grafana.ts');
+const { createGrafanaSource, grafanaMessage, toIndicatorValues, GRAFANA_CONNECTOR } = await import('../cases/src/lib/grafana.ts');
 const { brandPalette } = await import('../design-system/src/data/tokens.js');
 
 const FONT_DIR = new URL('../cases/src/assets/fonts/', import.meta.url);
@@ -84,7 +84,7 @@ test('formatação pt-BR dos indicadores', () => {
   // Todo indicador tem formatação, rótulo e espaço reservado para o painel do Grafana
   for (const d of ind.INDICATORS) {
     assert.ok(d.label && d.short && d.placeholder.startsWith('ex.:'), d.id);
-    assert.equal(d.source, undefined, `${d.id}: mapa do Grafana só após a Etapa 0`);
+    assert.equal(d.source, undefined, `${d.id}: o mapa do Grafana fica no servidor (backend/grafana/indicators.json)`);
   }
 });
 
@@ -147,13 +147,67 @@ test('números do texto do Claude: só os que estão nos dados', () => {
   for (const s of ['Exemplo – SP', 'R$ 1,2 mi', '12,5%', '"destaques"', 'sentence case', 'Sem emoji']) assert.ok(p.includes(s), s);
 });
 
-test('Grafana: pendente de configuração, sem dados inventados', async () => {
-  assert.equal(await grafana.status(), 'pending-setup');
-  await assert.rejects(grafana.listMunicipios(), (e) => e.code === 'pending-setup' && e.message.includes(GRAFANA_PENDING));
-  await assert.rejects(grafana.fetchIndicators({ id: 'x', nome: 'x' }, { inicio: '', fim: '' }), (e) => e.code === 'pending-setup');
-  assert.match(grafanaMessage({ code: 'needs_reauth' }), /Reconecte/);
+test('Grafana: conector Gove Grafana pela capacidade mcp, mensagens por código e valores do formulário', async () => {
+  assert.equal(GRAFANA_CONNECTOR, 'Gove Grafana');
+  // Fora do claude.ai (sem a capacidade): indisponível, sem dados inventados
+  const off = createGrafanaSource(async () => null);
+  assert.equal(await off.status(), 'unavailable');
+  await assert.rejects(off.listMunicipios(), (e) => e.code === 'unavailable' && /claude\.ai/.test(e.message));
+
+  // Conector não ligado
+  const notConnected = createGrafanaSource(async () => ({
+    listTools: async () => ({ servers: [] }),
+    callTool: async () => Promise.reject({ code: 'server_not_connected', message: 'x' }),
+  }));
+  assert.equal(await notConnected.status(), 'not_connected');
+  await assert.rejects(notConnected.listMunicipios(), (e) => e.code === 'server_not_connected' && e.message.includes('Ligue o conector Gove Grafana em claude.ai → Configurações → Conectores'));
+
+  // Chamadas reais: nome do conector, ferramentas e argumentos
+  const calls = [];
+  const payloads = {
+    list_case_dashboards: { dashboards: [{ uid: 'u1', title: 'Cases - Exemplo/SP', municipio: 'Exemplo', uf: 'SP', folder: 'Cases' }] },
+    get_case_indicators: {
+      indicators: [
+        { id: 'atendimentos', value: 600, before: 200, after: 600, unit: 'numero' },
+        { id: 'taxa_abertura', value: 45.1, before: 1, unit: 'pct' },
+        { id: 'funcionalidades', items: ['Agendamento', ' '], unit: 'lista' },
+        { id: 'inventado', value: 1 },
+        { id: 'ganho_financeiro', value: null },
+      ],
+      unmapped_panels: [{ id: 6, title: 'Mapa por bairro' }],
+      failed_panels: [{ id: 8, title: 'Arrecadação após disparo' }],
+    },
+  };
+  const ok = createGrafanaSource(async () => ({
+    listTools: async () => ({ servers: [{ server: 'Gove Grafana', authStatus: 'connected' }] }),
+    callTool: async (server, tool, input) => (calls.push({ server, tool, input }), { payload: payloads[tool] }),
+  }));
+  assert.equal(await ok.status(), 'ready');
+  const [m] = await ok.listMunicipios(' exem ');
+  assert.deepEqual(m, { id: 'u1', dashboardUid: 'u1', nome: 'Exemplo', uf: 'SP', titulo: 'Cases - Exemplo/SP', pasta: 'Cases' });
+  const r = await ok.fetchIndicators(m, { inicio: '2026-01', fim: '2026-06' });
+  assert.deepEqual(calls.map((x) => [x.server, x.tool, x.input]), [
+    ['Gove Grafana', 'list_case_dashboards', { query: 'exem' }],
+    ['Gove Grafana', 'get_case_indicators', { dashboard_uid: 'u1', from: '2026-01', to: '2026-06' }],
+  ]);
+  assert.deepEqual(r.filled, ['atendimentos', 'taxa_abertura', 'funcionalidades']);
+  assert.deepEqual(r.values.atendimentos, { enabled: true, value: 600, before: 200, after: 600 });
+  assert.deepEqual(r.values.taxa_abertura, { enabled: true, value: 45.1 }, 'sem antes/depois em indicador sem comparação');
+  assert.deepEqual(r.values.funcionalidades, { enabled: true, items: ['Agendamento'] });
+  assert.deepEqual([r.unmapped, r.failed], [['Mapa por bairro'], ['Arrecadação após disparo']]);
+  await assert.rejects(ok.fetchIndicators(m, { inicio: '', fim: '' }), (e) => e.code === 'no_period');
+
+  // Erros da ferramenta: permissão do Grafana, dashboard sumido, demora
+  const toolErr = (code) => ({ code: 'tool_error', message: 'x', result: { structuredContent: { error: { code } }, isError: true } });
+  assert.match(grafanaMessage(toolErr('forbidden')), /Sem permissão no Grafana para este dashboard/);
+  assert.match(grafanaMessage(toolErr('not_found')), /não encontrado/);
+  assert.match(grafanaMessage(toolErr('timeout')), /demorou demais/);
+  assert.match(grafanaMessage({ code: 'needs_reauth' }), /Entre de novo no Gove Grafana/);
   assert.match(grafanaMessage({ code: 'rate_limited' }), /Muitas/);
-  assert.match(grafanaMessage({ code: 'server_not_connected' }), /não conectado/);
+  assert.match(grafanaMessage({ code: 'not_in_manifest' }), /Ligue o conector Gove Grafana/);
+  const denied = createGrafanaSource(async () => ({ callTool: async () => Promise.reject(toolErr('forbidden')) }));
+  await assert.rejects(denied.fetchIndicators(m, { inicio: '2026-01', fim: '' }), (e) => e.code === 'tool_error' && /Sem permissão/.test(e.message));
+  assert.deepEqual(toIndicatorValues(null), { values: {}, filled: [], unmapped: [], failed: [] });
 });
 
 test('tamanhos: A4 210×297 mm e slides 1920×1080 (13,333×7,5 pol)', () => {

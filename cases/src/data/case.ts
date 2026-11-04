@@ -26,6 +26,8 @@ export type CaseData = {
   textos: Textos;
   contato: Contato;
   fonte: 'manual' | 'csv' | 'grafana';
+  /** Dashboard do município no Grafana (conector Gove Grafana), quando escolhido na lista. */
+  grafana?: { dashboardUid: string; titulo: string };
   createdAt: number;
   updatedAt: number;
 };
