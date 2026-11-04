@@ -27,7 +27,7 @@ type ClaudeLike = { use: (name: string) => Promise<any> };
  * capacidade concedida) os apps usam o armazenamento do navegador e o download comum.
  */
 // @ts-ignore — substituído pelo Vite em tempo de build
-const CAPS_ENABLED = import.meta.env.VITE_GOVE_CAPS !== 'off';
+const CAPS_ENABLED = (import.meta as any).env?.VITE_GOVE_CAPS !== 'off';
 
 function findClaude(): ClaudeLike | null {
   if (!CAPS_ENABLED) return null;
@@ -120,6 +120,18 @@ export function collection<T extends Doc = Doc>(app: string, name: string): Coll
   } catch {
     /* ignora cache corrompido */
   }
+  // Ids que já estiveram no db compartilhado. Um documento local fora dessa lista foi
+  // criado só neste navegador (antes de o db estar disponível) e precisa subir para
+  // o db; um que está na lista e sumiu do db foi apagado por outra pessoa.
+  const syncedKey = `${lsKey}:sincronizados`;
+  let synced = new Set<string>();
+  try {
+    synced = new Set(JSON.parse(safeLS.get(syncedKey) ?? '[]') as string[]);
+  } catch {
+    /* ignora */
+  }
+  const pendingUp = new Map<string, T>();
+  const saveSynced = () => safeLS.set(syncedKey, JSON.stringify([...synced]));
   let mode: 'db' | 'local' | 'pending' = 'pending';
   let dbCol: any = null;
   const listeners = new Set<Listener<T>>();
@@ -128,6 +140,10 @@ export function collection<T extends Doc = Doc>(app: string, name: string): Coll
     const docs = snapshot();
     safeLS.set(lsKey, JSON.stringify(docs));
     listeners.forEach((l) => l(docs));
+  };
+  const upload = (doc: T) => {
+    const { id, ...data } = doc;
+    return dbCol.doc(safeId(id)).set(JSON.parse(JSON.stringify(data)));
   };
 
   const ready = (async () => {
@@ -145,11 +161,24 @@ export function collection<T extends Doc = Doc>(app: string, name: string): Coll
             if (snap.metadata?.fromCache && first && snap.empty) return; // espera a leitura definitiva
             const next = new Map<string, T>();
             for (const d of snap.docs) next.set(d.id, { ...(d.data() as object), id: d.id } as T);
+            if (first) {
+              // Na primeira leitura, cadastros feitos só neste navegador não podem sumir:
+              // ficam na lista e sobem para o db compartilhado.
+              for (const [id, doc] of cache) if (!next.has(id) && !synced.has(id)) pendingUp.set(id, doc);
+            }
+            // Enquanto o envio não aparece no db, o documento local continua na lista.
+            for (const [id, doc] of pendingUp) {
+              if (next.has(id)) pendingUp.delete(id);
+              else next.set(id, doc);
+            }
+            for (const id of next.keys()) if (!pendingUp.has(id)) synced.add(id);
+            saveSynced();
             cache = next;
             mode = 'db';
             emit();
             if (first) {
               first = false;
+              for (const doc of [...pendingUp.values()]) upload(doc).catch(() => undefined);
               resolve();
             }
           },
@@ -185,8 +214,9 @@ export function collection<T extends Doc = Doc>(app: string, name: string): Coll
       cache.set(doc.id, doc);
       emit();
       if (dbCol) {
-        const { id, ...data } = doc;
-        await dbCol.doc(safeId(id)).set(JSON.parse(JSON.stringify(data)));
+        await upload(doc);
+        synced.add(doc.id);
+        saveSynced();
       }
     },
     async remove(id) {
