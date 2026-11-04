@@ -1,0 +1,67 @@
+{
+  "_aviso": "EXEMPLO FICTÍCIO: município, números e textos inventados só para demonstrar o formato. Não use em material real.",
+  "municipio": "Município Exemplo",
+  "uf": "SP",
+  "periodo": {
+    "inicio": "2026-01",
+    "fim": "2026-06"
+  },
+  "contexto": "Exemplo ilustrativo. Cidade fictícia de porte médio que queria reduzir filas no atendimento presencial e aumentar a arrecadação sem campanhas caras.",
+  "nota_max": 5,
+  "fonte": "manual",
+  "indicadores": {
+    "atendimentos": {
+      "valor": 12450,
+      "antes": 8200,
+      "depois": 12450
+    },
+    "ganho_financeiro": {
+      "valor": 1234567
+    },
+    "arrecadacao_pos_disparo": {
+      "valor": 350000,
+      "antes": 280000,
+      "depois": 350000
+    },
+    "aumento_arrecadacao_pct": {
+      "valor": 12.5
+    },
+    "aumento_arrecadacao_valor": {
+      "valor": 70000
+    },
+    "taxa_abertura": {
+      "valor": 45.3
+    },
+    "avaliacao_media": {
+      "valor": 4.7
+    },
+    "avaliacao_positiva": {
+      "valor": 92
+    },
+    "funcionalidades": {
+      "itens": [
+        "Lembretes de IPTU",
+        "Segunda via",
+        "Agendamento",
+        "Pesquisa de satisfação"
+      ]
+    }
+  },
+  "textos": {
+    "titulo": "Exemplo: atendimento digital que aumentou a arrecadação",
+    "resumo": "Exemplo fictício. Em seis meses, o Município Exemplo levou o atendimento para o celular dos munícipes e somou R$ 1,2 mi de ganho financeiro.",
+    "desafio": "Filas no atendimento presencial e tributos pagos com atraso.",
+    "solucao": "Avisos de vencimento pelo canal de cada munícipe, com segunda via em poucos toques.",
+    "resultado": "Os atendimentos subiram de 8.200 para 12.450, alta de 51,8%.",
+    "destaques": [
+      "R$ 350 mil arrecadados após o disparo",
+      "Nota 4,7 de 5 na avaliação dos munícipes"
+    ]
+  },
+  "contato": {
+    "cta": "Leve o Gove para o seu município",
+    "nome": "Equipe comercial Gove (exemplo)",
+    "email": "contato@exemplo.gov",
+    "site": "gove.digital"
+  }
+}

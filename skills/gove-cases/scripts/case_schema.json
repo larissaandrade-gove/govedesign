@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gove-cases/case.json",
+  "title": "Case de sucesso Gove (entrada de build_onepage.py, build_deck.py e check_numbers.py)",
+  "description": "Um case por arquivo. Números sempre como número JSON (12450, 1234567.5, 12.5), nunca como texto com R$ ou %. Percentuais de 0 a 100 (12.5 = 12,5%). Campos vazios ou ausentes fazem o bloco ou o slide sumir.",
+  "type": "object",
+  "required": ["municipio", "uf", "periodo", "indicadores", "textos"],
+  "additionalProperties": true,
+  "properties": {
+    "municipio": { "type": "string", "description": "Nome do município, sem a UF.", "examples": ["São Carlos"] },
+    "uf": { "type": "string", "enum": ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"] },
+    "periodo": {
+      "type": "object",
+      "description": "Período dos resultados, por mês.",
+      "properties": {
+        "inicio": { "type": "string", "pattern": "^\\d{4}-\\d{2}$", "description": "AAAA-MM" },
+        "fim": { "type": "string", "pattern": "^\\d{4}-\\d{2}$", "description": "AAAA-MM" }
+      }
+    },
+    "contexto": { "type": "string", "description": "Contexto do município informado pela equipe (vira o slide 'Contexto'). Números escritos aqui passam a valer como dados na checagem." },
+    "nota_max": { "type": "integer", "enum": [5, 10], "default": 5, "description": "Escala da avaliação média." },
+    "fonte": { "type": "string", "enum": ["manual", "csv", "grafana"], "default": "manual" },
+    "grafana": {
+      "type": "object",
+      "description": "Dashboard usado, quando os dados vieram do conector Gove Grafana.",
+      "properties": { "dashboard_uid": { "type": "string" }, "titulo": { "type": "string" } }
+    },
+    "indicadores": {
+      "type": "object",
+      "description": "Só os ids abaixo. Inclua só os indicadores confirmados com a pessoa.",
+      "additionalProperties": false,
+      "properties": {
+        "atendimentos": { "$ref": "#/$defs/comparavel", "description": "Atendimentos (número). Aceita antes/depois." },
+        "ganho_financeiro": { "$ref": "#/$defs/simples", "description": "Ganho financeiro (R$)." },
+        "arrecadacao_pos_disparo": { "$ref": "#/$defs/comparavel", "description": "Arrecadação após disparo (R$). Aceita antes/depois." },
+        "aumento_arrecadacao_pct": { "$ref": "#/$defs/simples", "description": "Aumento de arrecadação entre munícipes que receberam disparo (%, 0 a 100)." },
+        "aumento_arrecadacao_valor": { "$ref": "#/$defs/simples", "description": "Aumento de arrecadação entre munícipes que receberam disparo (R$)." },
+        "taxa_abertura": { "$ref": "#/$defs/simples", "description": "Taxa de abertura (%, 0 a 100)." },
+        "avaliacao_media": { "$ref": "#/$defs/simples", "description": "Avaliação média (nota na escala de nota_max)." },
+        "avaliacao_positiva": { "$ref": "#/$defs/simples", "description": "Índice de avaliação positiva (%, 0 a 100)." },
+        "funcionalidades": { "$ref": "#/$defs/lista", "description": "Funcionalidades e casos de uso utilizados." }
+      }
+    },
+    "textos": {
+      "type": "object",
+      "properties": {
+        "titulo": { "type": "string", "maxLength": 70 },
+        "resumo": { "type": "string", "maxLength": 260 },
+        "desafio": { "type": "string", "maxLength": 340 },
+        "solucao": { "type": "string", "maxLength": 340 },
+        "resultado": { "type": "string", "maxLength": 340 },
+        "destaques": { "type": "array", "maxItems": 3, "items": { "type": "string", "maxLength": 110 } }
+      }
+    },
+    "contato": {
+      "type": "object",
+      "properties": {
+        "cta": { "type": "string", "default": "Leve o Gove para o seu município", "description": "Chamada final (um único chamado para ação)." },
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "site": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "numero": { "type": ["number", "null"] },
+    "simples": {
+      "type": "object",
+      "properties": {
+        "valor": { "$ref": "#/$defs/numero" },
+        "incluir": { "type": "boolean", "default": true, "description": "false tira o indicador das peças sem apagar o dado." }
+      }
+    },
+    "comparavel": {
+      "type": "object",
+      "description": "Sem 'valor', vale o 'depois'. Com antes e depois, entra o gráfico antes/depois (o primeiro indicador comparável com os dois).",
+      "properties": {
+        "valor": { "$ref": "#/$defs/numero" },
+        "antes": { "$ref": "#/$defs/numero" },
+        "depois": { "$ref": "#/$defs/numero" },
+        "incluir": { "type": "boolean", "default": true }
+      }
+    },
+    "lista": {
+      "type": "object",
+      "properties": {
+        "itens": { "type": "array", "items": { "type": "string" } },
+        "incluir": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}
