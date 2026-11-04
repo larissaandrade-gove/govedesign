@@ -25,6 +25,9 @@
     "print:install": "cd print-studio/web && pnpm install",
     "print:build": "cd print-studio/web && pnpm run bundle",
     "print:icons": "node print-studio/scripts/build-icons.mjs",
+    "cases:install": "npm --prefix cases install",
+    "cases:dev": "npm --prefix cases run dev -- --port 5176",
+    "cases:build": "npm --prefix cases run build",
     "ds:install": "npm --prefix design-system install",
     "ds:dev": "npm --prefix design-system run dev",
     "ds:build": "npm --prefix design-system run build"

@@ -1,4 +1,6 @@
-import { CalendarCheck, Cards, type Icon as IconType, Layout, LinkSimple, Printer, RocketLaunch, Sparkle } from '@phosphor-icons/react';
+import { CalendarCheck, Cards, type Icon as IconType, Layout, LinkSimple, PresentationChart, Printer, RocketLaunch, Sparkle } from '@phosphor-icons/react';
+import cases1 from '../assets/apps/cases-1.webp';
+import cases2 from '../assets/apps/cases-2.webp';
 import criativos1 from '../assets/apps/criativos-1.webp';
 import criativos2 from '../assets/apps/criativos-2.webp';
 import links1 from '../assets/apps/links-1.webp';
@@ -134,6 +136,27 @@ export const APPS: GoveApp[] = [
     shots: [
       { src: print1, caption: 'Editor com preview fiel ao PDF, sangria e área de segurança.' },
       { src: print2, caption: 'Verificação antes do download: sangria, fontes, CMYK e QR code.' },
+    ],
+  },
+  {
+    id: 'cases',
+    tag: 'Mídia',
+    name: 'Gerador de cases',
+    route: '/cases',
+    icon: PresentationChart,
+    summary:
+      'Monta o case de um município com os indicadores do período e exporta a one page A4 em PDF e a apresentação 1920×1080 em PowerPoint editável, com a marca aplicada.',
+    tagline: 'Cases de municípios em PDF e .pptx.',
+    features: ['One page A4 em PDF', 'Apresentação .pptx editável', 'Indicadores à mão ou por CSV', 'Texto com Claude, só com os números do case', 'Histórico por município'],
+    stack: ['React', 'pdfkit', 'pptxgenjs'],
+    folder: 'cases/',
+    run: 'npm run cases:install && npm run cases:dev',
+    sameServer: false,
+    embeddedNote:
+      'Roda aqui no navegador. Cases salvos no Design System; o texto com Claude aparece só dentro do claude.ai. Importação do Grafana: liberada depois da configuração do conector.',
+    shots: [
+      { src: cases1, caption: 'Indicadores à mão, por CSV ou (em breve) do Grafana, com a one page ao vivo.' },
+      { src: cases2, caption: 'Apresentação 1920×1080: slides sem dados ficam ocultos.' },
     ],
   },
   {

@@ -38,7 +38,7 @@ test('equipes pedidas, com ids únicos e apps certos', () => {
   const by = Object.fromEntries(TEAMS.map((t) => [t.id, t]));
   assert.deepEqual(by['sucesso-operacoes'].apps, ['print-studio']);
   assert.deepEqual(by.produto.apps, ['atualizacoes']);
-  assert.deepEqual(by.vendas.apps, ['studio-cards', 'criativos', 'eventos']);
+  assert.deepEqual(by.vendas.apps, ['cases', 'studio-cards', 'criativos', 'eventos']);
   assert.deepEqual(by['apoio-ia'].instrucoes, INSTRUCOES.map((s) => s.id));
 });
 

@@ -36,7 +36,7 @@ export const TEAMS: Team[] = [
     label: 'Marketing',
     description: 'Todos os apps, com o encurtador de links em primeiro.',
     icon: Megaphone,
-    apps: ['links', 'criativos', 'lp', 'studio-cards', 'eventos', 'atualizacoes', 'print-studio'],
+    apps: ['links', 'criativos', 'lp', 'studio-cards', 'eventos', 'atualizacoes', 'print-studio', 'cases'],
     compact: true,
   },
   {
@@ -56,9 +56,9 @@ export const TEAMS: Team[] = [
   {
     id: 'vendas',
     label: 'Vendas e pré-vendas',
-    description: 'Cards, criativos de mídia paga e confirmação de evento.',
+    description: 'Cases de municípios, cards, criativos de mídia paga e confirmação de evento.',
     icon: ChartLineUp,
-    apps: ['studio-cards', 'criativos', 'eventos'],
+    apps: ['cases', 'studio-cards', 'criativos', 'eventos'],
   },
   {
     id: 'apoio-ia',
