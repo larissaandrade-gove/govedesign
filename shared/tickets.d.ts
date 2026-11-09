@@ -80,4 +80,9 @@ export declare function rarRow(t: Ticket, blocks?: Interval[]): Record<string, s
 export declare function workEvent(t: Ticket, b: Interval, i: number, n: number): CalendarEvent;
 export declare function ticketEmail(t: Ticket, opts?: { calendar?: boolean; blocks?: Interval[] }): { subject: string; text: string; html: string };
 export declare function ticketEvent(t: Ticket): CalendarEvent & { reminders: { method: string; minutes: number }[] };
-export declare function ticketIcs(t: Ticket): string;
+export declare function ticketIcs(t: Ticket, opts?: { organizer?: string }): string;
+export declare function ticketShortEmail(t: Ticket): { subject: string; text: string };
+export declare function isRealDate(yyyyMmDd: string): boolean;
+export declare function strictEmail(raw: string, domain?: string): string;
+export declare function parseCalendarTime(v: unknown): number;
+export declare function freeFromSlots(payload: unknown, opts: { startMs: number; endMs: number; pageSize?: number; horizonMs?: number }): Interval[] | null;

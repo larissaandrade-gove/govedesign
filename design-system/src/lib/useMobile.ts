@@ -20,21 +20,7 @@ export type Group = 'inicio' | 'instrucoes' | 'solicitacoes' | 'equipes';
 export const groupOf = (view: View): Group =>
   view.kind === 'instrucoes' ? 'instrucoes' : view.kind === 'solicitacoes' ? 'solicitacoes' : view.kind === 'equipes' ? 'equipes' : 'inicio';
 
-let pendingRequest = false;
-/** Abre o pop-up de nova solicitação de qualquer ponto: fora da página de Solicitações, vai até ela e abre. */
-export const openNewRequest = () => {
-  if (document.getElementById('solicitacoes')) {
-    window.dispatchEvent(new CustomEvent('gove:nova-solicitacao'));
-    return;
-  }
-  pendingRequest = true;
-  window.location.hash = 'solicitacoes';
-};
-/** Solicitações, ao montar: havia um pedido de abrir o pop-up? */
-export const takePendingRequest = () => {
-  const p = pendingRequest;
-  pendingRequest = false;
-  return p;
-};
+/** Abre o pop-up de nova solicitação por cima da página atual (provedor global em lib/requests.tsx). */
+export const openNewRequest = () => window.dispatchEvent(new CustomEvent('gove:nova-solicitacao'));
 /** Abre a busca do celular. */
 export const openSearch = () => window.dispatchEvent(new CustomEvent('gove:buscar'));

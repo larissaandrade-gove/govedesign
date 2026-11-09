@@ -33,7 +33,7 @@ export function EmbeddedApp({ id, name, reloadKey, full, onExitFull, hash = '' }
   return (
     <section
       aria-label={name}
-      className={full ? 'fixed inset-0 z-[60] bg-background' : 'relative h-[calc(100dvh-88px)] min-h-[480px] overflow-hidden rounded-lg border border-secondary bg-background shadow-md lg:h-[calc(100vh-112px)]'}
+      className={full ? 'fixed inset-0 z-[60] bg-background' : 'relative h-[calc(100dvh-168px)] min-h-[480px] overflow-hidden rounded-lg border border-secondary bg-background shadow-md lg:h-[calc(100vh-184px)]'}
     >
       <iframe
         key={`${id}-${reloadKey}`}

@@ -14,11 +14,17 @@ import { APPS } from './data/apps';
 import { useMobile } from './lib/useMobile';
 import { MobileSearch } from './components/MobileSearch';
 import { AccessGate } from './components/AccessGate';
+import { RequestProvider } from './lib/requests';
+import { RequestDialog } from './components/RequestDialog';
+import { RequestFab } from './components/RequestFab';
 
 export default function App() {
   return (
     <AccessGate>
-      <Shell />
+      <RequestProvider>
+        <Shell />
+        <RequestDialog />
+      </RequestProvider>
     </AccessGate>
   );
 }
@@ -52,7 +58,14 @@ function Shell() {
     window.scrollTo({ top: 0 });
   }, [key]);
 
-  if (selector) return <TeamSelector current={team} />;
+  // Botão único de Solicitações em todas as telas; no celular, acima da navigation bar (que some no seletor e nas páginas de app)
+  if (selector)
+    return (
+      <>
+        <TeamSelector current={team} />
+        <RequestFab />
+      </>
+    );
 
   const app = view.kind === 'app' ? APPS.find((a) => a.id === view.appId) : null;
   return (
@@ -81,6 +94,7 @@ function Shell() {
         {mobile && <MobileSearch team={team} />}
         {!mobile && <BackToTop />}
       </main>
+      <RequestFab aboveBar={mobile && !app} />
     </div>
   );
 }

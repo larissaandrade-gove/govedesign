@@ -279,6 +279,40 @@ export function freeFromBusy(startMs, endMs, busy) {
 
 const HALF = HOUR / 2;
 
+/**
+ * Lê um horário da Google Agenda. Sem fuso ("2026-11-10T08:00:00"), vale a
+ * hora de Brasília, nunca a do navegador de quem abre a página.
+ */
+export function parseCalendarTime(v) {
+  const s = typeof v === 'string' ? v : (v?.dateTime ?? v?.date ?? '');
+  if (!s) return NaN;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return fromWall(Date.parse(`${s}T00:00:00Z`));
+  if (/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) return Date.parse(s);
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2})?/.exec(s);
+  return m ? fromWall(Date.parse(`${m[1]}T${m[2]}${m[3] ?? ':00'}Z`)) : NaN;
+}
+
+/**
+ * Horários livres a partir da resposta do `suggest_time` (agenda da
+ * responsável). A janela consultada vale como coberta: o que não veio como
+ * livre está ocupado. Se a resposta veio truncada (`pageSize` atingido), a
+ * cobertura termina no fim do último horário recebido; depois dela, vale só o
+ * expediente. `null` quando a resposta não traz a lista de horários.
+ */
+export function freeFromSlots(payload, { startMs, endMs, pageSize = Infinity, horizonMs = 400 * DAY }) {
+  const raw = Array.isArray(payload) ? payload : payload?.timeSlots ?? payload?.slots ?? payload?.suggestions;
+  if (!Array.isArray(raw)) return null;
+  const slots = raw
+    .map((x) => ({ start: parseCalendarTime(x?.startTime ?? x?.start), end: parseCalendarTime(x?.endTime ?? x?.end) }))
+    .filter((x) => Number.isFinite(x.start) && Number.isFinite(x.end) && x.end > x.start)
+    .sort((a, b) => a.start - b.start);
+  const truncated = raw.length >= pageSize;
+  const coveredUntil = truncated && slots.length ? Math.max(...slots.map((x) => x.end)) : truncated ? startMs : endMs;
+  const free = slots.filter((x) => x.start < coveredUntil).map((x) => ({ start: Math.max(x.start, startMs), end: Math.min(x.end, coveredUntil) }));
+  free.push({ start: coveredUntil, end: coveredUntil + horizonMs });
+  return free.filter((x) => x.end > x.start);
+}
+
 /** Expediente livre por dia útil: cruza o horário de trabalho com os intervalos livres (sem `free`, todo o expediente). */
 function freeByDay(startMs, endMs, free, schedule) {
   return workWindows(startMs, endMs, schedule)
@@ -299,12 +333,19 @@ export function planWork({ nowMs, dueMs, hours, free = null, schedule }) {
   const days = freeByDay(start, dueMs, free, schedule).map((spans) => spans.map(([s, e]) => [s, e]));
   let remaining = hours * HOUR;
   const blocks = [];
+  // Blocos de 30 min ou mais; só o último, que fecha as horas pedidas, pode ser menor
+  // (sobras de 15 min de reuniões fora da meia hora não reprovam um pedido viável).
   const take = (spans, quota) => {
     let got = 0;
     for (const span of spans) {
-      if (quota - got < HALF) break;
-      const len = Math.min(span[1] - span[0], quota - got);
-      if (len < HALF) continue;
+      const want = quota - got;
+      if (want <= 0) break;
+      const len = Math.min(span[1] - span[0], want);
+      if (len <= 0) continue;
+      if (len < HALF && len < remaining - got) {
+        if (want < HALF) break;
+        continue;
+      }
       blocks.push({ start: span[0], end: span[0] + len });
       span[0] += len;
       got += len;
@@ -388,6 +429,23 @@ export function newTicketId(rand = Math.random) {
 
 export const DESCRIPTION_MIN = 50;
 
+/** Data AAAA-MM-DD que existe no calendário (recusa 2026-02-30, que o Date.parse empurraria para março). */
+export function isRealDate(yyyyMmDd) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(yyyyMmDd ?? ''))) return false;
+  const ms = Date.parse(`${yyyyMmDd}T00:00:00Z`);
+  return Number.isFinite(ms) && iso(new Date(ms)) === yyyyMmDd;
+}
+
+/**
+ * Um único e-mail do domínio, sem vírgulas, espaços nem endereços múltiplos.
+ * Devolve o endereço em minúsculas ou '' quando não vale.
+ */
+export function strictEmail(raw, domain = 'gove.digital') {
+  const e = String(raw ?? '').trim().toLowerCase();
+  const re = new RegExp(`^[a-z0-9](?:[a-z0-9._+-]{0,62}[a-z0-9])?@${domain.replace(/\./g, '\\.')}$`);
+  return re.test(e) && !e.includes('..') ? e : '';
+}
+
 const clean = (v, max) =>
   String(v ?? '')
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
@@ -424,8 +482,8 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
   if (pieceType.length < 2) errors.pieceType = 'Informe o tipo de peça.';
   const format = clean(input?.format, 80);
   if (format.length < 2) errors.format = 'Informe o formato (ex.: A4, 16:9, story, post).';
-  const requesterEmail = clean(input?.requesterEmail, 120).toLowerCase();
-  if (!new RegExp(`^[^\\s@]+@${domain.replace(/\./g, '\\.')}$`).test(requesterEmail)) errors.requesterEmail = `Entre com seu e-mail @${domain}.`;
+  const requesterEmail = strictEmail(clean(input?.requesterEmail, 120), domain);
+  if (!requesterEmail) errors.requesterEmail = `Informe um único e-mail @${domain} (sem vírgulas nem outros endereços).`;
   const requesterName = clean(input?.requesterName, 80) || nameFromEmail(requesterEmail);
 
   const rawLinks = Array.isArray(input?.links) ? input.links : String(input?.links ?? '').split(/[\s,]+/);
@@ -450,7 +508,8 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
   if (!priority) errors.priority = 'Escolha a prioridade.';
   const lead = leadHours(type?.id, priority ?? 'normal');
   const dueDate = clean(input?.dueDate, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) || Number.isNaN(Date.parse(dueDate))) errors.dueDate = 'Escolha a data de entrega.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) errors.dueDate = 'Escolha a data de entrega.';
+  else if (!isRealDate(dueDate)) errors.dueDate = 'Essa data não existe. Escolha outra.';
   else if (!isBusinessDate(dueDate, s)) errors.dueDate = 'Escolha um dia de expediente (fora de fins de semana e feriados).';
   else if (type && priority && businessHoursBetween(now, dueInstant(dueDate, s), s) < lead) {
     errors.dueDate = `Prazo mínimo: ${lead} h úteis. Primeira data possível: ${brDateFromIso(earliestDueDate(now, lead, s))}.`;
@@ -488,7 +547,8 @@ export function validateTicket(input, { now = Date.now(), domain = 'gove.digital
 /** Hora de entrega do pedido ("17:00"); pedidos anteriores ao expediente configurável entregavam às 18:00. */
 const ticketDueTime = (t) => (/^\d{2}:\d{2}$/.test(t?.dueTime ?? '') ? t.dueTime : '18:00');
 const hourLabel = (hm) => (hm.endsWith(':00') ? `${Number(hm.slice(0, 2))}h` : hm.replace(':', 'h'));
-const detailLines = (t) => (typeById(t.type)?.fields ?? []).filter((f) => t.details?.[f.id]).map((f) => `${f.label}: ${t.details[f.id]}`);
+const detailPairs = (t) => (typeById(t.type)?.fields ?? []).filter((f) => t.details?.[f.id]).map((f) => [f.label, t.details[f.id]]);
+const detailLines = (t) => detailPairs(t).map(([k, v]) => `${k}: ${v}`);
 const priorityLabel = (t) => TICKET_PRIORITIES.find((p) => p.id === t.priority)?.label ?? t.priority;
 
 /** Linha da aba "Novo RAR", por nome de coluna (a planilha é lida pelo cabeçalho). */
@@ -550,7 +610,7 @@ export function ticketEmail(t, { calendar = true, blocks = [] } = {}) {
     ['Prioridade', `${priorityLabel(t)} (mín. ${t.leadHours} h úteis)`],
     ['Entrega', `${due}, até ${hourLabel(ticketDueTime(t))}`],
     ['Produção', `${t.effortHours} h${blocks.length ? `: ${blocks.map(blockLabel).join('; ')}` : ''}`],
-    ...detailLines(t).map((l) => l.split(': ')),
+    ...detailPairs(t),
   ];
   const text = [`Nova solicitação para a área de design — ${t.id}`, '', t.title, '', ...rows.map(([k, v]) => `${k}: ${v}`), '', t.description, '', ...(t.links.length ? ['Links:', ...t.links, ''] : []), marker].join('\n');
   const html = `<div style="font-family:Inter,Arial,sans-serif;color:#20133D;max-width:560px">
@@ -563,14 +623,25 @@ ${t.links.length ? `<p style="font-size:14px">${t.links.map((l) => `<a href="${e
   return { subject, text, html };
 }
 
+/**
+ * Janela do evento de entrega em minutos do dia: a última hora do expediente,
+ * sem sair do último período quando ele tem menos de 60 min.
+ */
+function deliveryWindow(t) {
+  const end = toMinutes(ticketDueTime(t));
+  const last = t?.schedule ? normalizeSchedule(t.schedule).schedule?.periods.at(-1) : null;
+  const periodStart = last && toMinutes(last[1]) === end ? toMinutes(last[0]) : -Infinity;
+  return [Math.max(end - 60, periodStart), end];
+}
+
 /** Evento de entrega no dia do prazo (última hora do expediente, Brasília), com lembretes. */
 export function ticketEvent(t) {
-  const end = toMinutes(ticketDueTime(t));
+  const [start, end] = deliveryWindow(t);
   const lines = [`${t.typeLabel} · ${t.pieceType} (${t.format}) · ${t.id}`, `Solicitante: ${t.requesterName} (${t.requesterEmail})`, `Prioridade: ${priorityLabel(t)}`, '', t.description, ...detailLines(t), ...t.links];
   return {
     summary: `Entrega design: ${t.title} (${t.id})`,
     description: lines.join('\n'),
-    startTime: `${t.dueDate}T${hhmm(end - 60)}:00`,
+    startTime: `${t.dueDate}T${hhmm(start)}:00`,
     endTime: `${t.dueDate}T${hhmm(end)}:00`,
     timeZone: TIME_ZONE,
     reminders: [
@@ -581,25 +652,59 @@ export function ticketEvent(t) {
   };
 }
 
-/** Arquivo .ics do evento de entrega (para quem não tem a agenda conectada). */
-export function ticketIcs(t) {
+/** Dobra de linhas do iCalendar (RFC 5545 §3.1): no máximo 75 octetos por linha, continuação com espaço. */
+function foldIcs(line) {
+  const enc = new TextEncoder();
+  const out = [];
+  let cur = '';
+  let size = 0;
+  for (const ch of line) {
+    const n = enc.encode(ch).length;
+    if (size + n > (out.length ? 74 : 75)) {
+      out.push(cur);
+      cur = '';
+      size = 0;
+    }
+    cur += ch;
+    size += n;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+}
+
+/**
+ * Convite .ics do evento de entrega (METHOD:REQUEST), para quem não tem a
+ * agenda conectada e para o e-mail do servidor. `organizer` é a caixa da
+ * responsável (TICKETS_INBOX/DESIGN_INBOX); a convidada é só quem pediu.
+ */
+export function ticketIcs(t, { organizer = DESIGN_INBOX } = {}) {
   const ev = ticketEvent(t);
-  const start = fromWall(Date.parse(`${t.dueDate}T00:00:00Z`) + toMinutes(ticketDueTime(t)) * 60e3) - HOUR;
+  const [startMin, endMin] = deliveryWindow(t);
+  const day = Date.parse(`${t.dueDate}T00:00:00Z`);
+  const start = fromWall(day + startMin * 60e3);
+  const end = fromWall(day + endMin * 60e3);
   const fmt = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  const icsText = (s) => String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/[,;]/g, (c) => `\\${c}`);
+  const icsText = (v) => String(v).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/[,;]/g, (c) => `\\${c}`);
+  // Parâmetro entre aspas: sem aspas, quebras nem caracteres de controle
+  const cn = (v) => `"${String(v ?? '').replace(/["\r\n\u0000-\u001F]/g, '').trim()}"`;
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Gove Digital//Design System//PT-BR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
     'BEGIN:VEVENT',
     `UID:${t.id}@gove.digital`,
+    'SEQUENCE:0',
+    'STATUS:CONFIRMED',
+    'CLASS:PRIVATE',
     `DTSTAMP:${fmt(Date.parse(t.createdAt))}`,
     `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(start + HOUR)}`,
+    `DTEND:${fmt(end)}`,
     `SUMMARY:${icsText(ev.summary)}`,
     `DESCRIPTION:${icsText(ev.description)}`,
-    `ORGANIZER:mailto:${DESIGN_INBOX}`,
-    `ATTENDEE;CN=${icsText(t.requesterName)}:mailto:${t.requesterEmail}`,
+    `ORGANIZER;CN=${cn(nameFromEmail(organizer))}:mailto:${organizer}`,
+    `ATTENDEE;CN=${cn(t.requesterName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${t.requesterEmail}`,
     'BEGIN:VALARM',
     'TRIGGER:-P1D',
     'ACTION:DISPLAY',
@@ -608,5 +713,31 @@ export function ticketIcs(t) {
     'END:VEVENT',
     'END:VCALENDAR',
     '',
-  ].join('\r\n');
+  ]
+    .map(foldIcs)
+    .join('\r\n');
+}
+
+/**
+ * E-mail curto para o link `mailto` (quando o Gmail não está conectado): o
+ * resumo legível e o código do pedido, sem o marcador grande do Apps Script.
+ */
+export function ticketShortEmail(t) {
+  const due = brDateFromIso(t.dueDate);
+  const desc = t.description.length > 600 ? `${t.description.slice(0, 600)}…` : t.description;
+  const text = [
+    `Nova solicitação para a área de design — ${t.id}`,
+    '',
+    t.title,
+    `${t.typeLabel} · ${t.pieceType} (${t.format})`,
+    `Prioridade: ${priorityLabel(t)} · entrega ${due}, até ${hourLabel(ticketDueTime(t))}`,
+    `Solicitante: ${t.requesterName} · ${t.requesterEmail}`,
+    '',
+    desc,
+    ...detailLines(t),
+    ...t.links.slice(0, 5),
+    '',
+    `Código: ${t.id}`,
+  ].join('\n');
+  return { subject: `[Design] ${t.typeLabel} · ${t.title} · entrega ${due} (${t.id})`, text };
 }

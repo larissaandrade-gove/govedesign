@@ -19,8 +19,12 @@ lendo as colunas pelo nome do cabeçalho e sem duplicar o mesmo código `DS-…`
 solicitações, Larissa Andrade (larissa.andrade@gove.digital), sem feriados
 nacionais. O padrão é segunda a sexta, 8h–12h e 13h–17h, e a entrega acontece no
 fim do expediente do dia escolhido. Ela altera o expediente no card **Horário de
-trabalho** da página Solicitações; os pedidos seguintes passam a usar o novo
-horário, e cada pedido guarda o expediente em que foi feito. Os números ficam em
+trabalho** da página Solicitações, que só ela vê; os pedidos seguintes passam a
+usar o novo horário, e cada pedido guarda o expediente em que foi feito. As
+demais pessoas veem apenas a data de entrega prevista e o prazo mínimo. No
+artefato, o cálculo roda no navegador de quem pede, então dias e períodos
+continuam tecnicamente legíveis por quem inspecionar a página (sem nome nem data
+de atualização). Os números ficam em
 `shared/tickets.js` (`DEFAULT_SCHEDULE`, `LEAD_HOURS`, `EFFORT_HOURS` e `factor`
 de cada frente).
 
@@ -38,7 +42,11 @@ nos horários livres da agenda do design. Reuniões, ausências e produções j�
 marcadas ficam de fora. Se não houver espaço até a data pedida, o pedido é recusado
 e o formulário mostra a primeira data com espaço.
 
-## Instalação (uma vez, com a conta que recebe os pedidos)
+## Instalação (uma vez, pela Larissa, com a conta larissa.andrade@gove.digital)
+
+O script precisa ser instalado e publicado pela responsável: a agenda dela é a
+consultada, os blocos de produção ficam nela e o evento de entrega sai dela, com
+só quem pediu como convidada.
 
 1. Acesse [script.google.com](https://script.google.com) e crie um projeto chamado "Gove · RAR".
    Cole o conteúdo de `rar-tickets.gs`.
@@ -67,12 +75,17 @@ e o formulário mostra a primeira data com espaço.
   login. O servidor consulta os horários ocupados da agenda (`action: "ocupado"`)
   e distribui a produção. Depois chama o App da Web, que lança a linha, envia o
   e-mail para `TICKETS_INBOX` com cópia para quem pediu, cria o evento de
-  entrega (última hora do expediente, com convite e lembretes) e os blocos "Produção n/N". Sem o App da
-  Web, mas com SMTP configurado, o servidor envia o e-mail com o convite `.ics`,
-  e o gatilho do passo 3 lança a linha.
+  entrega (última hora do expediente, privado, com lembretes e só quem pediu
+  convidada) e os blocos "Produção n/N", que ficam só na agenda da Larissa, sem
+  convidados. Sem o App da Web, mas com SMTP configurado, o servidor envia o
+  e-mail com o convite `.ics` (`METHOD:REQUEST`, organizado por `TICKETS_INBOX`).
+  O marcador desse e-mail diz que o evento já existe, então o gatilho do passo 3
+  só lança a linha e a produção, sem um segundo convite. Se um passo falhar, o
+  reenvio (`POST /api/tickets/<código>/reenviar`) refaz só ele, com o mesmo código.
 - **Artefato no claude.ai**: quem pede vem da conta do claude.ai. A página consulta
   os horários livres da agenda do design pelo Google Agenda de quem pede
-  (`suggest_time`) e distribui a produção. Depois envia o e-mail e cria o evento
-  de entrega pelo Gmail e pelo Google Agenda dessa pessoa. O gatilho do passo 3
+  (`suggest_time`, em horário de Brasília) e distribui a produção. Depois cria o
+  evento de entrega na agenda dessa pessoa (privado, convidados: só ela e a
+  Larissa, sem poder convidar outros nem editar) e envia o e-mail pelo Gmail dela. O gatilho do passo 3
   lança a linha no RAR e cria os blocos de produção na agenda do design. Se a
   agenda de quem pede não estiver conectada, o script também cria o evento de entrega.

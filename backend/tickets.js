@@ -76,6 +76,8 @@ export function createTicketsRouter({
   const insert = db.prepare('INSERT INTO design_tickets (id, data, created_at) VALUES (?, ?, ?)');
   const setStatus = db.prepare('UPDATE design_tickets SET rar = ?, email = ?, calendar = ?, error = ? WHERE id = ?');
   const list = db.prepare('SELECT * FROM design_tickets ORDER BY created_at DESC LIMIT ?');
+  const listMine = db.prepare("SELECT * FROM design_tickets WHERE lower(json_extract(data, '$.requesterEmail')) = ? ORDER BY created_at DESC LIMIT ?");
+  const getOne = db.prepare('SELECT * FROM design_tickets WHERE id = ?');
   const exists = db.prepare('SELECT 1 FROM design_tickets WHERE id = ?');
   const script = Boolean(webhookUrl && webhookToken);
   const getSetting = db.prepare('SELECT value FROM design_settings WHERE key = ?');
@@ -98,7 +100,8 @@ export function createTicketsRouter({
     });
     const j = await r.json().catch(() => null);
     if (!r.ok || !j) throw new Error('A planilha não respondeu. Confira o Apps Script publicado.');
-    if (j.error) throw new Error(String(j.error));
+    // Erro com resultado parcial (ex.: RAR lançado, e-mail não): devolve o que foi feito
+    if (j.error && !['rar', 'email', 'calendar'].some((k) => k in j)) throw new Error(String(j.error));
     return j;
   }
 
@@ -128,8 +131,12 @@ export function createTicketsRouter({
     res.json({ types: TICKET_TYPES, priorities: TICKET_PRIORITIES, inbox, integrations: { rar: script, email: script || Boolean(mailer), calendar: script || Boolean(mailer) } });
   });
 
+  // Só a responsável vê de quem é o expediente e quando mudou; os demais recebem
+  // apenas dias e períodos, o necessário para calcular os prazos no navegador.
   router.get('/expediente', (req, res) => {
-    res.json({ schedule: schedule(), owner: inbox, canEdit: sessionEmail(req) === inbox });
+    const sc = schedule();
+    if (sessionEmail(req) === inbox) return res.json({ schedule: sc, owner: inbox, canEdit: true });
+    res.json({ schedule: { days: [...sc.days], periods: sc.periods.map((p) => [...p]) }, canEdit: false });
   });
 
   router.put('/expediente', (req, res) => {
@@ -160,10 +167,78 @@ export function createTicketsRouter({
     });
   });
 
+  const view = (r) => ({ ...JSON.parse(r.data), status: { rar: r.rar, email: r.email, calendar: r.calendar }, error: r.error ?? undefined });
+
+  // Cada pessoa vê só os próprios pedidos; a responsável vê todos
   router.get('/', (req, res) => {
-    const rows = list.all(Math.min(200, Number(req.query.limit) || 50));
-    res.json(rows.map((r) => ({ ...JSON.parse(r.data), status: { rar: r.rar, email: r.email, calendar: r.calendar }, error: r.error ?? undefined })));
+    const email = sessionEmail(req);
+    if (!email) return res.status(401).json({ error: 'Faça login para ver as solicitações.' });
+    const limit = Math.min(200, Number(req.query.limit) || 50);
+    const rows = email === inbox ? list.all(limit) : listMine.all(String(email).toLowerCase(), limit);
+    res.json(rows.map(view));
   });
+
+  /**
+   * Despacha os passos pedidos (`steps`) e devolve o status de cada um. Uma
+   * exceção marca só o passo em que aconteceu; o que já deu certo fica 'ok'.
+   */
+  async function dispatch(ticket, blocks, steps, prev) {
+    const status = { ...prev };
+    const errors = [];
+    const notes = [];
+    const want = (k) => steps.includes(k);
+    if (script) {
+      try {
+        const j = await callScript({
+          source: 'server',
+          steps,
+          ticket,
+          row: rarRow(ticket, blocks),
+          email: ticketEmail(ticket, { blocks }),
+          event: ticketEvent(ticket),
+          work: blocks.map((b, i) => workEvent(ticket, b, i, blocks.length)),
+        });
+        for (const k of ['rar', 'email', 'calendar']) if (want(k)) status[k] = j[k] === true ? 'ok' : 'falhou';
+        if (j.warnings?.length) errors.push(...j.warnings);
+        if (j.error) errors.push(String(j.error));
+        return { status, error: errors.join(' · ') || null, notes };
+      } catch (err) {
+        errors.push(err.message || 'O Apps Script não respondeu.');
+        // Sem resposta do Apps Script: o RAR fica como falhou; o aviso ainda pode sair por SMTP
+        if (want('rar')) status.rar = 'falhou';
+        if (!mailer) {
+          for (const k of ['email', 'calendar']) if (want(k)) status[k] = 'falhou';
+          return { status, error: errors.join(' · '), notes };
+        }
+      }
+    }
+    if (mailer && (want('email') || want('calendar'))) {
+      try {
+        // O convite segue no e-mail; o marcador diz ao gatilho que o evento já existe
+        const mail = ticketEmail(ticket, { blocks, calendar: true });
+        await mailer.sendMail({
+          from: process.env.MAIL_FROM || `Gove Design System <no-reply@${domain}>`,
+          to: inbox,
+          cc: ticket.requesterEmail,
+          replyTo: ticket.requesterEmail,
+          subject: mail.subject,
+          text: mail.text,
+          html: mail.html,
+          icalEvent: { filename: `${ticket.id}.ics`, method: 'REQUEST', content: ticketIcs(ticket, { organizer: inbox }) },
+        });
+        status.email = 'ok';
+        status.calendar = 'ok';
+        if (status.rar !== 'ok') status.rar = 'pendente'; // o gatilho do Apps Script lança ao ler o e-mail
+      } catch (err) {
+        errors.push(err.message || 'Falha ao enviar o e-mail.');
+        if (want('email')) status.email = 'falhou';
+        if (want('calendar')) status.calendar = 'falhou';
+      }
+    } else if (!script) {
+      notes.push('O servidor não tem o Apps Script nem o SMTP configurados: o pedido ficou salvo, mas a área de design não foi avisada. Envie o e-mail e o convite pelos botões abaixo.');
+    }
+    return { status, error: errors.join(' · ') || null, notes };
+  }
 
   router.post('/', async (req, res) => {
     const me = requester(req);
@@ -187,41 +262,37 @@ export function createTicketsRouter({
     const record = { ...ticket, work: blocks, calendarChecked: Boolean(free) };
     insert.run(ticket.id, JSON.stringify(record), ticket.createdAt);
 
-    let status = { rar: 'não configurado', email: 'não configurado', calendar: 'não configurado' };
-    let error = null;
+    const initial = script || mailer ? { rar: 'pendente', email: 'pendente', calendar: 'pendente' } : { rar: 'não configurado', email: 'não configurado', calendar: 'não configurado' };
+    let out;
     try {
-      if (script) {
-        const j = await callScript({
-          source: 'server',
-          ticket,
-          row: rarRow(ticket, blocks),
-          email: ticketEmail(ticket, { blocks }),
-          event: ticketEvent(ticket),
-          work: blocks.map((b, i) => workEvent(ticket, b, i, blocks.length)),
-        });
-        const st = (v) => (v === true ? 'ok' : 'falhou');
-        status = { rar: st(j.rar), email: st(j.email), calendar: st(j.calendar) };
-        if (j.warnings?.length) error = j.warnings.join(' · ');
-      } else if (mailer) {
-        const mail = ticketEmail(ticket, { blocks, calendar: false });
-        await mailer.sendMail({
-          from: process.env.MAIL_FROM || `Gove Design System <no-reply@${domain}>`,
-          to: inbox,
-          cc: ticket.requesterEmail,
-          replyTo: ticket.requesterEmail,
-          subject: mail.subject,
-          text: mail.text,
-          html: mail.html,
-          icalEvent: { filename: `${ticket.id}.ics`, method: 'REQUEST', content: ticketIcs(ticket) },
-        });
-        status = { rar: 'pendente', email: 'ok', calendar: 'pendente' };
-      }
+      out = await dispatch(ticket, blocks, ['rar', 'email', 'calendar'], initial);
     } catch (err) {
-      error = err.message || 'Falha ao avisar a área de design.';
-      status = { rar: 'falhou', email: 'falhou', calendar: 'falhou' };
+      out = { status: initial, error: err.message || 'Falha ao avisar a área de design.', notes: [] };
     }
-    setStatus.run(status.rar, status.email, status.calendar, error, ticket.id);
-    res.status(201).json({ ticket: record, status, error: error ?? undefined });
+    setStatus.run(out.status.rar, out.status.email, out.status.calendar, out.error, ticket.id);
+    res.status(201).json({ ticket: record, status: out.status, error: out.error ?? undefined, notes: out.notes });
+  });
+
+  // Reenvio com o mesmo código: refaz só os passos que falharam (sem duplicar e-mail nem evento)
+  router.post('/:id/reenviar', async (req, res) => {
+    const me = requester(req);
+    if (!me) return res.status(401).json({ error: 'Faça login para reenviar.' });
+    const row = getOne.get(String(req.params.id));
+    if (!row) return res.status(404).json({ error: 'Pedido não encontrado.' });
+    const record = JSON.parse(row.data);
+    if (record.requesterEmail !== me.email && me.email !== inbox) return res.status(403).json({ error: 'Só quem pediu reenvia o pedido.' });
+    const prev = { rar: row.rar, email: row.email, calendar: row.calendar };
+    const steps = Object.keys(prev).filter((k) => prev[k] === 'falhou');
+    if (!steps.length) return res.json({ ticket: record, status: prev, notes: ['Nada a reenviar: os passos já foram concluídos.'] });
+    const { work = [], calendarChecked: _c, ...ticket } = record;
+    let out;
+    try {
+      out = await dispatch(ticket, work, steps, prev);
+    } catch (err) {
+      out = { status: prev, error: err.message || 'Falha ao reenviar.', notes: [] };
+    }
+    setStatus.run(out.status.rar, out.status.email, out.status.calendar, out.error, ticket.id);
+    res.json({ ticket: record, status: out.status, error: out.error ?? undefined, notes: out.notes });
   });
 
   return router;

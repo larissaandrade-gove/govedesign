@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Clock, PencilSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react';
-import { dailyHours, dueTime, nameFromEmail, normalizeSchedule, scheduleLabel, type Schedule } from '../../../shared/tickets.js';
+import { dailyHours, dueTime, normalizeSchedule, scheduleLabel, type Schedule } from '../../../shared/tickets.js';
 import { saveSchedule, type Mode, type ScheduleState } from '../lib/tickets';
 import { Button } from './ui/Button';
 
@@ -18,9 +18,9 @@ const time = 'min-h-11 w-full rounded-md border border-secondary bg-background p
 const updated = (iso?: string) => (iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }) : null);
 
 /**
- * Horário de trabalho da responsável pelas solicitações. Todos veem o
- * expediente que define os prazos; só ela o altera, e os pedidos seguintes
- * passam a usá-lo (cada pedido guarda o expediente em que foi feito).
+ * Horário de trabalho da responsável pelas solicitações. Só ela vê e altera
+ * (a página Solicitações mostra o card apenas com `canEdit`); os pedidos
+ * seguintes passam a usá-lo (cada pedido guarda o expediente em que foi feito).
  */
 export function ExpedienteCard({ mode, state }: { mode: Mode | null; state: ScheduleState | null }) {
   const [editing, setEditing] = useState(false);
@@ -68,7 +68,7 @@ export function ExpedienteCard({ mode, state }: { mode: Mode | null; state: Sche
               {scheduleLabel(s)} · entregas até {dueTime(s)}
             </p>
             <p className="text-caption text-text-secondary">
-              Os prazos das solicitações seguem o expediente de {nameFromEmail(state.owner)}, responsável pela execução.
+              Só você vê este horário. Os prazos das solicitações seguem ele; as demais pessoas veem apenas o prazo mínimo e a entrega prevista.
               {updated(s.updatedAt) ? ` Atualizado em ${updated(s.updatedAt)}.` : ''}
             </p>
           </div>

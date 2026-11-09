@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUp } from '@phosphor-icons/react';
 
-/** Botão flutuante de voltar ao topo; aparece depois de rolar uma tela. */
+/** Botão flutuante de voltar ao topo; aparece depois de rolar uma tela, acima do botão de Solicitações. */
 export function BackToTop() {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -23,7 +23,7 @@ export function BackToTop() {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Voltar ao topo"
           title="Voltar ao topo"
-          className="fixed bottom-[88px] right-space-2 z-40 flex size-12 items-center justify-center rounded-full border border-secondary bg-background text-text-primary shadow-md transition-colors hover:border-primary lg:bottom-space-4 lg:right-space-4"
+          className="fixed bottom-[168px] right-space-2 z-40 flex size-12 items-center justify-center rounded-full border border-secondary bg-background text-text-primary shadow-md transition-colors hover:border-primary lg:bottom-[96px] lg:right-[28px]"
         >
           <ArrowUp className="size-5" aria-hidden />
         </motion.button>

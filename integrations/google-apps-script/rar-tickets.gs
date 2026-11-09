@@ -6,7 +6,9 @@
  *    - action "ocupado": devolve os horários ocupados da agenda (reuniões,
  *      produções já marcadas, ausências) para o servidor distribuir a produção;
  *    - pedido: lança a linha, envia o e-mail (com quem pediu em cópia), cria o
- *      evento de entrega (com quem pediu convidado) e os blocos de produção.
+ *      evento de entrega (só quem pediu convidado; a dona do script, a
+ *      responsável, é a organizadora) e os blocos de produção. Com `steps`,
+ *      refaz só os passos pedidos (reenvio sem duplicar).
  * 2. lerCaixaDeEntrada — gatilho de tempo (a cada 5 min). Lê os e-mails
  *    "[Design] …" com o marcador gove-ticket (enviados pelo artefato no
  *    claude.ai ou pelo servidor via SMTP), lança a linha e cria os blocos de
@@ -99,14 +101,34 @@ function criarProducao_(ticket, work) {
   return work.length;
 }
 
+/** Um único e-mail @gove.digital (sem vírgulas nem outros endereços), ou ''. */
+function emailUnico_(email) {
+  var e = String(email || '').trim().toLowerCase();
+  return /^[a-z0-9](?:[a-z0-9._+-]{0,62}[a-z0-9])?@gove\.digital$/.test(e) ? e : '';
+}
+
+/**
+ * Evento de entrega na agenda da dona do script (a responsável), com só quem
+ * pediu convidado. Não duplica: se já existe um evento de entrega com o código, usa ele.
+ */
 function criarEvento_(ticket, ev) {
   var inicio = new Date(ev.startTime + '-03:00');
   var fim = new Date(ev.endTime + '-03:00');
-  var evento = CalendarApp.getDefaultCalendar().createEvent(ev.summary, inicio, fim, {
+  var cal = CalendarApp.getDefaultCalendar();
+  var existente = cal.getEvents(inicio, fim, { search: ticket.id }).filter(function (e) {
+    return e.getTitle().indexOf('Entrega design') === 0;
+  })[0];
+  if (existente) return existente.getId();
+  var convidada = emailUnico_(ticket.requesterEmail);
+  var evento = cal.createEvent(ev.summary, inicio, fim, {
     description: ev.description,
-    guests: ticket.requesterEmail,
-    sendInvites: true,
+    guests: convidada,
+    sendInvites: Boolean(convidada),
   });
+  evento.setGuestsCanInviteOthers(false);
+  evento.setGuestsCanModify(false);
+  evento.setGuestsCanSeeGuests(true);
+  evento.setVisibility(CalendarApp.Visibility.PRIVATE);
   evento.removeAllReminders();
   evento.addPopupReminder(24 * 60);
   evento.addEmailReminder(24 * 60);
@@ -127,34 +149,44 @@ function doPost(e) {
   if (corpo.action === 'ocupado') return json_({ busy: ocupado_(new Date(corpo.start), new Date(corpo.end)) });
 
   var t = corpo.ticket;
+  var passos = corpo.steps && corpo.steps.length ? corpo.steps : ['rar', 'email', 'calendar'];
+  var quer = function (p) {
+    return passos.indexOf(p) >= 0;
+  };
   var r = { rar: false, email: false, calendar: false };
   var erros = [];
-  try {
-    r.row = lancarNoRar_(t, corpo.row);
-    r.rar = true;
-  } catch (err) {
-    erros.push('RAR: ' + err.message);
+  if (quer('rar')) {
+    try {
+      r.row = lancarNoRar_(t, corpo.row);
+      r.rar = true;
+    } catch (err) {
+      erros.push('RAR: ' + err.message);
+    }
   }
-  try {
-    MailApp.sendEmail({
-      to: corpo.inbox,
-      cc: t.requesterEmail,
-      replyTo: t.requesterEmail,
-      name: 'Gove Design System',
-      subject: corpo.email.subject,
-      body: corpo.email.text,
-      htmlBody: corpo.email.html,
-    });
-    r.email = true;
-  } catch (err) {
-    erros.push('E-mail: ' + err.message);
+  if (quer('email')) {
+    try {
+      MailApp.sendEmail({
+        to: corpo.inbox,
+        cc: emailUnico_(t.requesterEmail),
+        replyTo: emailUnico_(t.requesterEmail),
+        name: 'Gove Design System',
+        subject: corpo.email.subject,
+        body: corpo.email.text,
+        htmlBody: corpo.email.html,
+      });
+      r.email = true;
+    } catch (err) {
+      erros.push('E-mail: ' + err.message);
+    }
   }
-  try {
-    r.eventId = criarEvento_(t, corpo.event);
-    r.producao = criarProducao_(t, corpo.work);
-    r.calendar = true;
-  } catch (err) {
-    erros.push('Agenda: ' + err.message);
+  if (quer('calendar')) {
+    try {
+      r.eventId = criarEvento_(t, corpo.event);
+      r.producao = criarProducao_(t, corpo.work);
+      r.calendar = true;
+    } catch (err) {
+      erros.push('Agenda: ' + err.message);
+    }
   }
   if (erros.length) r.warnings = erros;
   return json_(r);
@@ -192,8 +224,8 @@ function lerCaixaDeEntrada() {
           var ev = {
             summary: 'Entrega design: ' + dado.ticket.title + ' (' + dado.ticket.id + ')',
             description: 'Solicitante: ' + dado.ticket.requesterName + ' (' + dado.ticket.requesterEmail + ')\n' + dado.row['Resultado / Comentários'],
-            // Última hora do expediente da responsável (pedidos antigos: 17h–18h)
-            startTime: dado.ticket.dueDate + 'T' + horaMenos1_(dado.ticket.dueTime || '18:00') + ':00',
+            // Última hora do expediente da responsável, dentro do último período (pedidos antigos: 17h–18h)
+            startTime: dado.ticket.dueDate + 'T' + inicioEntrega_(dado.ticket) + ':00',
             endTime: dado.ticket.dueDate + 'T' + (dado.ticket.dueTime || '18:00') + ':00',
           };
           criarEvento_(dado.ticket, ev);
@@ -207,9 +239,17 @@ function lerCaixaDeEntrada() {
   });
 }
 
-/** "17:00" → "16:00". */
-function horaMenos1_(hhmm) {
-  var m = Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5)) - 60;
+function minutos_(hhmm) {
+  return Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+}
+
+/** Início do evento de entrega: 1 h antes da entrega, sem sair do último período do expediente ("17:00" → "16:00"; último período 13:00–13:30 → "13:00"). */
+function inicioEntrega_(ticket) {
+  var fim = ticket.dueTime || '18:00';
+  var m = minutos_(fim) - 60;
+  var periodos = ticket.schedule && ticket.schedule.periods;
+  var ultimo = periodos && periodos.length ? periodos[periodos.length - 1] : null;
+  if (ultimo && ultimo[1] === fim) m = Math.max(m, minutos_(ultimo[0]));
   return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
 }
 

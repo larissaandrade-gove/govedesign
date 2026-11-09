@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowsLeftRight, Books, House, List, MagnifyingGlass, Plus, Ticket, UsersThree, type Icon as IconType } from '@phosphor-icons/react';
-import { groupOf, openNewRequest, openSearch, type Group } from '../lib/useMobile';
+import { ArrowLeft, ArrowsLeftRight, Books, House, List, MagnifyingGlass, Ticket, UsersThree, type Icon as IconType } from '@phosphor-icons/react';
+import { groupOf, openSearch, type Group } from '../lib/useMobile';
 import { EASE } from '../lib/motion';
 import { APPS } from '../data/apps';
 import { INSTRUCOES, teamApps, type Team } from '../data/teams';
@@ -14,8 +14,9 @@ import { isOpen, useStatuses } from '../lib/appStatus';
 
 /**
  * Navegação no padrão Material Design 3, organizada pela equipe escolhida:
- * - computador: navigation drawer (aberta) com a equipe, os apps dela e Instruções, que recolhe para navigation rail, com o FAB "Nova solicitação";
- * - celular: top app bar (logo ou título do app, voltar e busca), navigation bar com 4 destinos e FAB no Início e em Solicitações.
+ * - computador: navigation drawer (aberta) com a equipe, os apps dela e Instruções, que recolhe para navigation rail;
+ * - celular: top app bar (logo ou título do app, voltar e busca) e navigation bar com 4 destinos.
+ * A nova solicitação fica num botão único e flutuante, em todas as telas (RequestFab).
  * Item ativo: indicador em pílula (secondary) e ícone no peso fill — o regular é o padrão.
  */
 /** Destinos da navigation rail (computador recolhido) e da navigation bar (celular). */
@@ -118,24 +119,6 @@ function Destination({ href, label, icon: Icon, on, wide = false }: { href: stri
   );
 }
 
-/** FAB "Nova solicitação": a ação principal do Design System (accent, um por tela). */
-function Fab({ extended }: { extended: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={openNewRequest}
-      aria-label={extended ? undefined : 'Nova solicitação'}
-      title={extended ? undefined : 'Nova solicitação'}
-      className={`flex h-14 shrink-0 items-center justify-center gap-space-1 rounded-lg bg-accent font-semibold text-on-accent shadow-glow-yellow transition-[box-shadow,transform] duration-200 hover:scale-[1.02] hover:shadow-glow-yellow-strong ${
-        extended ? 'px-space-2 text-body' : 'w-14'
-      }`}
-    >
-      <Plus className="size-6" aria-hidden />
-      {extended && 'Nova solicitação'}
-    </button>
-  );
-}
-
 const iconButton = 'flex size-12 shrink-0 items-center justify-center rounded-full text-text-primary no-underline transition-colors hover:bg-secondary/50';
 
 export function Sidebar({ view, team }: { view: View; team: Team | null }) {
@@ -188,10 +171,6 @@ export function Sidebar({ view, team }: { view: View; team: Team | null }) {
             </a>
           </div>
         ) : null}
-
-        <div className={`flex shrink-0 ${open ? 'px-space-2' : 'justify-center'}`}>
-          <Fab extended={open} />
-        </div>
 
         {open ? (
           <nav aria-label="Seções do design system" className="min-h-0 flex-1 overflow-y-auto px-space-1">
@@ -291,12 +270,6 @@ export function Sidebar({ view, team }: { view: View; team: Team | null }) {
             <Destination key={d.id} href={d.href} label={d.label} icon={d.id === 'equipes' ? TeamIcon : d.icon} on={group === d.id} wide />
           ))}
         </nav>
-      )}
-      {/* FAB do Início e de Solicitações no celular: 16px acima da navigation bar */}
-      {!appView && (group === 'inicio' || group === 'solicitacoes') && (
-        <div className="fixed right-space-2 z-30 lg:hidden" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
-          <Fab extended />
-        </div>
       )}
     </>
   );

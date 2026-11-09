@@ -14,7 +14,11 @@ import {
   effortHours,
   dueTime,
   freeFromBusy,
+  freeFromSlots,
+  isRealDate,
   leadHours,
+  parseCalendarTime,
+  strictEmail,
   normalizeSchedule,
   ticketEvent,
   planWork,
@@ -137,8 +141,8 @@ test('linha do RAR, e-mail com solicitante e marcador, .ics no prazo', () => {
   assert.match(data.work[0].summary, /^Produção 1\/\d: Garrafas para o GF26 \[DS-ABC234\]$/);
   assert.match(ticketIcs(ticket), /DTSTART:20261023T190000Z/); // 16h de Brasília (última hora do expediente)
   assert.match(mail.text, /Entrega: 23\/10\/2026, até 17h/);
-  assert.match(ticketIcs(ticket), /ORGANIZER:mailto:larissa\.andrade@gove\.digital/);
-  assert.match(ticketIcs(ticket), /ATTENDEE;CN=Ana Souza:mailto:ana\.souza@gove\.digital/);
+  assert.match(ticketIcs(ticket), /ORGANIZER;CN="Larissa Andrade":mailto:larissa\.andrade@gove\.digital/);
+  assert.match(ticketIcs(ticket).replace(/\r\n /g, ''), /ATTENDEE;CN="Ana Souza";.*:mailto:ana\.souza@gove\.digital/);
 });
 
 function serve(opts) {
@@ -223,10 +227,17 @@ test('rota: sem Apps Script, envia e-mail com convite pelo SMTP', async () => {
   const s = serve({ mailer: { sendMail: async (m) => sent.push(m) }, inbox: 'design@gove.digital' });
   try {
     const j = await (await post(s.base, base())).json();
-    assert.deepEqual(j.status, { rar: 'pendente', email: 'ok', calendar: 'pendente' });
+    // O convite vai no e-mail: agenda ok; o RAR fica com o gatilho do Apps Script
+    assert.deepEqual(j.status, { rar: 'pendente', email: 'ok', calendar: 'ok' });
+    assert.equal(sent.length, 1);
     assert.equal(sent[0].to, 'design@gove.digital');
     assert.equal(sent[0].cc, 'larissa.andrade@gove.digital');
     assert.match(sent[0].icalEvent.content, /BEGIN:VEVENT/);
+    assert.match(sent[0].icalEvent.content, /METHOD:REQUEST/);
+    assert.match(sent[0].icalEvent.content, /ORGANIZER;CN="Design":mailto:design@gove\.digital/);
+    // Marcador com calendar:true: o gatilho do Apps Script não cria um segundo convite
+    const m = sent[0].text.match(new RegExp(`${TICKET_MARKER}([A-Za-z0-9+/=]+)\\.`));
+    assert.equal(JSON.parse(Buffer.from(m[1], 'base64').toString('utf8')).calendar, true);
   } finally {
     s.close();
   }
@@ -278,5 +289,185 @@ test('rota: só a responsável altera o expediente; pedidos seguintes usam o nov
   } finally {
     outra.close();
     dona.close();
+  }
+});
+
+/* ---------------------------------------------- revisão do fluxo (09/11) */
+
+test('agenda: sobra de 15 min não reprova pedido viável (último bloco pode ser menor que 30 min)', () => {
+  // Terça 8h15–9h30 e quarta 8h15–9h: exatamente 2 h livres
+  const free = [
+    { start: at('2026-10-20T08:15:00'), end: at('2026-10-20T09:30:00') },
+    { start: at('2026-10-21T08:15:00'), end: at('2026-10-21T09:00:00') },
+  ];
+  const p = planWork({ nowMs: at('2026-10-19T08:00:00'), dueMs: dueInstant('2026-10-21'), hours: 2, free });
+  assert.equal(p.missingHours, 0);
+  assert.equal(p.blocks.reduce((n, b) => n + b.end - b.start, 0), 2 * 36e5);
+  // Sem necessidade, nada de bloco menor que 30 min
+  const normal = planWork({ nowMs: SEG_10H, dueMs: dueInstant('2026-10-23'), hours: 8 });
+  assert.ok(normal.blocks.every((b) => b.end - b.start >= 30 * 60e3));
+});
+
+test('suggest_time: horários sem fuso valem em Brasília; vazio ou truncado não vira "agenda livre"', () => {
+  assert.equal(parseCalendarTime('2026-10-20T08:00:00'), at('2026-10-20T08:00:00'));
+  assert.equal(parseCalendarTime('2026-10-20T11:00:00Z'), at('2026-10-20T08:00:00'));
+  assert.equal(parseCalendarTime({ dateTime: '2026-10-20T08:00:00-03:00' }), at('2026-10-20T08:00:00'));
+  const start = SEG_10H;
+  const end = SEG_10H + 45 * 864e5;
+  // Sem a lista: agenda não consultada
+  assert.equal(freeFromSlots({}, { startMs: start, endMs: end }), null);
+  // Lista vazia: a janela consultada está ocupada; depois dela, só o expediente
+  const vazia = freeFromSlots({ timeSlots: [] }, { startMs: start, endMs: end, pageSize: 100 });
+  assert.equal(vazia.length, 1);
+  assert.equal(vazia[0].start, end);
+  assert.equal(earliestFeasibleDate({ nowMs: SEG_10H, typeId: 'redesign', priority: 'alta', free: vazia }) > '2026-11-30', true);
+  // Truncada: cobertura até o último horário recebido; depois, expediente puro
+  const slots = [{ startTime: '2026-10-20T08:00:00', endTime: '2026-10-20T12:00:00' }];
+  const trunc = freeFromSlots({ timeSlots: slots }, { startMs: start, endMs: end, pageSize: 1 });
+  assert.deepEqual(trunc[0], { start: at('2026-10-20T08:00:00'), end: at('2026-10-20T12:00:00') });
+  assert.equal(trunc[1].start, at('2026-10-20T12:00:00'));
+  const p = planWork({ nowMs: SEG_10H, dueMs: dueInstant('2026-10-23'), hours: 8, free: trunc });
+  assert.equal(p.missingHours, 0);
+  assert.ok(p.blocks.every((b) => b.start >= at('2026-10-20T08:00:00')), 'segunda (fora dos horários livres) não é usada');
+});
+
+test('validação: data impossível e e-mail estrito', () => {
+  assert.equal(isRealDate('2026-02-30'), false);
+  assert.equal(isRealDate('2026-02-28'), true);
+  assert.match(validateTicket(base({ dueDate: '2026-02-30' }), { now: SEG_10H }).errors.dueDate, /não existe/);
+  assert.equal(strictEmail(' Ana.Souza@gove.digital '), 'ana.souza@gove.digital');
+  for (const bad of ['ana,bia@gove.digital', 'ana@gove.digital,bia@gove.digital', 'ana@gove.digital bia@gove.digital', 'ana;x@gove.digital', 'ana@gmail.com', 'ana..x@gove.digital'])
+    assert.ok(validateTicket(base({ requesterEmail: bad }), { now: SEG_10H }).errors.requesterEmail, bad);
+});
+
+test('entrega: último período menor que 60 min mantém o evento dentro dele', () => {
+  const CURTO = { days: [1, 2, 3, 4, 5], periods: [['08:00', '12:00'], ['13:00', '13:30']] };
+  const { ticket } = validateTicket(base({ dueDate: '2026-10-30' }), { now: SEG_10H, schedule: CURTO, id: 'DS-CURTO2' });
+  const ev = ticketEvent(ticket);
+  assert.equal(ev.startTime, '2026-10-30T13:00:00');
+  assert.equal(ev.endTime, '2026-10-30T13:30:00');
+  const ics = ticketIcs(ticket);
+  assert.match(ics, /DTSTART:20261030T160000Z/);
+  assert.match(ics, /DTEND:20261030T163000Z/);
+});
+
+test('.ics: METHOD:REQUEST, linhas dobradas (75 octetos) e nome entre aspas', () => {
+  const { ticket } = validateTicket(base({ requesterName: 'Ana "Bia" Souza; Silva', description: `${DESC} ${'Texto longo com acentuação — '.repeat(10)}` }), { now: SEG_10H, id: 'DS-ICS234' });
+  const ics = ticketIcs(ticket, { organizer: 'design@gove.digital' });
+  assert.match(ics, /^BEGIN:VCALENDAR\r\nVERSION:2\.0\r\n.*METHOD:REQUEST\r\n/s);
+  assert.match(ics, /ORGANIZER;CN="Design":mailto:design@gove\.digital/);
+  assert.match(ics.replace(/\r\n /g, ''), /ATTENDEE;CN="Ana Bia Souza; Silva";.*:mailto:ana\.souza@gove\.digital/);
+  for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line, 'utf8') <= 75, line);
+  assert.ok(ics.includes('\r\n '), 'linhas longas continuam com espaço');
+});
+
+test('e-mail: detalhe com ": " no valor não é cortado', () => {
+  const { ticket } = validateTicket(base({ details: { quantidade: '200: 100 azuis e 100 brancas', fornecedor: 'X' } }), { now: SEG_10H, id: 'DS-DET234' });
+  const mail = ticketEmail(ticket);
+  assert.match(mail.text, /Quantidade: 200: 100 azuis e 100 brancas/);
+  assert.match(mail.html, /200: 100 azuis e 100 brancas/);
+});
+
+test('rota: expediente sem owner nem updatedAt para quem não é a responsável', async () => {
+  const outra = serve({ sessionEmail: () => 'ana.souza@gove.digital' });
+  const db = new Database(':memory:');
+  const dona = serve({ db });
+  try {
+    await fetch(dona.base + '/expediente', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(CEDO) });
+    const d = await (await fetch(dona.base + '/expediente')).json();
+    assert.equal(d.owner, 'larissa.andrade@gove.digital');
+    assert.ok(d.schedule.updatedAt);
+    const o = await (await fetch(outra.base + '/expediente')).json();
+    assert.equal(o.canEdit, false);
+    assert.equal('owner' in o, false);
+    assert.deepEqual(Object.keys(o.schedule).sort(), ['days', 'periods']);
+  } finally {
+    outra.close();
+    dona.close();
+  }
+});
+
+test('rota: lista só os pedidos de quem pergunta; a responsável vê todos', async () => {
+  const db = new Database(':memory:');
+  const as = (email) => serve({ db, sessionEmail: () => email });
+  const ana = as('ana.souza@gove.digital');
+  const bia = as('bia.lima@gove.digital');
+  const dona = as('larissa.andrade@gove.digital');
+  const anon = as(null);
+  try {
+    const a = await (await post(ana.base, base({ title: 'Pedido da Ana' }))).json();
+    const b = await (await post(bia.base, base({ title: 'Pedido da Bia' }))).json();
+    assert.deepEqual((await (await fetch(ana.base)).json()).map((t) => t.id), [a.ticket.id]);
+    assert.deepEqual((await (await fetch(bia.base)).json()).map((t) => t.id), [b.ticket.id]);
+    assert.deepEqual((await (await fetch(dona.base)).json()).map((t) => t.id).sort(), [a.ticket.id, b.ticket.id].sort());
+    assert.equal((await fetch(anon.base)).status, 401);
+    // Sem Apps Script nem SMTP: "não configurado" com a nota do motivo
+    assert.deepEqual(a.status, { rar: 'não configurado', email: 'não configurado', calendar: 'não configurado' });
+    assert.match(a.notes.join(' '), /não tem o Apps Script nem o SMTP/);
+  } finally {
+    for (const s of [ana, bia, dona, anon]) s.close();
+  }
+});
+
+test('rota: falha parcial marca só o passo; reenvio com o mesmo código refaz só ele', async () => {
+  const calls = [];
+  let falhaEmail = true;
+  const fetchImpl = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    calls.push(body);
+    if (body.action === 'ocupado') return new Response(JSON.stringify({ busy: [] }));
+    const steps = body.steps;
+    const out = { rar: steps.includes('rar'), email: steps.includes('email') && !falhaEmail, calendar: steps.includes('calendar') };
+    if (steps.includes('email') && falhaEmail) out.warnings = ['E-mail: cota diária'];
+    return new Response(JSON.stringify(out));
+  };
+  const s = serve({ webhookUrl: 'https://x/exec', webhookToken: 't', fetchImpl });
+  try {
+    const j = await (await post(s.base, base())).json();
+    assert.deepEqual(j.status, { rar: 'ok', email: 'falhou', calendar: 'ok' });
+    assert.match(j.error, /cota/);
+    falhaEmail = false;
+    const r = await (await post(`${s.base}/${j.ticket.id}/reenviar`, {})).json();
+    assert.deepEqual(r.status, { rar: 'ok', email: 'ok', calendar: 'ok' });
+    const sends = calls.filter((c) => c.source === 'server');
+    assert.equal(sends.length, 2);
+    assert.deepEqual(sends[1].steps, ['email']);
+    assert.equal(sends[1].ticket.id, j.ticket.id);
+    // Nada mais a reenviar: não chama o Apps Script de novo
+    await post(`${s.base}/${j.ticket.id}/reenviar`, {});
+    assert.equal(calls.filter((c) => c.source === 'server').length, 2);
+  } finally {
+    s.close();
+  }
+});
+
+test('rota: Apps Script fora do ar com SMTP: o aviso sai por e-mail e nada fica "tudo falhou"', async () => {
+  const sent = [];
+  const fetchImpl = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    if (body.action === 'ocupado') return new Response(JSON.stringify({ busy: [] }));
+    throw new Error('rede fora');
+  };
+  const s = serve({ webhookUrl: 'https://x/exec', webhookToken: 't', fetchImpl, mailer: { sendMail: async (m) => sent.push(m) } });
+  try {
+    const j = await (await post(s.base, base())).json();
+    assert.deepEqual(j.status, { rar: 'pendente', email: 'ok', calendar: 'ok' });
+    assert.equal(sent.length, 1);
+    assert.match(j.error, /rede fora/);
+  } finally {
+    s.close();
+  }
+});
+
+test('rota: SMTP com exceção marca e-mail e agenda, não o RAR já gravado', async () => {
+  const s = serve({ mailer: { sendMail: async () => { throw new Error('SMTP recusou'); } } });
+  try {
+    const j = await (await post(s.base, base())).json();
+    assert.deepEqual(j.status, { rar: 'pendente', email: 'falhou', calendar: 'falhou' });
+    assert.match(j.error, /SMTP recusou/);
+    const lista = await (await fetch(s.base)).json();
+    assert.equal(lista[0].id, j.ticket.id); // o pedido continua gravado
+  } finally {
+    s.close();
   }
 });

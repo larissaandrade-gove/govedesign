@@ -86,7 +86,8 @@ export function AppPage({ appId }: { appId: string }) {
   }
 
   return (
-    <article className="gutter pb-space-3 pt-[72px] lg:pb-space-4 lg:pt-space-2" aria-label={app.name}>
+    // Embaixo fica uma faixa livre para o botão de Solicitações, fora da área de toque do app
+    <article className="gutter pb-[80px] pt-[72px] lg:pt-space-2" aria-label={app.name}>
       {mobile &&
         slot &&
         createPortal(
@@ -190,7 +191,7 @@ export function AppPage({ appId }: { appId: string }) {
               </p>
             </div>
           ) : pub.status === 'publicado' && !findClaude() ? (
-            <section aria-label={app.name} className="relative h-[calc(100dvh-88px)] min-h-[480px] overflow-hidden rounded-lg border border-secondary bg-background shadow-md lg:h-[calc(100vh-112px)]">
+            <section aria-label={app.name} className="relative h-[calc(100dvh-168px)] min-h-[480px] overflow-hidden rounded-lg border border-secondary bg-background shadow-md lg:h-[calc(100vh-184px)]">
               <iframe key={reloadKey} title={app.name} src={pub.url} className="absolute inset-0 block h-full w-full border-0 bg-background" />
             </section>
           ) : pub.status === 'publicado' ? (

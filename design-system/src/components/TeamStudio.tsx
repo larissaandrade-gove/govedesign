@@ -194,7 +194,7 @@ export function TeamStudio({ team }: { team: Team }) {
       )}
 
       <motion.section variants={fadeUp} aria-label="Atalhos" className="gutter grid grid-cols-1 gap-space-2 md:grid-cols-2">
-        <Shortcut href="#solicitacoes" icon={Ticket} title="Solicitações" text="Peça ao time de design o que os apps não resolvem." />
+        <Shortcut href="#solicitacoes" icon={Ticket} title="Seus pedidos" text="Acompanhe as solicitações que você abriu ao time de design." />
         {!team.instrucoes && <Shortcut href="#instrucoes" icon={Books} title="Instruções" text="Cores, tipografia, logomarca e prompts para IA." />}
       </motion.section>
     </motion.div>

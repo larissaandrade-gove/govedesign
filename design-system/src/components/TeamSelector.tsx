@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CaretRight, CheckCircle, Ticket } from '@phosphor-icons/react';
+import { CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { TEAMS, type Team } from '../data/teams';
 import { fadeUp, stagger } from '../lib/motion';
 import { teamHref } from '../lib/team';
@@ -67,13 +67,6 @@ export function TeamSelector({ current }: { current: Team | null }) {
             })}
           </motion.ul>
 
-          <motion.p variants={fadeUp} className="text-center text-caption text-text-secondary">
-            Precisa de algo do time de design?{' '}
-            <a href="#solicitacoes" className="inline-flex min-h-11 items-center gap-1 font-semibold text-link">
-              <Ticket className="size-4" aria-hidden />
-              Abrir solicitação
-            </a>
-          </motion.p>
         </motion.div>
       </main>
     </div>
