@@ -50,8 +50,18 @@ export type PieceOptions = {
 };
 export type QueueItem = { key: string; municipioId: number; municipioNome: string; layouts: string[]; options: PieceOptions };
 
+/** Mensagem em PT-BR quando o servidor do Kit não responde (o navegador diz só "Failed to fetch"). */
+const OFFLINE = 'Sem conexão com o servidor do Kit de Boas-Vindas (VPN ligada?). Tente de novo.';
+async function net(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new Error(OFFLINE);
+  }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const res = await net(url, init);
   if (!res.ok) {
     let msg = `Erro ${res.status}`;
     try {
@@ -101,7 +111,7 @@ export const api = {
 
   preflight: (items: QueueItem[]) => request<{ pecas: PreflightPeca[]; ok: boolean }>('api/preflight', jsonBody({ items })),
   exportZip: async (items: QueueItem[]) => {
-    const res = await fetch('api/export', jsonBody({ items }));
+    const res = await net('api/export', jsonBody({ items }));
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Falha na exportação.');
     return res.blob();
   },

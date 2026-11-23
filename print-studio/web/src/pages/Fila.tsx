@@ -15,6 +15,13 @@ type Props = { queue: QueueItem[]; onRemove: (key: string) => void; onClear: () 
 const layoutName = (id: string) => LAYOUTS.find((l: { id: string }) => l.id === id)?.name ?? id;
 const RANK: Record<Level, number> = { ok: 0, warn: 1, error: 2 };
 
+/** Erros de rede do navegador ("Failed to fetch", "Load failed") viram uma mensagem que diz o que fazer. */
+function friendlyError(err: unknown) {
+  const msg = (err as Error)?.message ?? '';
+  if (/failed to fetch|load failed|networkerror/i.test(msg)) return 'Não foi possível gerar os arquivos: uma conexão foi bloqueada. Recarregue a página e tente de novo; se continuar, abra uma solicitação com o print desta mensagem.';
+  return msg || 'Não foi possível gerar os arquivos.';
+}
+
 export function Fila({ queue, onRemove, onClear }: Props) {
   const [checking, setChecking] = useState(false);
   const [report, setReport] = useState<{ pecas: PreflightPeca[]; ok: boolean } | null>(null);
@@ -29,7 +36,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
     try {
       setReport(await api.preflight(queue));
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(friendlyError(err));
     } finally {
       setChecking(false);
     }
@@ -44,7 +51,7 @@ export function Fila({ queue, onRemove, onClear }: Props) {
       toast.success(`${total} PDF(s) exportado(s).`);
       setReport(null);
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(friendlyError(err));
     } finally {
       setExporting(false);
     }

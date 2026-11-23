@@ -28,17 +28,45 @@ export function measure(text: string, weight: string, sizePt: number): number {
 
 export const qrModules = (data: string) => QRCode.create(data, { errorCorrectionLevel: 'H' }).modules;
 
+/**
+ * Arquivo `data:` → Blob sem rede. No artefato do claude.ai a política de segurança
+ * (connect-src) bloqueia `fetch()` de URLs `data:`/`blob:` e o navegador lança
+ * "Failed to fetch"; por isso os logos embutidos são decodificados aqui mesmo.
+ */
+export function dataUrlToBlob(url: string): Blob {
+  const m = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(url);
+  if (!m) throw new Error('URL data: inválida.');
+  const [, type, b64, body] = m;
+  if (!b64) return new Blob([decodeURIComponent(body)], { type: type || 'text/plain' });
+  const bin = atob(body);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: type || 'application/octet-stream' });
+}
+
+async function brandLogoBlob(file: string): Promise<Blob> {
+  const url = brandLogoUrl(file);
+  if (!url) throw new Error(`Logomarca oficial não encontrada (${file}).`);
+  if (url.startsWith('data:')) return dataUrlToBlob(url);
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Erro ${r.status}`);
+    return await r.blob();
+  } catch {
+    throw new Error('Não foi possível carregar a logomarca da Gove para o PDF. Confira a conexão e tente de novo.');
+  }
+}
+
 const stencils = new Map<string, Promise<any[]>>();
 function officialStencils(e: any) {
   const key = `${e.file}:${e.variant}`;
   if (!stencils.has(key)) {
-    stencils.set(
-      key,
-      fetch(brandLogoUrl(e.file))
-        .then((r) => r.blob())
-        .then((b) => rgbaOf(b))
-        .then(({ data, width, height }) => buildStencils(data, width, height, LOGO_VARIANT_COLORS[e.variant as keyof typeof LOGO_VARIANT_COLORS])),
-    );
+    const p = brandLogoBlob(e.file)
+      .then((b) => rgbaOf(b))
+      .then(({ data, width, height }) => buildStencils(data, width, height, LOGO_VARIANT_COLORS[e.variant as keyof typeof LOGO_VARIANT_COLORS]));
+    // Uma falha não fica presa no cache: a próxima tentativa refaz a leitura.
+    p.catch(() => stencils.delete(key));
+    stencils.set(key, p);
   }
   return stencils.get(key)!;
 }

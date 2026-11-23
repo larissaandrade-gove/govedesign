@@ -60,6 +60,11 @@ export function capability<T = any>(name: string): Promise<T | null> {
 
 export const insideArtifact = () => findClaude() !== null;
 
+// Regra para os apps: dentro do artefato, a política de segurança do claude.ai
+// (connect-src) bloqueia `fetch()` de URLs `data:` e `blob:` com "Failed to fetch".
+// Arquivos embutidos ou gerados no navegador devem ser decodificados localmente
+// (ex.: dataUrlToBlob em print-studio/web/src/lib/pdf.browser.ts), nunca buscados.
+
 /* ------------------------------------------------------------------- store */
 
 export type Doc = Record<string, unknown> & { id: string };
