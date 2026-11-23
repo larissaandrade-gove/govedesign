@@ -35,3 +35,46 @@ Abra uma solicitação pelo botão amarelo no canto inferior da tela e inclua:
 - o município e as peças que estavam na fila;
 - o navegador usado (Chrome, Edge, Safari…);
 - se estava no Design System do claude.ai ou no endereço interno da Gove (VPN).
+
+---
+
+# Parte 2: o .zip não chegava ao computador
+
+**Data:** 23/11/2026 · **Status:** corrigido (falta a confirmação da analista no claude.ai)
+
+## O que aconteceu
+Depois da primeira correção, a exportação terminava e o app mostrava **"4 PDF(s) exportado(s)"**, mas o .zip **não aparecia nos downloads** do computador.
+
+## Causa
+No claude.ai, o download passa por uma **janela de confirmação do claude.ai**. O arquivo só é salvo quando a pessoa clica em aceitar. Três falhas no app escondiam o problema:
+- **Falso sucesso:** quando essa janela não estava disponível, o app tentava um download "comum" do navegador. Dentro do claude.ai, o navegador **descarta esse download em silêncio**, e o app mostrava "exportado" mesmo assim.
+- **Falha que ficava presa:** se o claude.ai demorasse a responder na primeira vez, o app desistia do download pelo resto da sessão, até recarregar a página.
+- **Sem segunda chance:** se a janela fosse recusada, expirasse ou não aparecesse, era preciso gerar tudo de novo, e as mensagens não diziam o que fazer.
+
+## O que foi corrigido
+- Dentro do claude.ai, o app **não usa mais o download "comum"**. Se a janela do claude.ai não estiver disponível, ele avisa em vez de fingir que baixou.
+- **"Exportado" só aparece quando a pessoa aceita** a janela do claude.ai. Antes, um aviso pede: *"Confirme o download na janela do claude.ai"*.
+- Uma lentidão do claude.ai **não desliga mais** o download: o app pergunta de novo na tentativa seguinte.
+- Depois de gerar, os arquivos **ficam guardados na página**, num quadro **"Arquivos prontos"**, com dois botões:
+  - **Baixar .zip**: baixa de novo, sem gerar tudo outra vez;
+  - **Baixar PDFs separados**: baixa os PDFs um por um, caso o navegador ou a empresa bloqueie arquivos .zip.
+- Cada resultado tem uma mensagem própria em português: download recusado, janela já aberta, download indisponível ou arquivo grande demais.
+- Um item **"Detalhes"** mostra o código do resultado e a forma usada, para enviar ao suporte.
+- Os outros apps do Design System (Gerador de cases, Landing Pages, Gove Links e Criativos) também deixaram de mostrar falso sucesso no download.
+- Testes: o download foi simulado com a janela do claude.ai aceita, recusada, ocupada e indisponível, e também fora do claude.ai. Em todos os casos o app mostrou o resultado certo. O .zip saiu com os 4 PDFs.
+
+## Passo a passo da analista
+1. **Recarregue a página** do Design System no claude.ai (F5 ou Ctrl+R).
+2. No Kit de Boas-Vindas, vá à **Fila de exportação**, clique em **Verificar e exportar** e depois em **Baixar .zip**.
+3. Quando aparecer a **janela de download do claude.ai**, clique em **aceitar**.
+4. Se a janela não aparecer ou for fechada, use o botão **Baixar .zip** do quadro "Arquivos prontos". Não é preciso gerar de novo.
+5. Se o .zip continuar sem chegar, use **Baixar PDFs separados** e aceite a janela de cada PDF.
+
+## Se falhar de novo
+Abra uma solicitação pelo botão amarelo no canto inferior da tela e inclua:
+- o print do quadro "Arquivos prontos" com **"Detalhes" aberto** (código, resultado e forma);
+- a mensagem que apareceu;
+- o navegador usado e se estava no computador ou no celular;
+- se a janela de download do claude.ai apareceu ou não.
+
+**Limite:** não temos como abrir o claude.ai com a conta da analista. A confirmação final é ela baixar de novo depois de recarregar a página.

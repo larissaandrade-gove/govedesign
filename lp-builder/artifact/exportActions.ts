@@ -1,14 +1,14 @@
 /** Download e cópia do código exportado, compatíveis com o iframe do artefato. */
 import { toast } from "sonner";
-import { saveFile } from "@gove/runtime";
+import { saveFile, saveOutcomeText } from "@gove/runtime";
 import { slugify } from "@/lib/gove/export";
 
 export async function downloadCode(nome: string, code: string) {
   const filename = `landing-page-${slugify(nome)}.html`;
   const outcome = await saveFile(filename, new Blob([code], { type: "text/html;charset=utf-8" }));
   if (outcome === "saved") toast.success(`Arquivo ${filename} pronto.`);
-  else if (outcome === "error")
-    toast.error("Não foi possível baixar o arquivo. Use “Copiar código”.");
+  else if (outcome === "declined") toast("Download cancelado.");
+  else toast.error(`${saveOutcomeText(outcome)} Se preferir, use “Copiar código”.`);
 }
 
 /** Copia texto; usa a API de área de transferência e, se bloqueada, execCommand. */

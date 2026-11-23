@@ -4,7 +4,7 @@
  * transferência e a gravação de vídeo do app por estas funções.
  */
 import { toast } from "sonner";
-import { saveFile, type SaveOutcome } from "@gove/runtime";
+import { saveFile, saveOutcomeText, type SaveOutcome } from "@gove/runtime";
 
 /* --------------------------------------------------------------- downloads */
 
@@ -18,8 +18,7 @@ export async function saveDownload(blob: Blob, filename: string): Promise<SaveOu
   if (videoExt) name = name.replace(/\.(mp4|webm)$/i, "") + "." + videoExt;
   const outcome = await saveFile(name, blob);
   if (outcome === "declined") toast("Download cancelado.");
-  else if (outcome === "error")
-    toast.error("Não foi possível salvar o arquivo. Verifique se os downloads estão liberados para esta página.");
+  else if (outcome !== "saved") toast.error(saveOutcomeText(outcome) ?? "Não foi possível salvar o arquivo.");
   return outcome;
 }
 

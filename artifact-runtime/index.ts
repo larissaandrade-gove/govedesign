@@ -9,7 +9,8 @@
  * - Arquivos (logos, imagens): capacidade `assets` quando disponível; senão
  *   IndexedDB do navegador.
  * - Downloads: capacidade `downloads` (o visitante confirma o arquivo); fora
- *   do artefato, download comum do navegador.
+ *   do artefato, download comum do navegador. Dentro do artefato nunca há
+ *   `<a download>` (o iframe descarta em silêncio): sem a capacidade, `unavailable`.
  * - Tema: claro por padrão, escuro sob demanda; acompanha o Design System.
  *
  * Os apps rodam em iframes `srcdoc` do mesmo documento, por isso alcançam
@@ -43,16 +44,23 @@ function findClaude(): ClaudeLike | null {
 }
 
 const capCache = new Map<string, Promise<any>>();
-/** Resolve uma capacidade do artefato, ou `null` (fora do artefato, não concedida…). */
+/**
+ * Resolve uma capacidade do artefato, ou `null` (fora do artefato, não concedida…).
+ * Só o resultado positivo fica guardado: um `null` (ou o limite de 12 s numa
+ * primeira carga lenta) é tentado de novo no próximo pedido, para uma lentidão
+ * passageira não desligar a capacidade pelo resto da sessão.
+ */
 export function capability<T = any>(name: string): Promise<T | null> {
   if (!capCache.has(name)) {
     const c = findClaude();
-    const p = c
-      ? Promise.race([
-          c.use(name).catch(() => null),
-          new Promise((r) => setTimeout(() => r(null), 12000)),
-        ])
-      : Promise.resolve(null);
+    if (!c) return Promise.resolve(null);
+    const p = Promise.race([
+      c.use(name).catch(() => null),
+      new Promise((r) => setTimeout(() => r(null), 12000)),
+    ]).then((v) => {
+      if (v == null && capCache.get(name) === p) capCache.delete(name);
+      return v ?? null;
+    });
     capCache.set(name, p);
   }
   return capCache.get(name)! as Promise<T | null>;
@@ -331,20 +339,50 @@ export async function deleteFile(id: string): Promise<void> {
 
 /* --------------------------------------------------------------- downloads */
 
-export type SaveOutcome = 'saved' | 'declined' | 'error';
+/**
+ * Resultado de um download, já traduzido dos códigos da capacidade `downloads`:
+ * - `saved`: a pessoa aceitou a janela do claude.ai (ou, fora do artefato, o navegador recebeu o arquivo);
+ * - `declined`: a pessoa recusou ou deixou a janela expirar (não tentar de novo sozinho);
+ * - `rate_limited`: já há uma janela de download aberta, ou muitas seguidas: esperar e tentar de novo;
+ * - `unavailable`: downloads indisponíveis nesta visualização (inclui `not_granted`, `capability_*`,
+ *   `extension_not_enabled`, códigos desconhecidos e a capacidade ausente dentro do artefato);
+ * - `too_large`: arquivo acima do limite;
+ * - `error`: pedido inválido (`bad_request`, `rejected_extension`…) ou falha do navegador.
+ */
+export type SaveOutcome = 'saved' | 'declined' | 'rate_limited' | 'unavailable' | 'too_large' | 'error';
+/** Forma usada: `capacidade` (janela do claude.ai), `navegador` (`<a download>` fora do artefato). */
+export type SaveMethod = 'capacidade' | 'navegador';
+export type SaveResult = { outcome: SaveOutcome; code: string; method: SaveMethod };
 
-/** Entrega um arquivo gerado ao visitante (confirmação do claude.ai dentro do artefato). */
-export async function saveFile(filename: string, data: Blob | string): Promise<SaveOutcome> {
+const UNAVAILABLE_CODES = new Set(['unavailable', 'not_granted', 'capability_disabled', 'capability_removed', 'extension_not_enabled']);
+const ERROR_CODES = new Set(['rejected_extension', 'bad_request', 'transform_error', 'request_unknown', 'not_signed']);
+
+function outcomeOf(code: string): SaveOutcome {
+  if (code === 'declined' || code === 'rate_limited' || code === 'too_large') return code;
+  if (ERROR_CODES.has(code)) return 'error';
+  return 'unavailable'; // inclui UNAVAILABLE_CODES e códigos desconhecidos (regra do contrato)
+}
+
+/**
+ * Entrega um arquivo gerado ao visitante e diz o que de fato aconteceu.
+ * Dentro do artefato só a capacidade `downloads` funciona: o app roda num iframe
+ * sem permissão de download, e um `<a download>` ali é descartado em silêncio pelo
+ * navegador. Por isso, sem a capacidade, devolve `unavailable` em vez de um falso `saved`.
+ */
+export async function saveFileDetailed(filename: string, data: Blob | string): Promise<SaveResult> {
   const downloads = await capability('downloads');
   if (downloads) {
     try {
-      await downloads.save({ filename, data });
-      return 'saved';
+      const r = await downloads.save({ filename, data });
+      return { outcome: 'saved', code: String(r?.status ?? 'saved'), method: 'capacidade' };
     } catch (e: any) {
-      return e?.code === 'declined' ? 'declined' : 'error';
+      const code = typeof e?.code === 'string' ? e.code : 'erro_sem_codigo';
+      if (UNAVAILABLE_CODES.has(code)) capCache.delete('downloads'); // na próxima tentativa, pergunta de novo
+      return { outcome: code === 'erro_sem_codigo' ? 'error' : outcomeOf(code), code, method: 'capacidade' };
     }
   }
-  // Sem a capacidade (fora do artefato, ou artefato publicado sem ela): download comum do navegador
+  if (insideArtifact()) return { outcome: 'unavailable', code: 'sem_capacidade', method: 'capacidade' };
+  // Fora do artefato: download comum do navegador
   try {
     const blob = typeof data === 'string' ? new Blob([data], { type: 'text/plain;charset=utf-8' }) : data;
     const a = document.createElement('a');
@@ -354,9 +392,32 @@ export async function saveFile(filename: string, data: Blob | string): Promise<S
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    return 'saved';
+    return { outcome: 'saved', code: 'saved', method: 'navegador' };
   } catch {
-    return 'error';
+    return { outcome: 'error', code: 'falha_navegador', method: 'navegador' };
+  }
+}
+
+/** Entrega um arquivo gerado ao visitante (confirmação do claude.ai dentro do artefato). */
+export async function saveFile(filename: string, data: Blob | string): Promise<SaveOutcome> {
+  return (await saveFileDetailed(filename, data)).outcome;
+}
+
+/** Mensagem curta, em português, para cada resultado diferente de `saved` (null para `saved`). */
+export function saveOutcomeText(outcome: SaveOutcome): string | null {
+  switch (outcome) {
+    case 'saved':
+      return null;
+    case 'declined':
+      return 'Download cancelado: a janela de confirmação do claude.ai foi recusada ou expirou.';
+    case 'rate_limited':
+      return 'Já há uma janela de download aberta. Confirme ou feche essa janela e tente de novo.';
+    case 'unavailable':
+      return 'Downloads indisponíveis nesta visualização. Recarregue a página ou abra o artefato pelo claude.ai no navegador.';
+    case 'too_large':
+      return 'O arquivo é grande demais para baixar por aqui.';
+    default:
+      return 'Não foi possível baixar o arquivo.';
   }
 }
 

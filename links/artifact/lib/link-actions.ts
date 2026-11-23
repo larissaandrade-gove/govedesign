@@ -3,7 +3,7 @@
  * usam o Supabase diretamente), "Testar link" (substitui o redirecionamento
  * público /:slug) e exportações via saveFile().
  */
-import { openExternal, saveFile, type SaveOutcome } from "@gove/runtime";
+import { openExternal, saveFile, saveOutcomeText, type SaveOutcome } from "@gove/runtime";
 
 import { buildShortUrl } from "./short-domain";
 import { buildFinalUrl } from "./short-links";
@@ -130,7 +130,6 @@ export function exportClicksCsv(slug: string, clicks: LinkClickDoc[]) {
 }
 
 export function saveOutcomeMessage(outcome: SaveOutcome): string | null {
-  if (outcome === "saved") return null;
   if (outcome === "declined") return "Download cancelado.";
-  return "Não foi possível baixar o arquivo aqui (downloads indisponíveis neste artefato).";
+  return saveOutcomeText(outcome);
 }

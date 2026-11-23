@@ -4,14 +4,14 @@
 // artefato ou localStorage), arquivos via putFile (assets ou IndexedDB), PDFs e
 // .zip gerados aqui mesmo.
 import { zipSync } from 'fflate';
-import { collection, deleteFile, fileUrl, getFile, putFile, saveFile, type Doc } from '../../../../artifact-runtime/index.ts';
+import { collection, deleteFile, fileUrl, getFile, insideArtifact, putFile, saveFileDetailed, type Doc } from '../../../../artifact-runtime/index.ts';
 import { connectorCapture } from '../../../../artifact-runtime/pexels.ts';
 import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
 import { measure, renderPiece } from '@/lib/pdf.browser';
-import type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem } from './api';
+import type { Check, ExportFiles, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem, SaveResult } from './api';
 
-export type { Check, Imagem, LogoFixo, LogosFixos, Municipio, PieceOptions, PreflightPeca, QueueItem } from './api';
+export type { Check, ExportFiles, Imagem, LogoFixo, LogosFixos, Municipio, PieceOptions, PreflightPeca, QueueItem, SaveResult } from './api';
 
 const APP = 'print-studio';
 const MAX_UPLOAD = 25 * 1024 * 1024;
@@ -286,7 +286,7 @@ export const api = {
     return { pecas: results, ok: results.every((r) => r.ok) };
   },
 
-  exportZip: async (items: QueueItem[]) => {
+  exportZip: async (items: QueueItem[]): Promise<ExportFiles> => {
     const files: Record<string, Uint8Array> = {};
     const list = await pieces(items);
     // Identidade BB: paleta, contraste 4,5:1 e tipografia são regra — sem exportar mesmo assim
@@ -301,16 +301,20 @@ export const api = {
       for (let i = 2; files[name]; i++) name = name.replace(/(_\d+)?\.pdf$/, `_${i}.pdf`);
       files[name] = bytes;
     }
+    // Os PDFs separados viram Blobs antes do zipSync (a lista guarda cópias, não as mesmas views)
+    const pdfs = Object.entries(files).map(([name, bytes]) => ({ name, blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }) }));
     const zip = zipSync(files, { level: 6 });
-    return new Blob([zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' });
+    return { zip: new Blob([zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), files: pdfs };
   },
 
-  /** Entrega o arquivo ao visitante (capacidade `downloads` dentro do artefato). */
-  download: async (filename: string, blob: Blob): Promise<'saved' | 'declined'> => {
-    const r = await saveFile(filename, blob);
-    if (r === 'error') throw new Error('Não foi possível baixar o arquivo neste ambiente.');
-    return r;
-  },
+  /**
+   * Entrega o arquivo ao visitante (capacidade `downloads` dentro do artefato) e
+   * devolve o resultado real: `saved` só quando a pessoa aceitou a janela do claude.ai.
+   */
+  download: (filename: string, blob: Blob): Promise<SaveResult> => saveFileDetailed(filename, blob),
+
+  /** Dentro do artefato do claude.ai: cada download pede confirmação numa janela do claude.ai. */
+  insideArtifact,
 
   /** Avisa quando municípios ou logos mudam (outra pessoa no artefato, outra aba). */
   onChange: (cb: () => void) => {

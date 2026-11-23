@@ -4,7 +4,7 @@
 // (ver vite.config.js). Sem chamadas de rede.
 import '../shims/globals.js';
 import { config as fabricConfig } from 'fabric';
-import { isEmbedded, saveFile, setStandaloneTheme, syncTheme, currentTheme } from '../../../artifact-runtime/index.ts';
+import { isEmbedded, saveFile, saveOutcomeText, setStandaloneTheme, syncTheme, currentTheme } from '../../../artifact-runtime/index.ts';
 import { ACCEPTED_EXT, AuditInputError, detectMode, runAudit } from '../../../backend/services/auditService.js';
 import { pickLogo } from '../../../brand/logos.js';
 import { auditEntries, zipToBuffer } from '../../../backend/report/package.js';
@@ -91,7 +91,7 @@ async function deliver(filename, data, statusEl) {
   try {
     const outcome = await saveFile(filename, data);
     statusEl.textContent =
-      outcome === 'saved' ? `Arquivo ${filename} entregue.` : outcome === 'declined' ? 'Download cancelado.' : 'Não foi possível baixar o arquivo neste ambiente.';
+      outcome === 'saved' ? `Arquivo ${filename} entregue.` : saveOutcomeText(outcome) ?? 'Não foi possível baixar o arquivo neste ambiente.';
   } catch {
     statusEl.textContent = 'Não foi possível baixar o arquivo neste ambiente.';
   }

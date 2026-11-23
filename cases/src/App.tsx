@@ -1,6 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, CloudCheck, Moon, Sun } from '@phosphor-icons/react';
-import { currentTheme, isEmbedded, saveFile, setStandaloneTheme, type Theme } from '@gove/runtime';
+import { currentTheme, isEmbedded, saveFile, saveOutcomeText, setStandaloneTheme, type Theme } from '@gove/runtime';
 import { StepExportar } from '@/components/StepExportar.tsx';
 import { StepIndicadores } from '@/components/StepIndicadores.tsx';
 import { StepMunicipio } from '@/components/StepMunicipio.tsx';
@@ -109,7 +109,7 @@ export default function App() {
       const logo = await loadLogoPngs();
       const bytes = await renderPdf(buildOnePage(c, measure), fontBytes(), logo, { title });
       const r = await saveFile(`${fileBase}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
-      setStatus(r === 'saved' ? 'PDF pronto.' : r === 'declined' ? 'Download cancelado.' : 'Não foi possível baixar o PDF.');
+      setStatus(r === 'saved' ? 'PDF pronto.' : (saveOutcomeText(r) ?? 'Não foi possível baixar o PDF.'));
     } catch {
       setStatus('Não foi possível gerar o PDF.');
     } finally {
@@ -124,7 +124,7 @@ export default function App() {
       const logo = await loadLogoPngs();
       const bytes = await renderPptx(buildSlides(c, measure), logo, { title });
       const r = await saveFile(`${fileBase}.pptx`, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }));
-      setStatus(r === 'saved' ? 'Apresentação pronta.' : r === 'declined' ? 'Download cancelado.' : 'Não foi possível baixar a apresentação.');
+      setStatus(r === 'saved' ? 'Apresentação pronta.' : (saveOutcomeText(r) ?? 'Não foi possível baixar a apresentação.'));
     } catch {
       setStatus('Não foi possível gerar a apresentação.');
     } finally {

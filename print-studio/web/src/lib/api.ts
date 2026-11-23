@@ -1,5 +1,6 @@
 // Cliente da API do Print Studio. A interface é servida em /print-studio/,
 // então os caminhos relativos ("api/...") resolvem para /print-studio/api/...
+import { unzipSync } from 'fflate';
 
 export type Municipio = {
   id: number;
@@ -49,6 +50,12 @@ export type PieceOptions = {
   mockup: { mode?: 'upload'; imageId?: string; focus?: { x: number; y: number }; source?: 'envio' | 'captura' } | null;
 };
 export type QueueItem = { key: string; municipioId: number; municipioNome: string; layouts: string[]; options: PieceOptions };
+
+/** .zip gerado e os PDFs que estão nele (para baixar de novo sem gerar tudo outra vez). */
+export type ExportFiles = { zip: Blob; files: { name: string; blob: Blob }[] };
+/** Resultado real de um download (mesmo contrato de `saveFileDetailed` do artifact-runtime). */
+export type SaveOutcome = 'saved' | 'declined' | 'rate_limited' | 'unavailable' | 'too_large' | 'error';
+export type SaveResult = { outcome: SaveOutcome; code: string; method: 'capacidade' | 'navegador' };
 
 /** Mensagem em PT-BR quando o servidor do Kit não responde (o navegador diz só "Failed to fetch"). */
 const OFFLINE = 'Sem conexão com o servidor do Kit de Boas-Vindas (VPN ligada?). Tente de novo.';
@@ -110,14 +117,19 @@ export const api = {
     request<Imagem & { capturadoEm: string; site: string }>(`api/municipios/${municipioId}/captura`, { method: 'POST' }),
 
   preflight: (items: QueueItem[]) => request<{ pecas: PreflightPeca[]; ok: boolean }>('api/preflight', jsonBody({ items })),
-  exportZip: async (items: QueueItem[]) => {
+  exportZip: async (items: QueueItem[]): Promise<ExportFiles> => {
     const res = await net('api/export', jsonBody({ items }));
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Falha na exportação.');
-    return res.blob();
+    const zip = await res.blob();
+    const entries = unzipSync(new Uint8Array(await zip.arrayBuffer()));
+    const files = Object.entries(entries)
+      .filter(([name]) => name.toLowerCase().endsWith('.pdf'))
+      .map(([name, bytes]) => ({ name: name.split('/').pop()!, blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }) }));
+    return { zip, files };
   },
 
   /** Entrega o arquivo gerado ao usuário (download comum do navegador). */
-  download: async (filename: string, blob: Blob): Promise<'saved' | 'declined'> => {
+  download: async (filename: string, blob: Blob): Promise<SaveResult> => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -126,8 +138,11 @@ export const api = {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    return 'saved';
+    return { outcome: 'saved', code: 'saved', method: 'navegador' };
   },
+
+  /** Dentro do artefato do claude.ai (download pede confirmação)? No servidor: nunca. */
+  insideArtifact: () => false,
 
   /** Avisa quando os dados mudam fora desta aba (no servidor: nunca). */
   onChange: (_cb: () => void): (() => void) => () => undefined,

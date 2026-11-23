@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { ArrowLeft, DownloadSimple, SealCheck, Tray, Broom, SpinnerGap, Trash } from '@phosphor-icons/react';
+import { ArrowLeft, CaretDown, DownloadSimple, FilePdf, FileZip, SealCheck, Tray, Broom, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { StatusIcon, type Level } from '@/components/studio/CheckList';
 import { layoutShort } from '@/components/studio/LayoutGlyph';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { api, type PreflightPeca, type QueueItem } from '@/lib/api';
+import { api, type ExportFiles, type PreflightPeca, type QueueItem, type SaveOutcome, type SaveResult } from '@/lib/api';
 import { LAYOUTS } from '@/lib/studio';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +23,31 @@ function friendlyError(err: unknown) {
   return msg || 'Não foi possível gerar os arquivos.';
 }
 
+/** O que dizer para cada resultado do download (o código exato vai em "Detalhes"). */
+const OUTCOME_TEXT: Record<Exclude<SaveOutcome, 'saved'>, string> = {
+  declined: 'Download cancelado: a janela do claude.ai foi recusada ou expirou. Clique em “Baixar .zip” para tentar de novo.',
+  rate_limited: 'Já há uma janela de download aberta no claude.ai. Confirme ou feche essa janela e clique em “Baixar .zip” de novo.',
+  unavailable: 'Os downloads não estão disponíveis nesta visualização. Recarregue a página ou abra o Design System pelo claude.ai no navegador do computador e tente de novo.',
+  too_large: 'O .zip ficou grande demais para baixar por aqui. Use “Baixar PDFs separados”.',
+  error: 'O navegador não aceitou o arquivo. Use “Baixar PDFs separados”; se falhar, abra uma solicitação com os detalhes abaixo.',
+};
+
+type Ready = ExportFiles & { zipName: string; geradoEm: string };
+type LastSave = SaveResult & { arquivo: string; mensagem: string; horario: string };
+
+const kb = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+const hora = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export function Fila({ queue, onRemove, onClear }: Props) {
   const [checking, setChecking] = useState(false);
   const [report, setReport] = useState<{ pecas: PreflightPeca[]; ok: boolean } | null>(null);
   const [ack, setAck] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Arquivos já gerados ficam guardados aqui: baixar de novo não gera tudo outra vez.
+  const [ready, setReady] = useState<Ready | null>(null);
+  const [saving, setSaving] = useState<null | 'zip' | 'pdfs'>(null);
+  const [last, setLast] = useState<LastSave | null>(null);
   const total = queue.reduce((n, q) => n + q.layouts.length, 0);
 
 
@@ -42,14 +63,67 @@ export function Fila({ queue, onRemove, onClear }: Props) {
     }
   }
 
+  /** Um download, com o aviso da janela do claude.ai antes e o resultado real depois. */
+  async function saveOne(arquivo: string, blob: Blob): Promise<SaveResult> {
+    if (api.insideArtifact()) toast.info('Confirme o download na janela do claude.ai.', { id: 'confirmar-download' });
+    let r: SaveResult;
+    try {
+      r = await api.download(arquivo, blob);
+    } catch (err) {
+      r = { outcome: 'error', code: (err as Error)?.message || 'erro', method: api.insideArtifact() ? 'capacidade' : 'navegador' };
+    }
+    toast.dismiss('confirmar-download');
+    setLast({ ...r, arquivo, mensagem: r.outcome === 'saved' ? `${arquivo} entregue ao navegador.` : OUTCOME_TEXT[r.outcome], horario: hora() });
+    return r;
+  }
+
+  async function saveZip(files: Ready) {
+    setSaving('zip');
+    try {
+      const r = await saveOne(files.zipName, files.zip);
+      if (r.outcome === 'saved') toast.success(`${files.files.length} PDF(s) exportado(s).`);
+      else if (r.outcome === 'declined') toast.info(OUTCOME_TEXT.declined);
+      else toast.error(OUTCOME_TEXT[r.outcome]);
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  /** PDFs um a um: espera e tenta de novo em `rate_limited`; para na primeira recusa. */
+  async function savePdfs(files: Ready) {
+    setSaving('pdfs');
+    let ok = 0;
+    let stop: SaveResult | null = null;
+    try {
+      for (const f of files.files) {
+        let r = await saveOne(f.name, f.blob);
+        for (let i = 1; r.outcome === 'rate_limited' && i <= 4; i++) {
+          await wait(1500 * i);
+          r = await saveOne(f.name, f.blob);
+        }
+        if (r.outcome !== 'saved') {
+          stop = r;
+          break;
+        }
+        ok++;
+      }
+      if (!stop) toast.success(`${ok} PDF(s) baixado(s) separadamente.`);
+      else toast.error(`${ok} de ${files.files.length} PDF(s) baixado(s). ${OUTCOME_TEXT[stop.outcome as Exclude<SaveOutcome, 'saved'>]}`);
+    } finally {
+      setSaving(null);
+    }
+  }
+
   async function download() {
     setExporting(true);
     try {
-      const blob = await api.exportZip(queue);
-      const outcome = await api.download(`kit-boas-vindas_${new Date().toISOString().slice(0, 10)}.zip`, blob);
-      if (outcome === 'declined') return toast.info('Download cancelado.');
-      toast.success(`${total} PDF(s) exportado(s).`);
+      const out = await api.exportZip(queue);
+      const files: Ready = { ...out, zipName: `kit-boas-vindas_${new Date().toISOString().slice(0, 10)}.zip`, geradoEm: hora() };
+      setReady(files);
+      setLast(null);
       setReport(null);
+      setExporting(false);
+      await saveZip(files);
     } catch (err) {
       toast.error(friendlyError(err));
     } finally {
@@ -127,6 +201,69 @@ export function Fila({ queue, onRemove, onClear }: Props) {
         </ul>
       )}
       {queue.length > 0 && <p className="mt-3 font-mono text-xs text-muted-foreground">{'[portal-cidadao_]{layout}_{municipio}_{ddmmaaaa}.pdf'}</p>}
+
+      {ready && (
+        <section aria-labelledby="arquivos-prontos" className="mt-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <FileZip className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <h2 id="arquivos-prontos" className="font-semibold text-foreground">
+                Arquivos prontos
+              </h2>
+              <p className="break-all text-sm text-muted-foreground">
+                {ready.zipName} · {kb(ready.zip.size)} · {ready.files.length} PDF(s) · gerado às {ready.geradoEm}
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" aria-label="Descartar arquivos prontos" title="Descartar" disabled={!!saving} onClick={() => (setReady(null), setLast(null))}>
+              <X />
+            </Button>
+          </div>
+          <p className="mt-3 text-sm text-foreground">
+            {api.insideArtifact()
+              ? 'Cada download abre uma janela do claude.ai: clique em aceitar. Se a janela não aparecer ou for fechada, baixe de novo por aqui, sem gerar tudo outra vez.'
+              : 'Se o arquivo não aparecer nos downloads, baixe de novo por aqui, sem gerar tudo outra vez.'}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button disabled={!!saving} onClick={() => saveZip(ready)} className="min-h-11 bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
+              {saving === 'zip' ? <SpinnerGap className="size-5 animate-spin" aria-hidden /> : <DownloadSimple className="size-5" aria-hidden />}
+              {saving === 'zip' ? 'Aguardando confirmação…' : 'Baixar .zip'}
+            </Button>
+            <Button variant="outline" disabled={!!saving} onClick={() => savePdfs(ready)} className="min-h-11 font-semibold">
+              {saving === 'pdfs' ? <SpinnerGap className="size-5 animate-spin" aria-hidden /> : <FilePdf className="size-5" aria-hidden />}
+              {saving === 'pdfs' ? 'Baixando PDFs…' : 'Baixar PDFs separados'}
+            </Button>
+          </div>
+          <div aria-live="polite" role="status">
+            {last && (
+              <p className={cn('mt-3 rounded-md px-3 py-2 text-sm', last.outcome === 'saved' ? 'bg-secondary text-secondary-foreground' : last.outcome === 'declined' || last.outcome === 'rate_limited' ? 'bg-warning/10 text-foreground' : 'bg-destructive/10 text-foreground')}>
+                {last.mensagem}
+              </p>
+            )}
+          </div>
+          {last && (
+            <Collapsible className="mt-2">
+              <CollapsibleTrigger className="group inline-flex min-h-11 items-center gap-1 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                <CaretDown className="size-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
+                Detalhes
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md bg-secondary/50 p-3 font-mono text-xs text-foreground">
+                  <dt className="text-muted-foreground">código</dt>
+                  <dd className="break-all">{last.code}</dd>
+                  <dt className="text-muted-foreground">resultado</dt>
+                  <dd>{last.outcome}</dd>
+                  <dt className="text-muted-foreground">forma</dt>
+                  <dd>{last.method}</dd>
+                  <dt className="text-muted-foreground">arquivo</dt>
+                  <dd className="break-all">{last.arquivo}</dd>
+                  <dt className="text-muted-foreground">horário</dt>
+                  <dd>{last.horario}</dd>
+                </dl>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </section>
+      )}
 
       <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
