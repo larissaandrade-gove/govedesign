@@ -13,8 +13,8 @@
  *   `<a download>` (o iframe descarta em silêncio): sem a capacidade, `unavailable`.
  * - Tema: claro por padrão, escuro sob demanda; acompanha o Design System.
  *
- * Os apps rodam em iframes `srcdoc` do mesmo documento, por isso alcançam
- * `window.parent.claude`.
+ * Os apps rodam em iframes da mesma origem (`apps/<id>.html`) dentro do Design
+ * System, por isso alcançam o `claude` da página principal (`window.top`/`parent`).
  */
 
 /* ------------------------------------------------------------------ claude */
@@ -30,8 +30,17 @@ type ClaudeLike = { use: (name: string) => Promise<any> };
 // @ts-ignore — substituído pelo Vite em tempo de build
 const CAPS_ENABLED = (import.meta as any).env?.VITE_GOVE_CAPS !== 'off';
 
-function findClaude(): ClaudeLike | null {
-  if (!CAPS_ENABLED) return null;
+/** Janela que atendeu uma capacidade: `principal` (topo), `pai` ou `próprio` (o iframe do app). */
+export type CapFrame = 'principal' | 'pai' | 'próprio';
+type Candidate = { claude: ClaudeLike; win: any; frame: CapFrame };
+
+/**
+ * Instâncias do `claude` ao alcance, na ordem página principal (topo) → pai → próprio
+ * iframe, sem repetir. As capacidades são declaradas para o artefato e atendidas pela
+ * página principal; o iframe do app pode ter um `claude` próprio que não as atende.
+ */
+function claudeCandidates(): Candidate[] {
+  if (!CAPS_ENABLED || typeof window === 'undefined') return [];
   const tryWin = (w: any): ClaudeLike | null => {
     try {
       return w && w.claude && typeof w.claude.use === 'function' ? (w.claude as ClaudeLike) : null;
@@ -39,31 +48,89 @@ function findClaude(): ClaudeLike | null {
       return null; // outra origem
     }
   };
-  if (typeof window === 'undefined') return null;
-  return tryWin(window) ?? (window.parent !== window ? tryWin(window.parent) : null) ?? (window.top !== window ? tryWin(window.top) : null);
+  const out: Candidate[] = [];
+  const add = (w: any, frame: CapFrame) => {
+    if (!w || out.some((c) => c.win === w)) return;
+    const claude = tryWin(w);
+    if (claude && !out.some((c) => c.claude === claude)) out.push({ claude, win: w, frame });
+  };
+  let top: any = null;
+  let parent: any = null;
+  try {
+    top = window.top;
+    parent = window.parent;
+  } catch {
+    /* ignora */
+  }
+  add(top, 'principal');
+  add(parent, 'pai');
+  add(window, 'próprio');
+  return out;
 }
 
-const capCache = new Map<string, Promise<any>>();
+function findClaude(): ClaudeLike | null {
+  return claudeCandidates()[0]?.claude ?? null;
+}
+
+/** Capacidade resolvida: o objeto, a janela do `claude` que a atendeu e as tentativas feitas. */
+type CapHit = { value: any; win: any; frame: CapFrame };
+type CapLookup = { hit: CapHit | null; attempts: string[] };
+
+const capCache = new Map<string, Promise<CapLookup>>();
 /**
- * Resolve uma capacidade do artefato, ou `null` (fora do artefato, não concedida…).
- * Só o resultado positivo fica guardado: um `null` (ou o limite de 12 s numa
- * primeira carga lenta) é tentado de novo no próximo pedido, para uma lentidão
- * passageira não desligar a capacidade pelo resto da sessão.
+ * Procura a capacidade em cada candidato (topo → pai → próprio) e fica com o primeiro
+ * cujo `use(name)` não devolve `null`. Só o resultado positivo fica guardado: um `null`
+ * (ou o limite de 12 s numa primeira carga lenta) é tentado de novo no próximo pedido,
+ * para uma lentidão passageira não desligar a capacidade pelo resto da sessão.
  */
-export function capability<T = any>(name: string): Promise<T | null> {
+function lookupCapability(name: string): Promise<CapLookup> {
   if (!capCache.has(name)) {
-    const c = findClaude();
-    if (!c) return Promise.resolve(null);
-    const p = Promise.race([
-      c.use(name).catch(() => null),
-      new Promise((r) => setTimeout(() => r(null), 12000)),
-    ]).then((v) => {
-      if (v == null && capCache.get(name) === p) capCache.delete(name);
-      return v ?? null;
+    const cands = claudeCandidates();
+    if (!cands.length) return Promise.resolve({ hit: null, attempts: [] });
+    const p: Promise<CapLookup> = (async () => {
+      const attempts: string[] = [];
+      for (const c of cands) {
+        let v: any = null;
+        try {
+          v = await Promise.race([Promise.resolve(c.claude.use(name)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 12000))]);
+        } catch {
+          v = null;
+        }
+        if (v != null) {
+          attempts.push(`${c.frame}:ok`);
+          return { hit: { value: v, win: c.win, frame: c.frame }, attempts };
+        }
+        attempts.push(`${c.frame}:null`);
+      }
+      return { hit: null, attempts };
+    })().then((r) => {
+      if (!r.hit && capCache.get(name) === p) capCache.delete(name);
+      return r;
     });
     capCache.set(name, p);
   }
-  return capCache.get(name)! as Promise<T | null>;
+  return capCache.get(name)!;
+}
+
+/** Resolve uma capacidade do artefato, ou `null` (fora do artefato, não concedida…). */
+export function capability<T = any>(name: string): Promise<T | null> {
+  return lookupCapability(name).then((r) => (r.hit?.value ?? null) as T | null);
+}
+
+/**
+ * Recria os dados no "mundo" JavaScript da janela `win` (o `claude` de outra janela
+ * confere `data instanceof Blob` com o `Blob` dela e recusa um Blob deste iframe).
+ */
+async function inRealm<T extends Blob | string>(win: any, data: T): Promise<T> {
+  if (typeof data === 'string' || !win || win === (typeof window !== 'undefined' ? window : null)) return data;
+  try {
+    const B: any = win.Blob; // construtor de outra janela
+    const blob = data as Blob;
+    if (typeof B !== 'function' || blob instanceof B) return data;
+    return new B([await blob.arrayBuffer()], { type: blob.type }) as T;
+  } catch {
+    return data;
+  }
 }
 
 export const insideArtifact = () => findClaude() !== null;
@@ -267,10 +334,11 @@ export type StoredFile = { id: string; url: string };
 
 /** Guarda um arquivo e devolve um id durável + uma URL para exibir. */
 export async function putFile(blob: Blob): Promise<StoredFile> {
-  const assets = await capability('assets');
+  const { hit } = await lookupCapability('assets');
+  const assets = hit?.value;
   if (assets) {
     try {
-      const r = await assets.upload(blob);
+      const r = await assets.upload(await inRealm(hit!.win, blob));
       return { id: `asset:${r.id}`, url: r.url };
     } catch {
       /* cai para o armazenamento local */
@@ -352,7 +420,13 @@ export async function deleteFile(id: string): Promise<void> {
 export type SaveOutcome = 'saved' | 'declined' | 'rate_limited' | 'unavailable' | 'too_large' | 'error';
 /** Forma usada: `capacidade` (janela do claude.ai), `navegador` (`<a download>` fora do artefato). */
 export type SaveMethod = 'capacidade' | 'navegador';
-export type SaveResult = { outcome: SaveOutcome; code: string; method: SaveMethod };
+/**
+ * Janela que fez o download: a página principal, a janela pai, o próprio iframe do app,
+ * a `ponte` (postMessage para o Design System) ou o `navegador` (fora do artefato).
+ */
+export type SaveFrame = CapFrame | 'ponte' | 'navegador';
+/** `attempts`: cada tentativa, `janela:código` (ex.: `principal:null`, `pai:saved`), para o diagnóstico. */
+export type SaveResult = { outcome: SaveOutcome; code: string; method: SaveMethod; frame?: SaveFrame; attempts?: string[] };
 
 const UNAVAILABLE_CODES = new Set(['unavailable', 'not_granted', 'capability_disabled', 'capability_removed', 'extension_not_enabled']);
 const ERROR_CODES = new Set(['rejected_extension', 'bad_request', 'transform_error', 'request_unknown', 'not_signed']);
@@ -363,25 +437,93 @@ function outcomeOf(code: string): SaveOutcome {
   return 'unavailable'; // inclui UNAVAILABLE_CODES e códigos desconhecidos (regra do contrato)
 }
 
+/* Ponte com o Design System: quando nenhum `claude` ao alcance atende `downloads`, o app
+ * manda os bytes por postMessage à janela pai (o Design System), que faz o download com
+ * o próprio `claude` e responde. Mensagens:
+ *   app → DS  { type: 'gove:download', id, filename, mime, buffer }
+ *   DS → app  { type: 'gove:download:ack', id }       (logo ao receber)
+ *   DS → app  { type: 'gove:download:result', id, outcome, code, method: 'ponte' }
+ */
+export const BRIDGE_ACK_MS = 2000;
+export const BRIDGE_RESULT_MS = 120000;
+const SAVE_OUTCOMES = new Set<SaveOutcome>(['saved', 'declined', 'rate_limited', 'unavailable', 'too_large', 'error']);
+
+async function saveViaBridge(filename: string, data: Blob | string): Promise<{ outcome: SaveOutcome; code: string } | null> {
+  let parent: any = null;
+  try {
+    parent = window.parent;
+  } catch {
+    return null;
+  }
+  if (!parent || parent === window || typeof parent.postMessage !== 'function' || typeof window.addEventListener !== 'function') return null;
+  const blob = typeof data === 'string' ? new Blob([data], { type: 'text/plain;charset=utf-8' }) : data;
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await blob.arrayBuffer();
+  } catch {
+    return { outcome: 'error', code: 'ponte_dados_ilegiveis' };
+  }
+  const id = newId('dl-');
+  return new Promise((resolve) => {
+    let ackTimer: any = null;
+    let resultTimer: any = null;
+    const done = (r: { outcome: SaveOutcome; code: string }) => {
+      clearTimeout(ackTimer);
+      clearTimeout(resultTimer);
+      window.removeEventListener('message', onMessage);
+      resolve(r);
+    };
+    const onMessage = (e: MessageEvent) => {
+      const m = e.data;
+      if (e.source !== parent || !m || typeof m !== 'object' || m.id !== id) return;
+      if (m.type === 'gove:download:ack') {
+        clearTimeout(ackTimer);
+        // A pessoa tem até 2 minutos para responder à janela do claude.ai
+        resultTimer = setTimeout(() => done({ outcome: 'declined', code: 'ponte_tempo_esgotado' }), BRIDGE_RESULT_MS);
+      } else if (m.type === 'gove:download:result') {
+        const outcome = SAVE_OUTCOMES.has(m.outcome) ? (m.outcome as SaveOutcome) : 'error';
+        done({ outcome, code: typeof m.code === 'string' ? m.code : outcome });
+      }
+    };
+    window.addEventListener('message', onMessage);
+    ackTimer = setTimeout(() => done({ outcome: 'unavailable', code: 'ponte_sem_resposta' }), BRIDGE_ACK_MS);
+    try {
+      const origin = window.location?.origin;
+      const msg = { type: 'gove:download', id, filename, mime: blob.type, buffer };
+      parent.postMessage(msg, origin && origin !== 'null' ? origin : '*', [buffer]);
+    } catch {
+      done({ outcome: 'unavailable', code: 'ponte_falhou' });
+    }
+  });
+}
+
 /**
  * Entrega um arquivo gerado ao visitante e diz o que de fato aconteceu.
  * Dentro do artefato só a capacidade `downloads` funciona: o app roda num iframe
  * sem permissão de download, e um `<a download>` ali é descartado em silêncio pelo
- * navegador. Por isso, sem a capacidade, devolve `unavailable` em vez de um falso `saved`.
+ * navegador. A capacidade é procurada na página principal, na janela pai e no próprio
+ * iframe; sem nenhuma, tenta a ponte com o Design System. Se nada funcionar, devolve
+ * `unavailable` em vez de um falso `saved`.
  */
 export async function saveFileDetailed(filename: string, data: Blob | string): Promise<SaveResult> {
-  const downloads = await capability('downloads');
-  if (downloads) {
+  const { hit, attempts } = await lookupCapability('downloads');
+  if (hit) {
+    const frame = hit.frame;
     try {
-      const r = await downloads.save({ filename, data });
-      return { outcome: 'saved', code: String(r?.status ?? 'saved'), method: 'capacidade' };
+      const r = await hit.value.save({ filename, data: await inRealm(hit.win, data) });
+      const code = String(r?.status ?? 'saved');
+      return { outcome: 'saved', code, method: 'capacidade', frame, attempts: [...attempts, `${frame}:${code}`] };
     } catch (e: any) {
       const code = typeof e?.code === 'string' ? e.code : 'erro_sem_codigo';
       if (UNAVAILABLE_CODES.has(code)) capCache.delete('downloads'); // na próxima tentativa, pergunta de novo
-      return { outcome: code === 'erro_sem_codigo' ? 'error' : outcomeOf(code), code, method: 'capacidade' };
+      return { outcome: code === 'erro_sem_codigo' ? 'error' : outcomeOf(code), code, method: 'capacidade', frame, attempts: [...attempts, `${frame}:${code}`] };
     }
   }
-  if (insideArtifact()) return { outcome: 'unavailable', code: 'sem_capacidade', method: 'capacidade' };
+  if (insideArtifact()) {
+    const b = await saveViaBridge(filename, data);
+    if (b) return { ...b, method: 'capacidade', frame: 'ponte', attempts: [...attempts, `ponte:${b.code}`] };
+    return { outcome: 'unavailable', code: 'sem_capacidade', method: 'capacidade', attempts };
+  }
   // Fora do artefato: download comum do navegador
   try {
     const blob = typeof data === 'string' ? new Blob([data], { type: 'text/plain;charset=utf-8' }) : data;
@@ -392,9 +534,9 @@ export async function saveFileDetailed(filename: string, data: Blob | string): P
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    return { outcome: 'saved', code: 'saved', method: 'navegador' };
+    return { outcome: 'saved', code: 'saved', method: 'navegador', frame: 'navegador', attempts: ['navegador:saved'] };
   } catch {
-    return { outcome: 'error', code: 'falha_navegador', method: 'navegador' };
+    return { outcome: 'error', code: 'falha_navegador', method: 'navegador', frame: 'navegador', attempts: ['navegador:falha_navegador'] };
   }
 }
 

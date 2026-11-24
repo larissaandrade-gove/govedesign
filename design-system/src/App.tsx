@@ -17,8 +17,11 @@ import { AccessGate } from './components/AccessGate';
 import { RequestProvider } from './lib/requests';
 import { RequestDialog } from './components/RequestDialog';
 import { RequestFab } from './components/RequestFab';
+import { useDownloadBridge } from './lib/download';
 
 export default function App() {
+  // Apps embutidos que não alcançam a capacidade `downloads` pedem o download por aqui
+  useDownloadBridge();
   return (
     <AccessGate>
       <RequestProvider>

@@ -254,6 +254,10 @@ export function Fila({ queue, onRemove, onClear }: Props) {
                   <dd>{last.outcome}</dd>
                   <dt className="text-muted-foreground">forma</dt>
                   <dd>{last.method}</dd>
+                  <dt className="text-muted-foreground">janela</dt>
+                  <dd>{last.frame ?? '—'}</dd>
+                  <dt className="text-muted-foreground">tentativas</dt>
+                  <dd className="break-all">{last.attempts?.length ? last.attempts.join(' → ') : '—'}</dd>
                   <dt className="text-muted-foreground">arquivo</dt>
                   <dd className="break-all">{last.arquivo}</dd>
                   <dt className="text-muted-foreground">horário</dt>

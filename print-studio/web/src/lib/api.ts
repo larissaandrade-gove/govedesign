@@ -55,7 +55,9 @@ export type QueueItem = { key: string; municipioId: number; municipioNome: strin
 export type ExportFiles = { zip: Blob; files: { name: string; blob: Blob }[] };
 /** Resultado real de um download (mesmo contrato de `saveFileDetailed` do artifact-runtime). */
 export type SaveOutcome = 'saved' | 'declined' | 'rate_limited' | 'unavailable' | 'too_large' | 'error';
-export type SaveResult = { outcome: SaveOutcome; code: string; method: 'capacidade' | 'navegador' };
+/** `frame`: janela que fez o download; `attempts`: cada tentativa, `janela:código` (diagnóstico em "Detalhes"). */
+export type SaveFrame = 'principal' | 'pai' | 'próprio' | 'ponte' | 'navegador';
+export type SaveResult = { outcome: SaveOutcome; code: string; method: 'capacidade' | 'navegador'; frame?: SaveFrame; attempts?: string[] };
 
 /** Mensagem em PT-BR quando o servidor do Kit não responde (o navegador diz só "Failed to fetch"). */
 const OFFLINE = 'Sem conexão com o servidor do Kit de Boas-Vindas (VPN ligada?). Tente de novo.';
@@ -138,7 +140,7 @@ export const api = {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    return { outcome: 'saved', code: 'saved', method: 'navegador' };
+    return { outcome: 'saved', code: 'saved', method: 'navegador', frame: 'navegador', attempts: ['navegador:saved'] };
   },
 
   /** Dentro do artefato do claude.ai (download pede confirmação)? No servidor: nunca. */
