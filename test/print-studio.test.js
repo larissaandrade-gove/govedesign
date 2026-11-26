@@ -127,9 +127,9 @@ test('PDF com logomarca oficial: máscara 1 bit em CMYK, sem RGB, checagem de co
 
 // ------------------------------------------------ identidade Banco do Brasil
 const BB = await import('../brand/bb.js');
-const { BB_SCHEMES, bbChecks, bbBlockingChecks } = await import('../print-studio/shared/layout.js');
+const { KIT_BB_SCHEMES, bbChecks, bbBlockingChecks } = await import('../print-studio/shared/layout.js');
 const bbLogos = { central: { width: 1000, height: 700 }, simbolo: { width: 600, height: 600 }, horizontal: { width: 1800, height: 500 } };
-const bbInput = (extra = {}) => input({ identity: 'bb', bbScheme: 'capa', includeBB: false, services: ['saude', 'financas', 'transito', 'meio-ambiente'], mockup: { mode: 'generated' }, municipio: { ...municipio, endereco: 'Av. Brasil, 100', email: 'contato@x.gov.br' }, assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos.central }, ...extra });
+const bbInput = (extra = {}) => input({ identity: 'bb', bbScheme: 'azul-claro', includeBB: false, services: ['saude', 'financas', 'transito', 'meio-ambiente'], mockup: { mode: 'generated' }, municipio: { ...municipio, endereco: 'Av. Brasil, 100', email: 'contato@x.gov.br' }, assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos.central }, ...extra });
 const walkAll = (r) => {
   const out = [];
   const walk = (els) => els.forEach((e) => (out.push(e), e.type === 'group' && walk(e.children)));
@@ -147,9 +147,9 @@ test('identidade GOVE é o padrão: sem "identity" ou com "gove" a peça sai id�
   }
 });
 
-test('BB: todos os layouts × esquemas — só cores da paleta, todo texto ≥ 4,5:1 contra o fundo real, fontes BB, sem erros', () => {
+test('BB: todos os layouts no esquema do Kit (Azul claro) — só cores da paleta, todo texto ≥ 4,5:1 contra o fundo real, fontes BB, sem erros', () => {
   for (const kind of ['central', 'simbolo']) {
-    for (const sc of BB_SCHEMES) {
+    for (const sc of KIT_BB_SCHEMES) {
       for (const l of LAYOUTS) {
         const r = buildLayout(l.id, bbInput({ bbScheme: sc.id, assets: { gove: { official: true }, prefeitura: { width: 900, height: 300 }, bb: bbLogos[kind] } }), measure);
         const tag = `${kind}/${sc.id}/${l.id}`;
@@ -220,8 +220,12 @@ test('BB: logomarca obrigatória, mínimo de impressão e área de proteção', 
 });
 
 test('BB: texto arrastado para outro fundo é corrigido sozinho (cor aprovada ou proteção Azul escuro)', () => {
-  // esquema Azul: h4a (Azul escuro no painel Branco) arrastado para cima, metade sobre o Azul institucional
-  const r = buildLayout('flyer-a4', bbInput({ bbScheme: 'azul', overrides: { h4a: { dx: 0, dy: -12 } } }), measure);
+  // Azul claro e Branco aceitam o Azul escuro: arrastar h4a do painel para o fundo não exige ajuste
+  const ok = buildLayout('flyer-a4', bbInput({ overrides: { h4a: { dx: 0, dy: -12 } } }), measure);
+  assert.deepEqual(ok.bbFixes, []);
+  assert.equal(COLORS[walkAll(ok).find((e) => e.id === 'h4a').color].hex, BB.BB_PALETTE.azulEscuro);
+  // h4a arrastado para cima dos ícones de serviço (Azul escuro): ganha a proteção Azul escuro
+  const r = buildLayout('flyer-a4', bbInput({ overrides: { h4a: { dx: -40, dy: -48 } } }), measure);
   assert.ok(r.bbFixes.length > 0);
   assert.ok(r.checks.some((c) => c.code === 'bb-ajuste'));
   assert.deepEqual(bbBlockingChecks(r.checks), []);
@@ -260,14 +264,64 @@ test('banco: identidade e esquema BB persistidos por município (com migração)
   const db = openPrintDb(':memory:');
   const m = saveMunicipio(db, { ...municipio });
   assert.equal(m.identidade, 'gove');
-  assert.equal(m.bb_esquema, 'capa');
+  assert.equal(m.bb_esquema, 'azul-claro');
   return import('../print-studio/server/db.js').then(({ setMunicipioIdentidade }) => {
-    const n = setMunicipioIdentidade(db, m.id, 'bb', 'roxo');
+    const n = setMunicipioIdentidade(db, m.id, 'bb');
     assert.equal(n.identidade, 'bb');
-    assert.equal(n.bb_esquema, 'roxo');
+    assert.equal(n.bb_esquema, 'azul-claro');
     // editar o cadastro não perde a identidade
     assert.equal(saveMunicipio(db, { ...municipio, nome_municipio: 'São Carlos 2' }, m.id).identidade, 'bb');
+    // sem o logo do BB por padrão, a GOVE continua disponível
+    assert.equal(setMunicipioIdentidade(db, m.id, 'gove').identidade, 'gove');
   });
+});
+
+test('Kit: município com o logo do BB por padrão sai sempre na identidade BB, esquema Azul claro', async () => {
+  const { setMunicipioIdentidade } = await import('../print-studio/server/db.js');
+  const { KIT_BB_SCHEMES, KIT_BB_SCHEME, kitIdentity } = await import('../print-studio/shared/layout.js');
+  assert.deepEqual(KIT_BB_SCHEMES.map((s) => s.id), ['azul-claro']);
+  assert.equal(KIT_BB_SCHEMES[0].bg, BB.BB_PALETTE.azulClaro);
+  // brand/bb.js (Criativos e Landing Pages) mantém os 6 esquemas
+  assert.equal(BB.BB_SCHEMES.length, 6);
+  const db = openPrintDb(':memory:');
+  const m = saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: true });
+  assert.deepEqual([m.identidade, m.bb_esquema], ['bb', KIT_BB_SCHEME]);
+  // a GOVE não vale para ele
+  assert.equal(setMunicipioIdentidade(db, m.id, 'gove').identidade, 'bb');
+  // cadastro existente que passa a incluir o logo do BB vira 'bb'
+  const g = saveMunicipio(db, { ...municipio });
+  assert.equal(saveMunicipio(db, { ...municipio, incluir_logo_banco_do_brasil: true }, g.id).identidade, 'bb');
+  assert.deepEqual(kitIdentity({ incluir_logo_banco_do_brasil: true, identidade: 'gove', bb_esquema: 'roxo' }), { identidade: 'bb', bb_esquema: KIT_BB_SCHEME });
+  // a peça sai BB e Azul claro mesmo pedida como GOVE ou com esquema antigo, em todos os formatos e modelos
+  for (const model of ['whatsapp', 'portal']) {
+    for (const l of LAYOUTS) {
+      const r = buildLayout(l.id, bbInput({ identity: 'gove', bbScheme: 'roxo', model, municipio: { ...municipio, incluir_logo_banco_do_brasil: true, url_domicilio: 'https://www.saocarlos.sp.gov.br/' } }), measure);
+      assert.equal(r.identity, 'bb', `${model}/${l.id}`);
+      const els = walkAll(r);
+      const bg = els.find((e) => e.type === 'rect' && e.x <= 0 && e.y <= 0 && e.w >= l.trim.w && e.h >= l.trim.h);
+      assert.equal(COLORS[bg.fill].hex, BB.BB_PALETTE.azulClaro, `${model}/${l.id}: fundo`);
+      assert.equal(bg.fill, 'bbAzulClaro');
+      assert.deepEqual(COLORS.bbAzulClaro.cmyk, [50, 0, 0, 0]);
+      for (const e of els.filter((x) => x.type === 'text' && x.lines.length && x.bbBackdrop.every((b) => b === BB.BB_PALETTE.azulClaro))) {
+        assert.ok(BB.BB_TEXT_ON[BB.BB_PALETTE.azulClaro].includes(COLORS[e.color].hex), `${model}/${l.id}: "${e.lines[0].text}"`);
+      }
+    }
+  }
+});
+
+test('banco: migração do Kit — esquemas BB antigos viram Azul claro e logo do BB por padrão vira identidade BB', async () => {
+  const Database = (await import('better-sqlite3')).default;
+  const file = join(process.env.PRINT_STUDIO_DATA, 'esquemas-antigos.sqlite');
+  openPrintDb(file).close();
+  const old = new Database(file);
+  const ins = old.prepare("INSERT INTO municipios (nome_municipio, ddd, numero_whatsapp, incluir_logo_banco_do_brasil, identidade, bb_esquema) VALUES (?, '11', '45918100', ?, ?, ?)");
+  ins.run('Roxo', 0, 'bb', 'roxo');
+  ins.run('Capa', 1, 'gove', 'capa');
+  ins.run('Gove', 0, 'gove', 'profundo');
+  old.close();
+  const db = openPrintDb(file);
+  const rows = Object.fromEntries(db.prepare('SELECT nome_municipio, identidade, bb_esquema FROM municipios').all().map((r) => [r.nome_municipio, [r.identidade, r.bb_esquema]]));
+  assert.deepEqual(rows, { Roxo: ['bb', 'azul-claro'], Capa: ['bb', 'azul-claro'], Gove: ['gove', 'azul-claro'] });
 });
 
 test('Portal Cidadão: QR e faixa levam ao site do domicílio eletrônico, nas duas identidades', async () => {

@@ -6,7 +6,7 @@
 import { zipSync } from 'fflate';
 import { collection, deleteFile, fileUrl, getFile, insideArtifact, putFile, saveFileDetailed, type Doc } from '../../../../artifact-runtime/index.ts';
 import { connectorCapture } from '../../../../artifact-runtime/pexels.ts';
-import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../../../shared/layout.js';
+import { KIT_BB_SCHEME, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, kitIdentity, normalizeSite, onlyDigits, pdfFileName } from '../../../shared/layout.js';
 import { ImageInputError, imageSize, prepareLogo } from '@/lib/images.browser';
 import { measure, renderPiece } from '@/lib/pdf.browser';
 import type { Check, ExportFiles, Imagem, LogoFixo, LogosFixos, Municipio, PreflightPeca, QueueItem, SaveResult } from './api';
@@ -36,7 +36,8 @@ const urlOf = (id: string | null | undefined) => (id ? urls.get(id) ?? '' : '');
 // ------------------------------------------------------------------ municípios
 const toMunicipio = (d: MunicipioDoc): Municipio => {
   const { id: _id, num, logo_file, ...rest } = d;
-  return { ...rest, id: num, logo_avisos: rest.logo_avisos ?? [], tem_logo: Boolean(logo_file) };
+  // Kit: esquema BB único (Azul claro); logo do BB por padrão → identidade BB (migra cadastros antigos)
+  return { ...rest, ...kitIdentity(rest), id: num, logo_avisos: rest.logo_avisos ?? [], tem_logo: Boolean(logo_file) };
 };
 
 function validateMunicipio(form: FormData) {
@@ -99,7 +100,8 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
     const mockId = opts.model === 'portal' && opts.mockup?.source === 'captura' && doc.captura_imagem_id ? doc.captura_imagem_id : opts.mockup?.imageId;
     const [goveBlob, bbBlob, prefBlob, mockBlob] = await Promise.all([blob(gove?.file), blob(bb?.file), blob(doc.logo_file), blob(mockId)]);
     const mockDims = mockBlob ? await imageSize(mockBlob).catch(() => null) : null;
-    const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
+    // Logo do BB por padrão no cadastro: identidade BB em todos os formatos e modelos
+    const identity = municipio.incluir_logo_banco_do_brasil || (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
     // Identidade BB: logomarca do Banco do Brasil obrigatória
     const includeBB = identity === 'bb' || (opts.includeBB ?? municipio.incluir_logo_banco_do_brasil);
     const dims = (w?: number | null, h?: number | null, b?: Blob | null) => (w && h && b ? { width: w, height: h } : null);
@@ -121,7 +123,7 @@ async function pieces(items: QueueItem[]): Promise<Piece[]> {
           municipio,
           model: opts.model === 'portal' ? 'portal' : 'whatsapp',
           identity,
-          bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
+          bbScheme: KIT_BB_SCHEME, // único esquema BB do Kit (Azul claro)
           includeBB,
           services: opts.services ?? [],
           texts: opts.texts?.[layoutId] ?? {},
@@ -180,8 +182,7 @@ export const api = {
       id: String(num),
       num,
       ...data,
-      identidade: prev?.identidade ?? 'gove',
-      bb_esquema: prev?.bb_esquema ?? 'capa',
+      ...kitIdentity({ ...data, identidade: prev?.identidade }),
       // Site trocado: a captura antiga deixa de valer (o Editor captura de novo)
       ...(prev && prev.url_domicilio === data.url_domicilio ? { captura_imagem_id: prev.captura_imagem_id ?? null, captura_em: prev.captura_em ?? null } : { captura_imagem_id: null, captura_em: null }),
       ...logo,
@@ -200,12 +201,11 @@ export const api = {
     if (doc.logo_file) void deleteFile(doc.logo_file);
   },
 
-  setIdentidade: async (id: number, identidade: 'gove' | 'bb', bb_esquema: string): Promise<Municipio> => {
+  setIdentidade: async (id: number, identidade: 'gove' | 'bb'): Promise<Municipio> => {
     await municipiosCol.ready;
     const prev = municipioDoc(id);
     if (!prev) throw new Error('Município não encontrado.');
-    const esquema = BB_SCHEMES.some((s: { id: string }) => s.id === bb_esquema) ? bb_esquema : 'capa';
-    const doc: MunicipioDoc = { ...prev, identidade: identidade === 'bb' ? 'bb' : 'gove', bb_esquema: esquema, data_atualizacao: new Date().toISOString() };
+    const doc: MunicipioDoc = { ...prev, ...kitIdentity({ ...prev, identidade: identidade === 'bb' ? 'bb' : 'gove' }), data_atualizacao: new Date().toISOString() };
     await municipiosCol.set(doc);
     return toMunicipio(doc);
   },

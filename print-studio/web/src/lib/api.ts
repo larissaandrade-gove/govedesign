@@ -11,7 +11,7 @@ export type Municipio = {
   incluir_logo_banco_do_brasil: boolean;
   /** Identidade visual preferida das peças do município (persistida no Editor). */
   identidade?: 'gove' | 'bb';
-  /** Esquema de cores BB (BB_SCHEMES) quando a identidade é Banco do Brasil. */
+  /** Esquema de cores BB do Kit (KIT_BB_SCHEMES: só 'azul-claro'; ids antigos são migrados). */
   bb_esquema?: string;
   endereco?: string | null;
   email?: string | null;
@@ -95,8 +95,8 @@ export const api = {
   saveMunicipio: (form: FormData, id?: number) =>
     request<Municipio>(id ? `api/municipios/${id}` : 'api/municipios', { method: id ? 'PUT' : 'POST', body: form }),
   deleteMunicipio: (id: number) => request<void>(`api/municipios/${id}`, { method: 'DELETE' }),
-  setIdentidade: (id: number, identidade: 'gove' | 'bb', bb_esquema: string) =>
-    request<Municipio>(`api/municipios/${id}/identidade`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ identidade, bb_esquema }) }),
+  setIdentidade: (id: number, identidade: 'gove' | 'bb') =>
+    request<Municipio>(`api/municipios/${id}/identidade`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ identidade }) }),
   municipioLogoUrl: (m: Municipio) => `api/municipios/${m.id}/logo?v=${encodeURIComponent(m.data_atualizacao)}`,
 
   logosFixos: () => request<LogosFixos>('api/logos-fixos'),

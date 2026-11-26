@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { KIT_BB_SCHEME, kitIdentity } from '../shared/layout.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const DATA_DIR = process.env.PRINT_STUDIO_DATA || join(ROOT, 'data');
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS municipios (
   captura_imagem_id            TEXT,
   captura_em                   TEXT,
   identidade                   TEXT    NOT NULL DEFAULT 'gove',
-  bb_esquema                   TEXT    NOT NULL DEFAULT 'capa',
+  bb_esquema                   TEXT    NOT NULL DEFAULT 'azul-claro',
   logo_original                TEXT,
   logo_hires                   TEXT,
   logo_largura                 INTEGER,
@@ -66,9 +67,12 @@ export function openPrintDb(path = join(DATA_DIR, 'print-studio.sqlite')) {
 /** Migração segura: só acrescenta colunas que faltam (bases criadas antes dos campos novos). */
 function migrate(db) {
   const cols = new Set(db.prepare('PRAGMA table_info(municipios)').all().map((c) => c.name));
-  const add = { endereco: 'TEXT', email: 'TEXT', url_domicilio: 'TEXT', captura_imagem_id: 'TEXT', captura_em: 'TEXT', identidade: "TEXT NOT NULL DEFAULT 'gove'", bb_esquema: "TEXT NOT NULL DEFAULT 'capa'" };
+  const add = { endereco: 'TEXT', email: 'TEXT', url_domicilio: 'TEXT', captura_imagem_id: 'TEXT', captura_em: 'TEXT', identidade: "TEXT NOT NULL DEFAULT 'gove'", bb_esquema: `TEXT NOT NULL DEFAULT '${KIT_BB_SCHEME}'` };
   db.transaction(() => {
     for (const [c, type] of Object.entries(add)) if (!cols.has(c)) db.exec(`ALTER TABLE municipios ADD COLUMN ${c} ${type}`);
+    // Kit: um só esquema BB (Azul claro); município com o logo do BB por padrão sai sempre na identidade BB
+    db.prepare('UPDATE municipios SET bb_esquema=? WHERE bb_esquema IS NOT ?').run(KIT_BB_SCHEME, KIT_BB_SCHEME);
+    db.exec("UPDATE municipios SET identidade='bb' WHERE incluir_logo_banco_do_brasil=1 AND identidade IS NOT 'bb'");
   })();
 }
 
@@ -76,6 +80,7 @@ const toMunicipio = (r) =>
   r && {
     ...r,
     incluir_logo_banco_do_brasil: r.incluir_logo_banco_do_brasil === 1,
+    ...kitIdentity({ ...r, incluir_logo_banco_do_brasil: r.incluir_logo_banco_do_brasil === 1 }),
     logo_avisos: JSON.parse(r.logo_avisos),
     tem_logo: Boolean(r.logo_hires),
   };
@@ -106,6 +111,7 @@ export function saveMunicipio(db, data, id = null) {
     db.prepare(
       `UPDATE municipios SET nome_municipio=@nome_municipio, uf=@uf, ddd=@ddd, numero_whatsapp=@numero_whatsapp,
        incluir_logo_banco_do_brasil=@incluir_logo_banco_do_brasil, endereco=@endereco, email=@email,
+       identidade=CASE WHEN @incluir_logo_banco_do_brasil=1 THEN 'bb' ELSE identidade END,
        captura_imagem_id=CASE WHEN url_domicilio IS @url_domicilio THEN captura_imagem_id END,
        captura_em=CASE WHEN url_domicilio IS @url_domicilio THEN captura_em END,
        url_domicilio=@url_domicilio, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=@id`,
@@ -114,18 +120,24 @@ export function saveMunicipio(db, data, id = null) {
   }
   const info = db
     .prepare(
-      `INSERT INTO municipios (nome_municipio, uf, ddd, numero_whatsapp, incluir_logo_banco_do_brasil, endereco, email, url_domicilio)
-       VALUES (@nome_municipio, @uf, @ddd, @numero_whatsapp, @incluir_logo_banco_do_brasil, @endereco, @email, @url_domicilio)`,
+      `INSERT INTO municipios (nome_municipio, uf, ddd, numero_whatsapp, incluir_logo_banco_do_brasil, endereco, email, url_domicilio, identidade)
+       VALUES (@nome_municipio, @uf, @ddd, @numero_whatsapp, @incluir_logo_banco_do_brasil, @endereco, @email, @url_domicilio,
+               CASE WHEN @incluir_logo_banco_do_brasil=1 THEN 'bb' ELSE 'gove' END)`,
     )
     .run(row);
   return getMunicipio(db, Number(info.lastInsertRowid));
 }
 
-/** Identidade visual preferida do município (GOVE ou Banco do Brasil) e o esquema BB. */
-export function setMunicipioIdentidade(db, id, identidade, bbEsquema) {
+/**
+ * Identidade visual preferida do município (GOVE ou Banco do Brasil). O esquema BB do
+ * Kit é sempre o Azul claro, e o município com o logo do BB por padrão fica em 'bb'.
+ */
+export function setMunicipioIdentidade(db, id, identidade) {
+  const m = getMunicipio(db, id);
+  const norm = kitIdentity({ ...m, identidade: identidade === 'bb' ? 'bb' : 'gove' });
   db.prepare(
     `UPDATE municipios SET identidade=?, bb_esquema=?, data_atualizacao=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`,
-  ).run(identidade, bbEsquema, id);
+  ).run(norm.identidade, norm.bb_esquema, id);
   return getMunicipio(db, id);
 }
 

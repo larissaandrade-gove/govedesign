@@ -14,8 +14,8 @@ import { LayoutGlyph, layoutShort } from '@/components/studio/LayoutGlyph';
 import { api, type Check, type Imagem, type LogosFixos, type Model, type Municipio, type PieceOptions, type QueueItem } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand';
 import {
-  BB_SCHEMES, DEFAULT_SERVICES, IDENTITIES, LAYOUTS, MAX_SERVICES_RECOMMENDED, MODELS, SERVICE_ICONS, TEXT_LABELS, bbBlockingChecks, buildLayout, defaultTextsFor, formatPhone, measure,
-  normalizeSite, siteLabel, type Identity,
+  DEFAULT_SERVICES, IDENTITIES, KIT_BB_SCHEME, KIT_BB_SCHEMES, LAYOUTS, MAX_SERVICES_RECOMMENDED, MODELS, SERVICE_ICONS, TEXT_LABELS, bbBlockingChecks, buildLayout, defaultTextsFor, formatPhone, measure,
+  kitForcesBB, normalizeSite, siteLabel, type Identity,
 } from '@/lib/studio';
 import { cn } from '@/lib/utils';
 
@@ -70,8 +70,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue,
   const [active, setActive] = useState<string>('flyer-a4');
   const [includeBB, setIncludeBB] = useState(false);
   // Identidade visual das peças: GOVE (padrão) ou Banco do Brasil; persistida por município
-  const [identity, setIdentity] = useState<Identity>('gove');
-  const [bbScheme, setBbScheme] = useState<string>('capa');
+  const [identityChoice, setIdentity] = useState<Identity>('gove');
+  // Esquema BB do Kit: um só (Azul claro), para todos os formatos e modelos
+  const bbScheme = KIT_BB_SCHEME as string;
   // Modelo (pauta): WhatsApp ou Portal Cidadão — mesma diagramação, textos e destino do QR próprios
   const [model, setModel] = useState<Model>('whatsapp');
   // Textos editados por modelo (cada pauta tem os seus)
@@ -92,6 +93,9 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue,
   const dragFrom = useRef<number | null>(null);
 
   const municipio = municipios.find((m) => m.id === municipioId) ?? null;
+  // Município com o logo do BB por padrão: identidade BB obrigatória (a GOVE fica indisponível)
+  const bbLocked = kitForcesBB(municipio) as boolean;
+  const identity: Identity = bbLocked ? 'bb' : identityChoice;
   const activeLayout = selected.includes(active) ? active : selected[0];
 
   function chooseMunicipio(id: number | null) {
@@ -109,16 +113,15 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue,
     if (appliedMunicipio.current === municipio.id) return;
     appliedMunicipio.current = municipio.id;
     setIncludeBB(municipio.incluir_logo_banco_do_brasil);
-    setIdentity(municipio.identidade === 'bb' ? 'bb' : 'gove');
-    setBbScheme(municipio.bb_esquema ?? 'capa');
+    setIdentity(municipio.identidade === 'bb' || kitForcesBB(municipio) ? 'bb' : 'gove');
   }, [municipio]);
 
-  /** Troca a identidade/esquema e grava no município selecionado (vale para as próximas sessões). */
-  function chooseIdentity(next: Identity, scheme = bbScheme) {
+  /** Troca a identidade e grava no município selecionado (vale para as próximas sessões). */
+  function chooseIdentity(next: Identity) {
+    if (bbLocked && next !== 'bb') return;
     setIdentity(next);
-    setBbScheme(scheme);
     if (!municipio) return;
-    api.setIdentidade(municipio.id, next, scheme).then(onMunicipioSaved, (err: Error) => toast.error(err.message));
+    api.setIdentidade(municipio.id, next).then(onMunicipioSaved, (err: Error) => toast.error(err.message));
   }
   const bb = identity === 'bb';
   const defaults = defaultTextsFor(identity, model);
@@ -309,46 +312,44 @@ export function Editor({ municipios, logosFixos, onMunicipioSaved, onAddToQueue,
 
         <Section title="Identidade" icon={Palette}>
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Identidade visual">
-            {(IDENTITIES as { id: Identity; label: string }[]).map((it) => (
-              <button
-                key={it.id}
-                type="button"
-                role="radio"
-                aria-checked={identity === it.id}
-                onClick={() => chooseIdentity(it.id)}
-                className={cn(
-                  'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors',
-                  identity === it.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {it.label}
-              </button>
-            ))}
+            {(IDENTITIES as { id: Identity; label: string }[]).map((it) => {
+              const off = bbLocked && it.id !== 'bb';
+              return (
+                <button
+                  key={it.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={identity === it.id}
+                  disabled={off}
+                  aria-describedby={off ? 'identidade-bb-hint' : undefined}
+                  onClick={() => chooseIdentity(it.id)}
+                  className={cn(
+                    'min-h-11 rounded-lg px-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    identity === it.id ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground enabled:hover:text-foreground',
+                  )}
+                >
+                  {it.label}
+                </button>
+              );
+            })}
           </div>
+          {bbLocked && municipio && (
+            <p id="identidade-bb-hint" className="text-xs text-muted-foreground">
+              {municipio.nome_municipio} inclui o logo do Banco do Brasil por padrão: todas as peças saem na identidade BB.
+            </p>
+          )}
           {bb && (
             <>
-              <div className="grid grid-cols-6 gap-1.5" role="radiogroup" aria-label="Esquema de cores BB">
-                {BB_SCHEMES.map((sc: { id: string; label: string; bg: string; title: string; accent: string }) => (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={bbScheme === sc.id}
-                    aria-label={sc.label}
-                    title={sc.label}
-                    onClick={() => chooseIdentity('bb', sc.id)}
-                    style={{ background: sc.bg, color: sc.title }}
-                    className={cn(
-                      'flex min-h-11 items-center justify-center rounded-lg border-2 text-sm font-bold transition-shadow',
-                      bbScheme === sc.id ? 'border-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' : 'border-border',
-                    )}
-                  >
+              {KIT_BB_SCHEMES.filter((sc: { id: string }) => sc.id === bbScheme).map((sc: { id: string; label: string; bg: string; title: string }) => (
+                <div key={sc.id} className="flex min-h-11 items-center gap-2.5 rounded-lg border border-border px-2.5" aria-label="Esquema de cores BB">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border text-xs font-bold" style={{ background: sc.bg, color: sc.title }} aria-hidden>
                     Aa
-                  </button>
-                ))}
-              </div>
+                  </span>
+                  <span className="text-sm font-medium">{sc.label}</span>
+                </div>
+              ))}
               <p className="text-xs text-muted-foreground">
-                {BB_SCHEMES.find((sc: { id: string }) => sc.id === bbScheme)?.label} · paleta, fontes e CMYK do Banco do Brasil; textos sempre ≥ 4,5:1.
+                Fundo Azul claro com textos em Azul escuro · paleta, fontes e CMYK do Banco do Brasil; textos sempre ≥ 4,5:1.
               </p>
               {bbLogoMissing && (
                 <p className="flex gap-1.5 text-xs font-medium text-warning" role="status">

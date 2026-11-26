@@ -12,7 +12,7 @@
 // branco com canto arredondado, faixa verde com o número, QR e logos à direita,
 // celular inclinado com a captura de tela enviada.
 import { LOGOS, LOGO_MIN_CONTRAST, kindForBox, pickLogo } from '../../brand/logos.js';
-import { BB_LOGO_RULES, BB_NAMES, BB_PALETTE, BB_PRETO, BB_SCHEMES, BB_TEXT_ON, MIN_TEXT, contrast as bbContrast, graphicColors, norm as bbNorm, textOn, textOnSamples } from '../../brand/bb.js';
+import { BB_LOGO_RULES, BB_NAMES, BB_PALETTE, BB_PRETO, BB_TEXT_ON, MIN_TEXT, contrast as bbContrast, graphicColors, norm as bbNorm, textOn, textOnSamples } from '../../brand/bb.js';
 import { SERVICE_ICONS, UI_ICONS, WHATSAPP_GLYPH, WHATSAPP_OUTLINE } from './icons.js';
 import {
   BACKGROUND,
@@ -116,8 +116,27 @@ export const IDENTITIES = [
   { id: 'gove', label: 'GOVE' },
   { id: 'bb', label: 'Banco do Brasil' },
 ];
-export { BB_SCHEMES };
-export const isBBInput = (input) => input?.identity === 'bb';
+/**
+ * Esquema de cores BB do Kit de Boas-Vindas: um só, fundo Azul claro (CMYK 50/0/0/0,
+ * Pantone 292 C) com textos em Azul escuro, o único par aprovado (BB_TEXT_ON) sobre
+ * ele. Lista própria do Kit: Criativos e Landing Pages seguem com os BB_SCHEMES de
+ * brand/bb.js. Ids antigos gravados ('capa', 'roxo'…) caem neste esquema.
+ */
+export const KIT_BB_SCHEME = 'azul-claro';
+export const KIT_BB_SCHEMES = [
+  { id: KIT_BB_SCHEME, label: 'Azul claro (BB)', bg: BB_PALETTE.azulClaro, title: BB_PALETTE.azulEscuro, text: BB_PALETTE.azulEscuro, accent: BB_PALETTE.azulEscuro, button: BB_PALETTE.azulEscuro, buttonText: BB_PALETTE.branco },
+];
+/** Município com o logo do BB por padrão: o Kit sai sempre na identidade BB (todos os formatos e modelos). */
+export const kitForcesBB = (municipio) => municipio?.incluir_logo_banco_do_brasil === true;
+/**
+ * Identidade e esquema BB normalizados do município (migração dos cadastros antigos):
+ * logo do BB por padrão → 'bb'; esquema sempre o do Kit.
+ * @returns {{ identidade: 'gove' | 'bb', bb_esquema: string }}
+ */
+export function kitIdentity(municipio) {
+  return { identidade: kitForcesBB(municipio) || municipio?.identidade === 'bb' ? 'bb' : 'gove', bb_esquema: KIT_BB_SCHEME };
+}
+export const isBBInput = (input) => input?.identity === 'bb' || kitForcesBB(input?.municipio);
 /** Textos padrão do modelo e da identidade (o Portal Cidadão usa o texto revisado nas duas). */
 export const defaultTextsFor = (identity, model = 'whatsapp') => (model === 'portal' ? PORTAL_DEFAULT_TEXTS : identity === 'bb' ? BB_DEFAULT_TEXTS : DEFAULT_TEXTS);
 
@@ -214,7 +233,7 @@ const bbKey = (hex) => {
  * cor impressa é uma cor da paleta, com o CMYK oficial).
  */
 export function bbTheme(schemeId) {
-  const s = BB_SCHEMES.find((x) => x.id === schemeId) ?? BB_SCHEMES[0];
+  const s = KIT_BB_SCHEMES.find((x) => x.id === schemeId) ?? KIT_BB_SCHEMES[0];
   const P = BB_PALETTE;
   const on = (bg, pref) => bbKey(textOn(bg, pref));
   // formas e ícones: ≥ 3:1 com o fundo (prefere a cor do título)

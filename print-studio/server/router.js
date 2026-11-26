@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ZipArchive } from 'archiver';
-import { BB_SCHEMES, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../shared/layout.js';
+import { KIT_BB_SCHEME, LAYOUTS, bbBlockingChecks, buildLayout, isEmail, normalizeSite, onlyDigits, pdfFileName } from '../shared/layout.js';
 import { FONT_FILES } from '../shared/tokens.js';
 import {
   deleteMunicipio, getImagem, getLogosFixos, getMunicipio, listMunicipios, openPrintDb,
@@ -55,7 +55,8 @@ function pieceContext(db, item, layoutId) {
   const imageId = fromCapture ? municipio.captura_imagem_id : opts.mockup?.imageId;
   const img = imageId ? getImagem(db, imageId) : null;
   const mode = 'upload'; // só captura enviada (tela gerada removida)
-  const identity = (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
+  // Logo do BB por padrão no cadastro: identidade BB em todos os formatos e modelos
+  const identity = municipio.incluir_logo_banco_do_brasil || (opts.identity ?? municipio.identidade) === 'bb' ? 'bb' : 'gove';
   // Identidade BB: logomarca do Banco do Brasil obrigatória
   const includeBB = identity === 'bb' || (opts.includeBB ?? municipio.incluir_logo_banco_do_brasil);
   const dims = (w, h) => (w && h ? { width: w, height: h } : null);
@@ -65,7 +66,7 @@ function pieceContext(db, item, layoutId) {
       municipio,
       model: opts.model === 'portal' ? 'portal' : 'whatsapp',
       identity,
-      bbScheme: opts.bbScheme ?? municipio.bb_esquema ?? 'capa',
+      bbScheme: KIT_BB_SCHEME, // único esquema BB do Kit (Azul claro)
       includeBB,
       services: opts.services ?? [],
       texts: opts.texts?.[layoutId] ?? {},
@@ -137,8 +138,7 @@ export function createPrintStudioRouter({ db = openPrintDb(), capture = captureS
     const id = Number(req.params.id);
     if (!getMunicipio(db, id)) return res.status(404).json({ error: 'Município não encontrado.' });
     const identidade = req.body?.identidade === 'bb' ? 'bb' : 'gove';
-    const esquema = BB_SCHEMES.some((s) => s.id === req.body?.bb_esquema) ? req.body.bb_esquema : 'capa';
-    res.json(setMunicipioIdentidade(db, id, identidade, esquema));
+    res.json(setMunicipioIdentidade(db, id, identidade));
   });
   // Captura da tela do celular a partir do site do domicílio eletrônico (Portal Cidadão)
   router.post('/api/municipios/:id/captura', async (req, res, next) => {
