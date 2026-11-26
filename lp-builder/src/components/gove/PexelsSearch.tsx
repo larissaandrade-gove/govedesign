@@ -48,6 +48,13 @@ export function PexelsSearch({
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Link do guia quando falta ligar o conector Pexels Gove no claude.ai. */
+  const [guideUrl, setGuideUrl] = useState<string | null>(null);
+  const fail = (e: unknown, fallback: string) => {
+    setError(e instanceof Error && e.message ? e.message : fallback);
+    const guide = (e as { guideUrl?: unknown } | null)?.guideUrl;
+    setGuideUrl(typeof guide === "string" ? guide : null);
+  };
   const request = useRef(0);
 
   useEffect(() => {
@@ -63,6 +70,7 @@ export function PexelsSearch({
     const id = ++request.current;
     setLoading(true);
     setError(null);
+    setGuideUrl(null);
     try {
       const data = await pexelsSearch({ q: q.trim(), page, orientation: orient, perPage: PER_PAGE });
       if (id !== request.current) return;
@@ -70,7 +78,7 @@ export function PexelsSearch({
       setResult(data);
     } catch (e) {
       if (id !== request.current) return;
-      setError(e instanceof Error && e.message ? e.message : "Não foi possível buscar imagens agora. Use a URL ou o upload.");
+      fail(e, "Não foi possível buscar imagens agora. Use a URL ou o upload.");
     } finally {
       if (id === request.current) setLoading(false);
     }
@@ -145,6 +153,14 @@ export function PexelsSearch({
       {error ? (
         <p role="alert" className="text-xs font-semibold text-destructive">
           {error}
+          {guideUrl ? (
+            <>
+              {" "}
+              <a href={guideUrl} target="_blank" rel="noreferrer" className="underline">
+                Como ligar
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -160,7 +176,7 @@ export function PexelsSearch({
                       try {
                         onPick(await resolvePexelsPhoto(photo));
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : "Não foi possível carregar a foto.");
+                        fail(err, "Não foi possível carregar a foto.");
                       }
                     }}
                     aria-label={`Usar foto de ${photo.photographer}${photo.alt ? `: ${photo.alt}` : ""}`}

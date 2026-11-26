@@ -27,6 +27,17 @@ function pexelsAvailable() {
   return statusPromise;
 }
 
+const SEARCH_ERROR = "Busca indisponível no momento. Envie uma imagem do dispositivo.";
+type PickerError = { text: string; guideUrl?: string | undefined };
+
+/** Mensagem do conector Pexels Gove do claude.ai (ex.: "Ligue o conector…"); senão a mensagem padrão. */
+function pickerError(e: unknown, fallback: string): PickerError {
+  if (e instanceof Error && e.name === "PexelsConnectorError" && e.message) {
+    return { text: e.message, guideUrl: (e as Error & { guideUrl?: string }).guideUrl };
+  }
+  return { text: fallback };
+}
+
 /** Carrega a foto escolhida de forma segura para o canvas (sem "taint"). */
 export async function loadPexelsImage(photo: PexelsPhoto): Promise<HTMLImageElement> {
   const { src } = await fetchPexelsImage({ data: { url: photo.src.large } });
@@ -76,7 +87,7 @@ export function PexelsPicker({
   const [next, setNext] = useState<number | null>(null);
   const [total, setTotal] = useState(0);
   const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<PickerError | null>(null);
   const [picking, setPicking] = useState<number | null>(null);
   const reqId = useRef(0);
 
@@ -98,9 +109,9 @@ export function PexelsPicker({
       setNext(r.next);
       setTotal(r.total);
       setError(null);
-    } catch {
+    } catch (e) {
       if (id !== reqId.current) return;
-      setError("Busca indisponível no momento. Envie uma imagem do dispositivo.");
+      setError(pickerError(e, SEARCH_ERROR));
     } finally {
       if (id === reqId.current) setSearching(false);
     }
@@ -128,8 +139,9 @@ export function PexelsPicker({
     setPicking(p.id);
     try {
       onPick(await loadPexelsImage(p), p);
-    } catch {
-      toast.error("Não foi possível carregar essa imagem.");
+    } catch (e) {
+      const err = pickerError(e, "");
+      toast.error("Não foi possível carregar essa imagem.", err.text ? { description: err.text } : undefined);
     } finally {
       setPicking(null);
     }
@@ -161,7 +173,19 @@ export function PexelsPicker({
         />
       </div>
       {searching && !photos.length && <p className="text-xs text-muted-foreground">Buscando…</p>}
-      {error && <p className="text-xs text-amber-700">{error}</p>}
+      {error && (
+        <p className="text-xs text-amber-700" role="alert">
+          {error.text}
+          {error.guideUrl && (
+            <>
+              {" "}
+              <a href={error.guideUrl} target="_blank" rel="noreferrer" className="underline">
+                Como ligar
+              </a>
+            </>
+          )}
+        </p>
+      )}
       {!searching && !error && query.trim().length >= 2 && photos.length === 0 && (
         <p className="text-xs text-muted-foreground">
           Nenhuma imagem encontrada. Tente outro termo.

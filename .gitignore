@@ -10,3 +10,6 @@ scratch/
 print-studio/data/
 print-studio/web/dist/
 print-studio/web/.parcel-cache/
+
+# Cloudflare Workers (wrangler)
+.wrangler/

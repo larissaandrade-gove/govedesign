@@ -1,0 +1,7 @@
+# Conector "Pexels Gove" (Cloudflare Workers). Sem segredos aqui: a chave do Pexels
+# e o token do endereço ficam só na Cloudflare, criados com `npm run segredo:chave`
+# e `npm run segredo:token` (wrangler secret put). Guia: ../README.md
+name = "pexels-gove"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true

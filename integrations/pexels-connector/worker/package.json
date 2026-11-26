@@ -1,0 +1,14 @@
+{
+  "name": "pexels-gove-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Conector Pexels Gove (MCP) para o claude.ai, na Cloudflare Workers",
+  "type": "module",
+  "scripts": {
+    "login": "npx --yes wrangler@4.160.0 login",
+    "deploy": "npx --yes wrangler@4.160.0 deploy",
+    "segredo:chave": "npx --yes wrangler@4.160.0 secret put PEXELS_API_KEY",
+    "segredo:token": "npx --yes wrangler@4.160.0 secret put MCP_TOKEN",
+    "check": "npx --yes wrangler@4.160.0 deploy --dry-run --outdir .wrangler/dry-run"
+  }
+}
