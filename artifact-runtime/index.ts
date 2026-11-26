@@ -98,7 +98,7 @@ function lookupCapability(name: string): Promise<CapLookup> {
         }
         if (v != null) {
           attempts.push(`${c.frame}:ok`);
-          return { hit: { value: v, win: c.win, frame: c.frame }, attempts };
+          return { hit: { value: crossRealm(v, c.win), win: c.win, frame: c.frame }, attempts };
         }
         attempts.push(`${c.frame}:null`);
       }
@@ -110,6 +110,91 @@ function lookupCapability(name: string): Promise<CapLookup> {
     capCache.set(name, p);
   }
   return capCache.get(name)!;
+}
+
+/*
+ * Capacidade atendida por outra janela (topo/pai): cada objeto passado a ela precisa
+ * nascer no "mundo" JavaScript daquela janela. O `db` do claude.ai confere se os dados
+ * são objetos simples comparando com o `Object.prototype` dele e recusa um objeto deste
+ * iframe ("arguments must be plain JSON data within the store's limits"). Por isso a
+ * capacidade de outra janela vem embrulhada: os argumentos de todo método (também os de
+ * `collection()`, `doc()`, consultas…) são recriados lá com `structuredClone` da janela
+ * (preserva Blob/ArrayBuffer) ou, sem ele, com o `JSON` dela.
+ */
+const ownWindow = () => (typeof window !== 'undefined' ? window : null);
+const unwrapped = new WeakMap<object, object>();
+
+/**
+ * Recria `value` no mundo de `win`: objetos simples e arrays campo a campo; Blob,
+ * ArrayBuffer, Date… com o `structuredClone` da janela. Primitivos, funções, objetos que
+ * já são de lá e o que não pode ser clonado (ex.: AbortSignal) passam como estão.
+ */
+export function toRealm<T>(win: any, value: T): T {
+  if (!win || win === ownWindow() || value === null || typeof value !== 'object') return value;
+  const raw = (unwrapped.get(value as object) ?? value) as any;
+  try {
+    if (typeof win.Object !== 'function' || raw instanceof win.Object) return raw; // já é de lá
+    if (Array.isArray(raw)) {
+      const out = new win.Array();
+      for (const x of raw) out.push(toRealm(win, x));
+      return out;
+    }
+    const proto = Object.getPrototypeOf(raw);
+    if (proto === null || proto === Object.prototype) {
+      const out = new win.Object();
+      for (const k of Object.keys(raw)) out[k] = toRealm(win, raw[k]);
+      return out;
+    }
+    if (typeof win.structuredClone === 'function') return win.structuredClone(raw);
+  } catch {
+    /* não clonável: segue o original */
+  }
+  return raw;
+}
+
+/** Objeto "com métodos" (handle do db, consulta, namespace), e não dado simples. */
+function isHandle(win: any, v: any): boolean {
+  if (typeof v === 'function') return true;
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return false;
+  try {
+    if (typeof win.Blob === 'function' && v instanceof win.Blob) return false;
+    if (typeof win.ArrayBuffer === 'function' && (v instanceof win.ArrayBuffer || ArrayBuffer.isView(v))) return false;
+    const proto = Object.getPrototypeOf(v);
+    if (proto !== null && proto !== win.Object?.prototype && proto !== Object.prototype) return true; // instância de classe
+    return Object.keys(v).some((k) => typeof v[k] === 'function');
+  } catch {
+    return false;
+  }
+}
+
+/** Embrulha a capacidade de outra janela: argumentos convertidos, retornos com métodos embrulhados também. */
+export function crossRealm<T>(value: T, win: any): T {
+  if (!win || win === ownWindow() || typeof Proxy === 'undefined') return value;
+  const wrapResult = (r: any): any => {
+    if (r && typeof r === 'object' && typeof r.then === 'function') return r.then(wrapResult); // Promise
+    return r && typeof r === 'object' && isHandle(win, r) ? wrap(r) : r;
+  };
+  const wrap = (target: any): any => {
+    if (unwrapped.has(target)) return target;
+    // Alvo vazio: o objeto real pode estar congelado, e um Proxy sobre ele não poderia
+    // devolver o método embrulhado (invariante do Proxy).
+    const t = target;
+    const proxy = new Proxy(typeof target === 'function' ? function () {} : {}, {
+      has: (_d, prop) => Reflect.has(t, prop),
+      apply: (_d, _this, args) => wrapResult(Reflect.apply(t, t, args.map((a: any) => toRealm(win, a)))),
+      get(_d, prop) {
+        const v = Reflect.get(t, prop, t);
+        if (typeof prop === 'symbol') return v;
+        if (typeof v === 'function') {
+          return (...args: any[]) => wrapResult(v.apply(t, args.map((a) => toRealm(win, a))));
+        }
+        return v && typeof v === 'object' && isHandle(win, v) ? wrap(v) : v;
+      },
+    });
+    unwrapped.set(proxy, target);
+    return proxy;
+  };
+  return value && (typeof value === 'object' || typeof value === 'function') ? wrap(value) : value;
 }
 
 /** Resolve uma capacidade do artefato, ou `null` (fora do artefato, não concedida…). */
@@ -300,9 +385,41 @@ export function collection<T extends Doc = Doc>(app: string, name: string): Coll
       }
     },
     async remove(id) {
+      const doc = cache.get(id);
+      const pos = [...cache.keys()].indexOf(id);
       cache.delete(id);
+      // Sai também da fila de envio e dos sincronizados: senão o próximo
+      // sincronismo trata o documento como cadastro local e o devolve à lista.
+      const wasPending = pendingUp.delete(id);
+      const wasSynced = synced.delete(id);
+      saveSynced();
       emit();
-      if (dbCol) await dbCol.doc(safeId(id)).delete();
+      if (!dbCol) return;
+      if (!wasSynced) {
+        // Só existia neste navegador. Se estava na fila, o envio pode ter chegado ao db:
+        // apaga por garantia, sem erro (não há cópia compartilhada a proteger).
+        if (wasPending) dbCol.doc(safeId(id)).delete().catch(() => undefined);
+        return;
+      }
+      try {
+        await dbCol.doc(safeId(id)).delete();
+      } catch (e: any) {
+        // Falhou no banco: devolve o item à lista, na mesma posição, e avisa.
+        if (doc && !cache.has(id)) {
+          const entries = [...cache.entries()];
+          entries.splice(pos < 0 ? entries.length : Math.min(pos, entries.length), 0, [id, doc]);
+          cache = new Map(entries);
+        }
+        synced.add(id);
+        saveSynced();
+        emit();
+        const why = `${e?.code ?? ''} ${e?.message ?? e ?? ''}`;
+        throw new Error(
+          /permission|permiss|denied|forbidden|unauthori[sz]ed|403/i.test(why)
+            ? 'Sem permissão para excluir neste artefato.'
+            : 'Não foi possível excluir agora. Tente de novo.',
+        );
+      }
     },
     subscribe(fn) {
       listeners.add(fn);

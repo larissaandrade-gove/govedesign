@@ -13,8 +13,8 @@ const LOGO_MIN_PX = 700;
 export class ImageInputError extends Error {}
 
 /**
- * Valida o logo (PNG/SVG com fundo transparente) e grava o original e a versão
- * de trabalho em alta resolução (PNG). SVG é rasterizado a 2400 px de largura.
+ * Valida o logo (PNG, WebP ou SVG com fundo transparente) e grava o original e a
+ * versão de trabalho em alta resolução (PNG). SVG é rasterizado a 2400 px de largura.
  */
 export async function storeLogo(buffer, originalName = '') {
   const isSvg = /\.svg$/i.test(originalName) || buffer.subarray(0, 512).toString('utf8').includes('<svg');
@@ -22,16 +22,17 @@ export async function storeLogo(buffer, originalName = '') {
   try {
     meta = await sharp(buffer).metadata();
   } catch {
-    throw new ImageInputError('Arquivo de logo ilegível. Envie PNG ou SVG.');
+    throw new ImageInputError('Arquivo de logo ilegível. Envie PNG, WebP ou SVG.');
   }
-  if (!isSvg && meta.format !== 'png') throw new ImageInputError('O logo deve ser PNG ou SVG com fundo transparente.');
+  const isWebp = !isSvg && meta.format === 'webp';
+  if (!isSvg && meta.format !== 'png' && !isWebp) throw new ImageInputError('O logo deve ser PNG, WebP ou SVG com fundo transparente.');
 
   const warnings = [];
   const hires = isSvg
     ? await sharp(buffer, { density: 1200 }).resize({ width: 2400, withoutEnlargement: false }).png().toBuffer()
     : await sharp(buffer).png().toBuffer();
   const h = await sharp(hires).metadata();
-  if (!h.hasAlpha) warnings.push('PNG sem transparência: o fundo do arquivo aparecerá na peça.');
+  if (!h.hasAlpha) warnings.push(`${isWebp ? 'WebP' : 'PNG'} sem transparência: o fundo do arquivo aparecerá na peça.`);
   if (!isSvg && h.width < LOGO_MIN_PX) {
     warnings.push(`Logo com ${h.width} px de largura: abaixo de 300 dpi no maior tamanho de uso (mín. ${LOGO_MIN_PX} px).`);
   }
@@ -40,7 +41,7 @@ export async function storeLogo(buffer, originalName = '') {
   const tm = await sharp(trimmed).metadata();
 
   const id = randomUUID();
-  const original = `logo-${id}.${isSvg ? 'svg' : 'png'}`;
+  const original = `logo-${id}.${isSvg ? 'svg' : isWebp ? 'webp' : 'png'}`;
   const hiresFile = `logo-${id}-hires.png`;
   writeFileSync(join(FILES_DIR, original), buffer);
   writeFileSync(join(FILES_DIR, hiresFile), trimmed);

@@ -75,21 +75,26 @@ function toBlob(c: HTMLCanvasElement, type: string, quality?: number): Promise<B
 export type StoredLogo = { blob: Blob; width: number; height: number; warnings: string[] };
 
 /**
- * Valida o logo (PNG/SVG com fundo transparente), rasteriza SVG e recorta as
- * margens transparentes — como `storeLogo` do servidor. Devolve um PNG.
+ * Valida o logo (PNG, WebP ou SVG com fundo transparente), rasteriza SVG e recorta
+ * as margens transparentes — como `storeLogo` do servidor. Devolve um PNG.
  */
 export async function prepareLogo(file: File): Promise<StoredLogo> {
-  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const head = new Uint8Array(await file.slice(0, 12).arrayBuffer());
   const isPng = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47;
-  const text = isPng ? '' : await file.slice(0, 2 * 1024 * 1024).text();
-  const isSvg = !isPng && (/\.svg$/i.test(file.name) || text.includes('<svg'));
-  if (!isPng && !isSvg) throw new ImageInputError('O logo deve ser PNG ou SVG com fundo transparente.');
+  // WebP: "RIFF" + tamanho (4 bytes) + "WEBP"
+  const isWebp =
+    head[0] === 0x52 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x46 &&
+    head[8] === 0x57 && head[9] === 0x45 && head[10] === 0x42 && head[11] === 0x50;
+  const isRaster = isPng || isWebp;
+  const text = isRaster ? '' : await file.slice(0, 2 * 1024 * 1024).text();
+  const isSvg = !isRaster && (/\.svg$/i.test(file.name) || text.includes('<svg'));
+  if (!isRaster && !isSvg) throw new ImageInputError('O logo deve ser PNG, WebP ou SVG com fundo transparente.');
 
   let src: CanvasImageSource & { width: number; height: number };
   try {
     src = isSvg ? await rasterizeSvg(await file.text()) : await decode(file);
   } catch {
-    throw new ImageInputError('Arquivo de logo ilegível. Envie PNG ou SVG.');
+    throw new ImageInputError('Arquivo de logo ilegível. Envie PNG, WebP ou SVG.');
   }
   const warnings: string[] = [];
   const { c, ctx } = canvas(src.width, src.height);
@@ -114,7 +119,7 @@ export async function prepareLogo(file: File): Promise<StoredLogo> {
     }
   }
   if (x1 < 0) throw new ImageInputError('O logo está totalmente transparente.');
-  if (!transparent) warnings.push('PNG sem transparência: o fundo do arquivo aparecerá na peça.');
+  if (!transparent) warnings.push(`${isWebp ? 'WebP' : 'PNG'} sem transparência: o fundo do arquivo aparecerá na peça.`);
   if (!isSvg && W < LOGO_MIN_PX) warnings.push(`Logo com ${W} px de largura: abaixo de 300 dpi no maior tamanho de uso (mín. ${LOGO_MIN_PX} px).`);
 
   const tw = x1 - x0 + 1;

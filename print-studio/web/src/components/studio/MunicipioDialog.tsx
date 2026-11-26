@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,11 +14,13 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   municipio?: Municipio | null;
   onSaved: (m: Municipio) => void;
+  /** Com o município em edição: mostra "Excluir município" (com confirmação). */
+  onDeleted?: (m: Municipio) => void;
 };
 
 const digits = (s: string) => s.replace(/\D/g, '');
 
-export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Props) {
+export function MunicipioDialog({ open, onOpenChange, municipio, onSaved, onDeleted }: Props) {
   const [nome, setNome] = useState('');
   const [uf, setUf] = useState('');
   const [ddd, setDdd] = useState('');
@@ -29,6 +32,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
   const [logo, setLogo] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [removing, setRemoving] = useState<Municipio | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -82,7 +86,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
             <DialogTitle>{municipio ? 'Editar município' : 'Novo município'}</DialogTitle>
-            <DialogDescription>O logo da prefeitura deve ser PNG ou SVG com fundo transparente.</DialogDescription>
+            <DialogDescription>O logo da prefeitura deve ser PNG, WebP ou SVG com fundo transparente.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-[1fr_88px] gap-3">
             <div className="space-y-1.5">
@@ -156,7 +160,7 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="mun-logo">Logo da prefeitura {municipio?.tem_logo && <span className="font-normal text-muted-foreground">· já cadastrado</span>}</Label>
-            <Input id="mun-logo" type="file" accept=".png,.svg,image/png,image/svg+xml" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
+            <Input id="mun-logo" type="file" accept=".png,.webp,.svg,image/png,image/webp,image/svg+xml" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
           </div>
           <div className="flex min-h-11 items-center justify-between gap-3 rounded-md border border-border px-3">
             <Label htmlFor="mun-bb" className="flex-1 cursor-pointer py-3">Incluir logo do Banco do Brasil por padrão</Label>
@@ -164,12 +168,74 @@ export function MunicipioDialog({ open, onOpenChange, municipio, onSaved }: Prop
           </div>
           {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
           <DialogFooter className="gap-2">
+            {municipio && onDeleted && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setRemoving(municipio)}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
+              >
+                <Trash aria-hidden /> Excluir município
+              </Button>
+            )}
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={!valid || saving} className="bg-accent font-semibold text-accent-foreground hover:bg-accent/90">
               {saving ? 'Salvando…' : 'Salvar município'}
             </Button>
           </DialogFooter>
         </form>
+        <ExcluirMunicipioDialog
+          municipio={removing}
+          onClose={() => setRemoving(null)}
+          onDeleted={(m) => {
+            onOpenChange(false);
+            onDeleted?.(m);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type ExcluirProps = {
+  /** Município a excluir; null fecha a confirmação. */
+  municipio: Municipio | null;
+  onClose: () => void;
+  onDeleted: (m: Municipio) => void;
+};
+
+/** Confirmação de exclusão (tabela e diálogo de edição). O aviso de sucesso só sai depois que o banco confirma. */
+export function ExcluirMunicipioDialog({ municipio, onClose, onDeleted }: ExcluirProps) {
+  const [busy, setBusy] = useState(false);
+
+  async function remove() {
+    if (!municipio) return;
+    setBusy(true);
+    try {
+      await api.deleteMunicipio(municipio.id);
+      toast.success(`${municipio.nome_municipio} excluído.`);
+      onDeleted(municipio);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+      onClose();
+    }
+  }
+
+  return (
+    <Dialog open={!!municipio} onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir {municipio?.nome_municipio}?</DialogTitle>
+          <DialogDescription>O cadastro e o logo deixam de estar disponíveis para novas peças. Os itens dele na fila de exportação também saem.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button variant="destructive" onClick={remove} disabled={busy}>
+            <Trash aria-hidden /> {busy ? 'Excluindo…' : 'Excluir'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

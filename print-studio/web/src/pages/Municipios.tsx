@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, ImageBroken, ListMagnifyingGlass, MapPinPlus, PencilSimple, Plus, MagnifyingGlass, Trash } from '@phosphor-icons/react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MunicipioDialog } from '@/components/studio/MunicipioDialog';
+import { ExcluirMunicipioDialog, MunicipioDialog } from '@/components/studio/MunicipioDialog';
 import { api, type Municipio } from '@/lib/api';
 import { formatPhone } from '@/lib/studio';
 import { cn } from '@/lib/utils';
@@ -15,6 +13,8 @@ type Props = {
   /** false enquanto a primeira leitura da lista não terminou (evita o aviso de "nenhum cadastrado"). */
   loaded: boolean;
   onChanged: () => void;
+  /** Município excluído (já confirmado pelo banco): limpa fila e seleção. */
+  onDeleted: (id: number) => void;
   /** Município da produção em andamento, se já escolhido. */
   currentId: number | null;
   /** Conclui a etapa inicial: abre o editor com este município selecionado. */
@@ -23,7 +23,7 @@ type Props = {
 
 const label = (m: Municipio) => `${m.nome_municipio}${m.uf ? ` - ${m.uf}` : ''}`;
 
-export function Municipios({ municipios, loaded, onChanged, currentId, onStart }: Props) {
+export function Municipios({ municipios, loaded, onChanged, onDeleted, currentId, onStart }: Props) {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Municipio | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -35,19 +35,6 @@ export function Municipios({ municipios, loaded, onChanged, currentId, onStart }
     const t = q.trim().toLowerCase();
     return t ? municipios.filter((m) => `${m.nome_municipio} ${m.uf ?? ''}`.toLowerCase().includes(t)) : municipios;
   }, [municipios, q]);
-
-  async function remove() {
-    if (!removing) return;
-    try {
-      await api.deleteMunicipio(removing.id);
-      toast.success(`${removing.nome_municipio} excluído.`);
-      onChanged();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setRemoving(null);
-    }
-  }
 
   const current = municipios.find((m) => m.id === currentId) ?? null;
 
@@ -142,22 +129,10 @@ export function Municipios({ municipios, loaded, onChanged, currentId, onStart }
           onChanged();
           if (fromStart) onStart(m.id);
         }}
+        onDeleted={(m) => onDeleted(m.id)}
       />
 
-      <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir {removing?.nome_municipio}?</DialogTitle>
-            <DialogDescription>O cadastro e o logo deixam de estar disponíveis para novas peças.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={remove}>
-              <Trash aria-hidden /> Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ExcluirMunicipioDialog municipio={removing} onClose={() => setRemoving(null)} onDeleted={(m) => onDeleted(m.id)} />
     </div>
   );
 }

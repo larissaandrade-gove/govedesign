@@ -346,3 +346,27 @@ test('captura do site: rota grava a imagem no município e a troca de site inval
     srv.close();
   }
 });
+
+test('logo WebP: transparente vira PNG recortado; opaco gera aviso', async () => {
+  const { readStored } = await import('../print-studio/server/images.js');
+  // 1000×400 transparente com um retângulo opaco no meio (margens a recortar)
+  const webp = await sharp({ create: { width: 1000, height: 400, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: { create: { width: 800, height: 200, channels: 4, background: { r: 20, g: 90, b: 200, alpha: 1 } } }, left: 100, top: 100 }])
+    .webp({ lossless: true })
+    .toBuffer();
+  assert.equal((await sharp(webp).metadata()).format, 'webp');
+  const t = await storeLogo(webp, 'logo.webp');
+  assert.deepEqual(t.warnings, []);
+  assert.match(t.hires, /\.png$/);
+  const hm = await sharp(readStored(t.hires)).metadata();
+  assert.equal(hm.format, 'png');
+  assert.ok(hm.hasAlpha);
+  assert.deepEqual([t.width, t.height], [800, 200]);
+
+  const opaco = await sharp({ create: { width: 900, height: 300, channels: 3, background: { r: 255, g: 255, b: 255 } } }).webp().toBuffer();
+  const o = await storeLogo(opaco, 'opaco.webp');
+  assert.ok(o.warnings.some((w) => /WebP sem transparência/.test(w)), o.warnings.join('; '));
+
+  const jpg = await sharp({ create: { width: 900, height: 300, channels: 3, background: '#fff' } }).jpeg().toBuffer();
+  await assert.rejects(storeLogo(jpg, 'x.jpg'), /PNG, WebP ou SVG/);
+});

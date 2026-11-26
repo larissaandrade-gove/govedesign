@@ -141,6 +141,12 @@ export default function App() {
                 municipios={municipios}
                 loaded={municipiosLoaded}
                 onChanged={() => void refreshMunicipios()}
+                onDeleted={(id) => {
+                  // Itens do município excluído saem da fila; se estava no editor, a seleção é limpa.
+                  setQueue((q) => q.filter((x) => x.municipioId !== id));
+                  setMunicipioId((cur) => (cur === id ? null : cur));
+                  void refreshMunicipios();
+                }}
                 currentId={municipioId}
                 onStart={(id) => {
                   setMunicipioId(id);

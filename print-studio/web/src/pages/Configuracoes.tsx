@@ -33,7 +33,7 @@ export function Configuracoes({ logos, onChanged }: Props) {
   return (
     <div className="h-full overflow-y-auto px-4 py-6 sm:px-8">
       <h1 className="sr-only">Logos fixos</h1>
-      <p className="max-w-2xl text-sm text-muted-foreground">Valem para todos os municípios · PNG ou SVG com fundo transparente.</p>
+      <p className="max-w-2xl text-sm text-muted-foreground">Valem para todos os municípios · PNG, WebP ou SVG com fundo transparente.</p>
       <div className="mt-4 grid max-w-4xl gap-4 md:grid-cols-2">
         {ITEMS.map(({ chave, titulo, texto }) => {
           const l = logos[chave];
@@ -64,7 +64,7 @@ export function Configuracoes({ logos, onChanged }: Props) {
                 <Button asChild variant="secondary" disabled={busy === chave}>
                   <label className="cursor-pointer">
                     {busy === chave ? <SpinnerGap className="animate-spin" aria-hidden /> : <UploadSimple aria-hidden />} {busy === chave ? 'Enviando…' : l ? 'Substituir' : 'Enviar'}
-                    <input type="file" accept=".png,.svg,image/png,image/svg+xml" className="sr-only" aria-label={`${l ? 'Substituir' : 'Enviar'} ${titulo}`} onChange={(e) => e.target.files?.[0] && upload(chave, e.target.files[0])} />
+                    <input type="file" accept=".png,.webp,.svg,image/png,image/webp,image/svg+xml" className="sr-only" aria-label={`${l ? 'Substituir' : 'Enviar'} ${titulo}`} onChange={(e) => e.target.files?.[0] && upload(chave, e.target.files[0])} />
                   </label>
                 </Button>
               </div>

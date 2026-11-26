@@ -161,7 +161,8 @@ test('outras capacidades (db) também usam o primeiro candidato que responde', a
   const db = { tag: 'db-do-topo' };
   f.top.claude.use = async (n) => (n === 'db' ? db : null);
   const { capability } = await load();
-  assert.equal(await capability('db'), db);
+  // Vem embrulhado (argumentos recriados no mundo da página principal), mas é o db do topo
+  assert.equal((await capability('db')).tag, 'db-do-topo');
   assert.equal(await capability('assets'), null);
 });
 
